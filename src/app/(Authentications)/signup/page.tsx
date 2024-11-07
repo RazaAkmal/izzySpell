@@ -1,5 +1,5 @@
 import React from "react";
-import CreateAccount from "./CreateAccount";
+import SignupForm from "./CreateAccount";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -12,7 +12,7 @@ export default function LoginPage() {
         <p className="text-center text-blue font-bold text-3xl mb-6">
           Create an account
         </p>
-        <CreateAccount />
+        <SignupForm />
         <p className="mt-4 text-center text-purple text-sm">
           Already have an account?{" "}
           <Link

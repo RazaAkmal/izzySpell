@@ -17,7 +17,10 @@ const config: Config = {
         lightBlue: "#ECF4FF",
         blue: "#4793FE",
         darkBlue: "#426096",
-        purple: "#956CFC"
+        purple: "#956CFC",
+        green: "#57AE0C",
+        hoverGreen: "#479306",
+        white: "#F1F7FF",
       },
       backgroundImage: {
         'login-background': "url('/images/login_background.svg')",
