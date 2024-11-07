@@ -15,7 +15,9 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
         lightBlue: "#ECF4FF",
-        blue: "#4793FE"
+        blue: "#4793FE",
+        darkBlue: "#426096",
+        purple: "#956CFC"
       },
       backgroundImage: {
         'login-background': "url('/images/login_background.svg')",

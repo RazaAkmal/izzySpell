@@ -8,7 +8,7 @@ type Props = {
 }
 export default function InputField({title, description, placeholder, type}: Props) {
   return (
-    <div className="w-full max-w-md px-4">
+    <div className="w-full max-w-md">
       <Field>
         {title && <Label className="text-sm/6 font-medium text-white">{title}</Label>}
         {description && <Description className="text-sm/6 text-white/50">description</Description>}
