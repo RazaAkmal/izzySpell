@@ -1,31 +1,20 @@
+import CustomButton from "@/components/HeadlessButton";
 import InputField from "@/components/Input";
+import Link from "next/link";
 import React from "react";
 
 const LoginForm = () => {
   return (
     <form className="space-y-4 w-full flex flex-col items-center">
-      <InputField type="email" placeholder="Email" />
+      <InputField type="text" placeholder="User Name" />
       <InputField type="password" placeholder="Password" />
-      <div className="w-full max-w-sm text-right text-blue text-sm">
-        <a href="#" className="hover:underline">
+      <div className="w-full max-w-sm text-right text-darkBlue text-sm">
+        <Link href="/forgot-password" className="hover:underline">
           Forgot Password?
-        </a>
+        </Link>
       </div>
       <div className="w-full max-w-md px-4">
-        <button
-          type="submit"
-          className="w-full bg-blue text-white py-2 rounded-xl hover:bg-blue-600"
-        >
-          Log in
-        </button>
-      </div>
-      <div className="w-full max-w-md px-4">
-        <button
-          type="button"
-          className="w-full border border-blue text-blue py-2 rounded-xl hover:bg-blue hover:text-white"
-        >
-          Sign in with Google
-        </button>
+        <CustomButton label="Log in" fullWidth />
       </div>
     </form>
   );
