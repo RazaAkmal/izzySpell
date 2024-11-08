@@ -37,8 +37,8 @@ export default function InputField({
           placeholder={placeholder}
           type={type}
           className={clsx(
-            "w-full px-4 py-2 border border-blue-300 rounded-xl text-blue",
-            "focus:ring-2 focus:ring-blue-500 data-[focus]:outline-2 data-[focus]:-outline-offset-2 data-[focus]:outline-white/25"
+            "w-full px-4 py-2 border border-inputText rounded-xl text-inputText",
+            "data-[focus]:outline-2 data-[focus]:outline-offset-2 data-[focus]:outline-inputText "
           )}
           {...register(fieldName, {
             required: requiredValue
@@ -64,7 +64,7 @@ export default function InputField({
         />
       </Field>
       {get(errors, fieldName) && (
-      <p className="text-green mt-2">{get(errors, fieldName).message}</p>
+      <p className="text-red-500 mt-2">{get(errors, fieldName).message}</p>
     )}
     </div>
   );

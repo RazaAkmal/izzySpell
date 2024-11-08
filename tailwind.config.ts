@@ -19,6 +19,7 @@ const config: Config = {
         darkBlue: "#426096",
         purple: "#956CFC",
         green: "#57AE0C",
+        inputText: '#7898D2',
         hoverGreen: "#479306",
         white: "#F1F7FF",
       },
