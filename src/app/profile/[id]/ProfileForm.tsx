@@ -103,7 +103,9 @@ const ProfileForm = () => {
           name="age"
           control={control}
           defaultValue=""
+          rules={{ required: "Please select your Age" }}
           render={({ field }) => (
+            <>
             <RadioGroup value={field.value} onChange={field.onChange}>
               <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
                 {ageOptions.map((age) => (
@@ -123,6 +125,9 @@ const ProfileForm = () => {
                 ))}
               </div>
             </RadioGroup>
+            {errors.age && (
+              <p className="text-red-500 text-sm mt-1">{errors.age.message}</p>
+            )}</>
           )}
         />
       </div>
@@ -134,7 +139,9 @@ const ProfileForm = () => {
           name="grade"
           control={control}
           defaultValue=""
+          rules={{ required: "Please select your Grade" }}
           render={({ field }) => (
+            <>
             <RadioGroup value={field.value} onChange={field.onChange}>
               <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
                 {gradeOptions.map((grade) => (
@@ -154,6 +161,9 @@ const ProfileForm = () => {
                 ))}
               </div>
             </RadioGroup>
+            {errors.grade && (
+              <p className="text-red-500 text-sm mt-1">{errors.grade.message}</p>
+            )}</>
           )}
         />
       </div>
