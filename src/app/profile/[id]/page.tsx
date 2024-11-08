@@ -1,5 +1,5 @@
 import ProfileForm from "./ProfileForm";
-
+import Image from "next/image";
 export default function ProfileSetup() {
   
   return (
@@ -9,9 +9,15 @@ export default function ProfileSetup() {
         <h1 className="text-2xl font-bold text-center text-gray-800 mb-1">
           IzzySpell
         </h1>
-        <p className="text-lg text-center text-purple mb-6">
-          Let&apos;s Setup Profile
-        </p>
+        <div className="flex justify-center mb-6">
+        <Image
+            src="/images/profileTitle.svg"
+            alt="User avatar"
+            width={40}
+            height={20}
+            className="w-80"
+          />
+        </div>
         <ProfileForm />
       </div>
     </div>

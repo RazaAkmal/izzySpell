@@ -1,16 +1,12 @@
 "use client";
-import { loginUser } from "@/app/api/auth/route";
 import CustomButton from "@/components/HeadlessButton";
 import InputField from "@/components/Input";
 import Link from "next/link";
 import React from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
+import { loginFormValues } from "@/lib/defination";
 
-type loginFormValues = {
-  name: string;
-  password: string;
-};
 
 const LoginForm = () => {
   const {
@@ -21,16 +17,26 @@ const LoginForm = () => {
   const router = useRouter();
 
   const submitForm = async (data: loginFormValues) => {
-    try {
-      const user = await loginUser(data.name, data.password);
-
-      if (user.profileUpdated) {
-        router.push("/profile/home");
+    const {name, password} = data;
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, password }),
+    });
+  
+    const user = await response.json();
+  
+    if (response.ok) {
+      if (!user.profileUpdated) {
+        router.push(`profile/${user.id}`)
       } else {
-        router.push(`/profile/${user.id}`);
+        router.push("/dashboard")
       }
-    } catch (error) {
-      console.error("Login failed:", error);
+      console.log('Login successful:', data);
+    } else {
+      console.error('Login failed:');
     }
   };
   return (

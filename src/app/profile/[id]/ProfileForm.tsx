@@ -1,5 +1,4 @@
 "use client";
-import { updateProfile } from "@/app/api/auth/route";
 import CustomButton from "@/components/HeadlessButton";
 import InputField from "@/components/Input";
 import React from "react";
@@ -7,13 +6,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { Radio, RadioGroup } from "@headlessui/react";
-
-type ProfileFormValues = {
-  firstName: string;
-  lastName: string;
-  age: string;
-  grade: string;
-};
+import { ProfileFormValues } from "@/lib/defination";
 
 const ageOptions = ["6-7", "7-8", "8-9", "9-10", "10-11", "11-12"];
 const gradeOptions = [
@@ -36,19 +29,31 @@ const ProfileForm = () => {
   const params = useParams();
   const { id } = params;
 
-  const submitForm = async (data: ProfileFormValues) => {
+  const submitForm = async (data: ProfileFormValues) => {  
     try {
       if (typeof id === "string") {
-        const user = await updateProfile(data, id);
-
+        const response = await fetch('/api/auth/updateProfile', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ data, userId: id }),
+        });
+  
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Profile update failed');
+        }
+  
+        const user = await response.json();
+  
         if (user.profileUpdated) {
           // Redirect to dashboard if profile is updated
-        } else {
-          router.push("/profile");
+          router.push('/dashboard');
         }
       }
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error("Profile update failed:", error);
     }
   };
   return (

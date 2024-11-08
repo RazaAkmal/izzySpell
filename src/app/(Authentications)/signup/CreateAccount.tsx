@@ -1,16 +1,11 @@
 "use client";
-import { signupUser } from "@/app/api/auth/route";
 import CustomButton from "@/components/HeadlessButton";
 import InputField from "@/components/Input";
+import { SignupFormValues } from "@/lib/defination";
 import { useRouter } from "next/navigation";
 import React from "react";
 import { useForm } from "react-hook-form";
 
-type SignupFormValues = {
-  name: string;
-  password: string;
-  confirmPassword: string;
-};
 const SignupForm = () => {
   const {
     register,
@@ -21,7 +16,25 @@ const SignupForm = () => {
 
   const submitForm = async (data: SignupFormValues) => {
     try {
-      const user = await signupUser(data.name, data.password);
+      // Make a POST request to the signup API endpoint
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: data.name,
+          password: data.password,
+        }),
+      });
+
+      // Check if the request was successful
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Signup failed");
+      }
+
+      const user = await response.json();
       router.push(`/profile/${user.id}`);
     } catch (error) {
       alert(error);

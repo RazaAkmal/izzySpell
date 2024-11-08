@@ -1,15 +1,10 @@
 "use client";
-import { resetPassword } from "@/app/api/auth/route";
 import CustomButton from "@/components/HeadlessButton";
 import InputField from "@/components/Input";
+import { SignupFormValues } from "@/lib/defination";
 import React from "react";
 import { useForm } from "react-hook-form";
 
-type SignupFormValues = {
-  name: string;
-  password: string;
-  confirmPassword: string;
-};
 const ResetPassword = () => {
   const {
     register,
@@ -19,12 +14,23 @@ const ResetPassword = () => {
 
   const submitForm = async (data: SignupFormValues) => {
     try {
-      const response = await resetPassword(data.name, data.password);
-      console.log(response);
-      // alert(response.message);
+      const response = await fetch('/api/auth/resetPassword', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: data.name, password: data.password }),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Password reset failed');
+      }
+  
+      const result = await response.json();
+      alert(result.message); // Show success message
     } catch (error) {
-      // alert(error?.message);
-      console.log(error);
+      alert(error);
     }
   };
   return (

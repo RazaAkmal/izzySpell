@@ -13,6 +13,7 @@ interface CustomButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement
   label: string;
   variant?: keyof typeof variantStyles; 
   fullWidth?: boolean;
+  disabled?: boolean
 }
 
 const CustomButton: React.FC<CustomButtonProps> = ({
@@ -21,11 +22,13 @@ const CustomButton: React.FC<CustomButtonProps> = ({
   fullWidth = false,
   className = '', // Accept className prop
   onClick,
+  disabled,
   ...props
 }) => {
   return (
     <Button
       onClick={onClick}
+      aria-disabled={disabled}
       className={`py-2 text-sm font-Pally transition-colors 
         ${variantStyles[variant]} ${fullWidth ? 'w-full' : 'w-auto'} ${className}`}
       {...props}
