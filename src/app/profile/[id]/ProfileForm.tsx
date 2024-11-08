@@ -29,27 +29,27 @@ const ProfileForm = () => {
   const params = useParams();
   const { id } = params;
 
-  const submitForm = async (data: ProfileFormValues) => {  
+  const submitForm = async (data: ProfileFormValues) => {
     try {
       if (typeof id === "string") {
-        const response = await fetch('/api/auth/updateProfile', {
-          method: 'PUT',
+        const response = await fetch("/api/auth/updateProfile", {
+          method: "PUT",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({ data, userId: id }),
         });
-  
+
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Profile update failed');
+          throw new Error(errorData.error || "Profile update failed");
         }
-  
+
         const user = await response.json();
-  
+
         if (user.profileUpdated) {
           // Redirect to dashboard if profile is updated
-          router.push('/dashboard');
+          router.push("/dashboard");
         }
       }
     } catch (error) {
@@ -106,28 +106,31 @@ const ProfileForm = () => {
           rules={{ required: "Please select your Age" }}
           render={({ field }) => (
             <>
-            <RadioGroup value={field.value} onChange={field.onChange}>
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                {ageOptions.map((age) => (
-                  <Radio key={age} value={age}>
-                    {({ checked }) => (
-                      <CustomButton
-                        label={age}
-                        fullWidth={false}
-                        className={`px-3 py-1 rounded-md border w-full ${
-                          checked
-                            ? "bg-green text-white data-[hover]:bg-hoverGreen"
-                            : "bg-white !text-green border-green data-[hover]:!text-white data-[hover]:bg-hoverGreen"
-                        }`}
-                      />
-                    )}
-                  </Radio>
-                ))}
-              </div>
-            </RadioGroup>
-            {errors.age && (
-              <p className="text-red-500 text-sm mt-1">{errors.age.message}</p>
-            )}</>
+              <RadioGroup value={field.value} onChange={field.onChange}>
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                  {ageOptions.map((age) => (
+                    <Radio key={age} value={age}>
+                      {({ checked }) => (
+                        <CustomButton
+                          label={age}
+                          fullWidth={false}
+                          className={`px-3 py-1 rounded-md border w-full ${
+                            checked
+                              ? "bg-green text-white data-[hover]:bg-hoverGreen"
+                              : "bg-white !text-green border-green data-[hover]:!text-white data-[hover]:bg-hoverGreen"
+                          }`}
+                        />
+                      )}
+                    </Radio>
+                  ))}
+                </div>
+              </RadioGroup>
+              {errors.age && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.age.message}
+                </p>
+              )}
+            </>
           )}
         />
       </div>
@@ -142,34 +145,42 @@ const ProfileForm = () => {
           rules={{ required: "Please select your Grade" }}
           render={({ field }) => (
             <>
-            <RadioGroup value={field.value} onChange={field.onChange}>
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                {gradeOptions.map((grade) => (
-                  <Radio key={grade} value={grade}>
-                    {({ checked }) => (
-                      <CustomButton
-                        label={grade}
-                        fullWidth={false}
-                        className={`px-3 py-1 rounded-md border w-full ${
-                          checked
-                            ? "bg-green text-white data-[hover]:bg-hoverGreen"
-                            : "bg-white !text-green border-green data-[hover]:!text-white data-[hover]:bg-hoverGreen"
-                        }`}
-                      />
-                    )}
-                  </Radio>
-                ))}
-              </div>
-            </RadioGroup>
-            {errors.grade && (
-              <p className="text-red-500 text-sm mt-1">{errors.grade.message}</p>
-            )}</>
+              <RadioGroup value={field.value} onChange={field.onChange}>
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                  {gradeOptions.map((grade) => (
+                    <Radio key={grade} value={grade}>
+                      {({ checked }) => (
+                        <CustomButton
+                          label={grade}
+                          fullWidth={false}
+                          className={`px-3 py-1 rounded-md border w-full ${
+                            checked
+                              ? "bg-green text-white data-[hover]:bg-hoverGreen"
+                              : "bg-white !text-green border-green data-[hover]:!text-white data-[hover]:bg-hoverGreen"
+                          }`}
+                        />
+                      )}
+                    </Radio>
+                  ))}
+                </div>
+              </RadioGroup>
+              {errors.grade && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.grade.message}
+                </p>
+              )}
+            </>
           )}
         />
       </div>
       <div className="flex w-full justify-center">
         <div className="w-full max-w-md px-4">
-          <CustomButton className="border-white" type="submit" label="Next" fullWidth />
+          <CustomButton
+            className="border-white"
+            type="submit"
+            label="Next"
+            fullWidth
+          />
         </div>
       </div>
     </form>
