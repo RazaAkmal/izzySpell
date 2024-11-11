@@ -5,6 +5,17 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 First, run the development server:
 
 ```bash
+# To generate prisma model
+npx prisma generate
+# To run the existing migrations
+npx prisma migrate deploy
+# Database management tool 
+npx prisma studio
+# To create the migration update prisma.schema file and run
+npx prisma generate && npx prisma migrate dev
+```
+
+```bash
 npm run dev
 # or
 yarn dev
