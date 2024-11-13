@@ -6,6 +6,11 @@ type UpdateProfile = {
   lastName: string;
   age: string;
   grade: string;
+  cardName: string;
+  cardCVC: number;
+  cardNumber: number;
+  expireMonth: string;
+  expireYear: number;
 };
 
 export async function PUT(req: Request) {
@@ -19,7 +24,12 @@ export async function PUT(req: Request) {
         lastName: data.lastName,
         age: data.age,
         grade: data.grade,
-        profileUpdated: true, // Mark the profile as updated
+        profileUpdated: true,
+        cardCVC: String(data.cardCVC),
+        cardName: data.cardName,
+        expireMonth: data.expireMonth,
+        expireYear: String(data.expireYear),
+        cardNumber: String(data.cardNumber)
       },
     });
 

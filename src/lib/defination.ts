@@ -20,3 +20,10 @@ export type ProfileFormValues = {
   age: string;
   grade: string;
 };
+export type CardDetailsFormValues = {
+  card_number: number;
+  cardName: string;
+  expireMonth: string;
+  expireYear: number;
+  cardCVC: number;
+};

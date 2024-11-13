@@ -1,6 +1,7 @@
 import { Description, Field, Input, Label } from "@headlessui/react";
 import clsx from "clsx";
 import { get } from "lodash";
+
 type Props = {
   id: string;
   title?: string;
@@ -11,6 +12,7 @@ type Props = {
   fieldName: string;
   requiredValue: boolean;
   errors: any;
+  className?: string;
 };
 export default function InputField({
   title,
@@ -21,6 +23,7 @@ export default function InputField({
   fieldName,
   requiredValue,
   errors,
+  className,
 }: Props) {
   return (
     <div className="w-full max-w-md">
@@ -38,7 +41,8 @@ export default function InputField({
           type={type}
           className={clsx(
             "w-full px-4 py-2 border border-inputText rounded-xl text-inputText",
-            "data-[focus]:outline-2 data-[focus]:outline-offset-2 data-[focus]:outline-inputText "
+            "data-[focus]:outline-2 data-[focus]:outline-offset-2 data-[focus]:outline-inputText ",
+            className
           )}
           {...register(fieldName, {
             required: requiredValue
@@ -64,8 +68,8 @@ export default function InputField({
         />
       </Field>
       {get(errors, fieldName) && (
-      <p className="text-red-500 mt-2">{get(errors, fieldName).message}</p>
-    )}
+        <p className="text-red-500 mt-2">{get(errors, fieldName).message}</p>
+      )}
     </div>
   );
 }

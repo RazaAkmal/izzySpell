@@ -18,12 +18,17 @@ model User {
   id            String     @default(cuid()) @id
   name          String     @unique
   password      String
-  firstName     String?
-  lastName      String?
+  firstName     String?    @map(name: "first_name")
+  lastName      String?    @map(name: "last_name")
   age           String?
   grade         String?
-  profileUpdated Boolean @default(false)
+  profileUpdated Boolean  @default(false)
   createdAt     DateTime  @default(now()) @map(name: "created_at")
   updatedAt     DateTime  @updatedAt @map(name: "updated_at")
+  cardNumber    String?   @map(name: "card_number")
+  cardName      String?   @map(name: "card_name")
+  expireMonth   String?   @map(name: "expire_month")
+  expireYear    String?   @map(name: "expire_year")
+  cardCVC       String?   @map(name: "card_cvc")
   @@map(name: "users")
 }

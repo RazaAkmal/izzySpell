@@ -3,7 +3,6 @@ import CustomButton from "@/components/HeadlessButton";
 import InputField from "@/components/Input";
 import React from "react";
 import { Controller, useForm } from "react-hook-form";
-import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { Radio, RadioGroup } from "@headlessui/react";
 import { ProfileFormValues } from "@/lib/defination";
@@ -17,27 +16,27 @@ const gradeOptions = [
   "5th Grade",
   "6th Grade",
 ];
-
-const ProfileForm = () => {
+type Props = {
+  onComplete: () => void,
+  userId: string | string[] | undefined; 
+}
+const ProfileForm = ({onComplete, userId}: Props) => {
   const {
     register,
     handleSubmit,
     control,
     formState: { errors },
   } = useForm<ProfileFormValues>();
-  const router = useRouter();
-  const params = useParams();
-  const { id } = params;
 
   const submitForm = async (data: ProfileFormValues) => {
     try {
-      if (typeof id === "string") {
+      if (typeof userId === "string") {
         const response = await fetch("/api/auth/updateProfile", {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ data, userId: id }),
+          body: JSON.stringify({ data, userId }),
         });
 
         if (!response.ok) {
@@ -48,8 +47,7 @@ const ProfileForm = () => {
         const user = await response.json();
 
         if (user.profileUpdated) {
-          // Redirect to dashboard if profile is updated
-          router.push("/dashboard");
+          onComplete()
         }
       }
     } catch (error) {
@@ -58,6 +56,18 @@ const ProfileForm = () => {
   };
   return (
     <form onSubmit={handleSubmit(submitForm)}>
+      <h1 className="text-2xl font-bold text-center text-gray-800">
+          IzzySpell
+        </h1>
+      <div className="flex justify-center mb-6">
+        <Image
+            src="/images/titles/profileTitle.svg"
+            alt="User avatar"
+            width={40}
+            height={20}
+            className="w-80"
+          />
+        </div>
       <div className="flex gap-3 mb-6">
         <div className="w-20 h-20 rounded-xl overflow-hidden mb-3">
           <Image
