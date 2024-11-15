@@ -16,7 +16,7 @@ const List: React.FC = () => {
   ]);
 
   return (
-    <div className="p-4 bg-skyBlue rounded-lg shadow-md md:m-5  mt-3">
+    <div className="p-4 bg-skyBlue rounded-lg shadow-md m-2 md:m-5  mt-3">
       <div className="flex justify-center">
         <Image
           src="/images/titles/MyListTitle.svg"
