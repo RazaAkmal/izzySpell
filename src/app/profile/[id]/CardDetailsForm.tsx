@@ -81,7 +81,7 @@ const CardDetailsForm = ({ onComplete, userId }: Props) => {
               type="number"
               placeholder="1234  8765  7654  9812"
               className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
-              requiredValue={false}
+              requiredValue={true}
             />
           </div>
           <div className="mb-4">
@@ -93,7 +93,7 @@ const CardDetailsForm = ({ onComplete, userId }: Props) => {
               type="text"
               placeholder="Myra Goodwin"
               className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-              requiredValue={false}
+              requiredValue={true}
             />
           </div>
 
@@ -108,6 +108,7 @@ const CardDetailsForm = ({ onComplete, userId }: Props) => {
                   register={register}
                   fieldName={"expireMonth"}
                   errors={errors}
+                  requiredValue={true}
                 />
               </div>
               <div className="w-1/3 mr-2">
@@ -117,6 +118,7 @@ const CardDetailsForm = ({ onComplete, userId }: Props) => {
                   register={register}
                   fieldName={"expireYear"}
                   errors={errors}
+                  requiredValue={true}
                 />
               </div>
               <div className="w-1/3">
@@ -128,7 +130,7 @@ const CardDetailsForm = ({ onComplete, userId }: Props) => {
                   type="number"
                   placeholder="CVC"
                   className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                  requiredValue={false}
+                  requiredValue={true}
                 />
               </div>
             </div>
