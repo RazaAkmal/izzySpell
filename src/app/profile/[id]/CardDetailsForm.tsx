@@ -9,7 +9,7 @@ import { CardDetailsFormValues } from "@/lib/defination";
 
 type Props = {
   onComplete: () => void;
-  userId: string | string[] | undefined; 
+  userId: string | string[] | undefined;
 };
 
 const CardDetailsForm = ({ onComplete, userId }: Props) => {
@@ -18,8 +18,9 @@ const CardDetailsForm = ({ onComplete, userId }: Props) => {
     handleSubmit,
     setValue,
     formState: { errors },
-  } = useForm<CardDetailsFormValues>({defaultValues: {expireYear: expiryYearOptions[0]}});
-
+  } = useForm<CardDetailsFormValues>({
+    defaultValues: { expireYear: expiryYearOptions[0] },
+  });
 
   const submitForm = async (data: CardDetailsFormValues) => {
     try {
@@ -40,7 +41,7 @@ const CardDetailsForm = ({ onComplete, userId }: Props) => {
         const user = await response.json();
 
         if (user.profileUpdated) {
-          onComplete()
+          onComplete();
         }
       }
     } catch (error) {
@@ -50,18 +51,25 @@ const CardDetailsForm = ({ onComplete, userId }: Props) => {
 
   return (
     <div className="flex flex-col items-center">
-      <h1 className="text-2xl font-bold text-center text-gray-800">
-      IzzySpell
-      </h1>
-      <div className="flex justify-center mb-4">
+      <div className="relative flex items-center h-20 w-72">
         <Image
-          src="/images/titles/PaymentTitle.svg"
-          alt="User avatar"
-          width={40}
-          height={20}
-          className="w-80"
+          src="/images/izzyLogo.svg"
+          alt="Logo"
+          width={300}
+          height={40}
+          className="mx-auto"
         />
       </div>
+      <div className="relative flex items-center h-20 w-72">
+        <Image
+          src="/images/titles/PaymentTitle.svg"
+          alt="payment title"
+          width={300}
+          height={40}
+          className="mx-auto"
+        />
+      </div>
+
       <form onSubmit={handleSubmit(submitForm)}>
         <div className="border border-blueStroke p-8 rounded-lg shadow-md mb-4 max-w-md">
           <div className="mb-4">
@@ -94,10 +102,22 @@ const CardDetailsForm = ({ onComplete, userId }: Props) => {
               {" "}
               {/* This line was missing a closing `>` */}
               <div className="w-1/3 mr-2">
-              <CardDropDown setValue={setValue} options={monthOptions} register={register} fieldName={"expireMonth"} errors={errors} />
+                <CardDropDown
+                  setValue={setValue}
+                  options={monthOptions}
+                  register={register}
+                  fieldName={"expireMonth"}
+                  errors={errors}
+                />
               </div>
               <div className="w-1/3 mr-2">
-              <CardDropDown setValue={setValue} options={expiryYearOptions} register={register} fieldName={"expireYear"} errors={errors} />
+                <CardDropDown
+                  setValue={setValue}
+                  options={expiryYearOptions}
+                  register={register}
+                  fieldName={"expireYear"}
+                  errors={errors}
+                />
               </div>
               <div className="w-1/3">
                 <InputField

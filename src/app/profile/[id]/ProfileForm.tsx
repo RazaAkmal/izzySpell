@@ -56,9 +56,17 @@ const ProfileForm = ({onComplete, userId}: Props) => {
   };
   return (
     <form onSubmit={handleSubmit(submitForm)}>
-      <h1 className="text-2xl font-bold text-center text-gray-800">
-          IzzySpell
-        </h1>
+      <div className="flex justify-center">
+      <div className="relative flex items-center h-20 w-72">
+          <Image
+            src="/images/izzyLogo.svg"
+            alt="Logo"
+            width={300}
+            height={40}
+            className="mx-auto"
+          />
+        </div>
+        </div>
       <div className="flex justify-center mb-6">
         <Image
             src="/images/titles/profileTitle.svg"

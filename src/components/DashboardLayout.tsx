@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import React, { ReactNode } from "react";
 import Image from "next/image";
 
@@ -15,13 +15,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     <div className="bg-dashboard-background bg-cover bg-center min-h-screen flex flex-col">
       {/* TopBar */}
       <div className="mx-4 md:mx-8 lg:mx-16">
-        <header className="bg-sky-100 m-2 md:m-8 p-6 md:p-4 rounded-lg shadow-md">
+        <header className="bg-sky-100 m-2 md:m-6 p-4 md:p-4 rounded-lg shadow-md">
           <div className="container mx-auto flex flex-row md:flex-row justify-between items-center">
-            <div className="flex items-center  ">
-              <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-blue"></div>
-              <div className="text-lg md:text-xl font-bold text-black ml-5 md:ml-7">
-                IzzySpell
-              </div>
+          <div className="relative flex items-center h-20 w-52">
+              <Image
+                src="/images/izzyLogo.svg"
+                alt="Logo"
+                width={200} 
+                height={40}
+                className="mx-auto"
+              />
             </div>
 
             {/* for profile of user */}
@@ -34,7 +37,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   height={49}
                 />
               </div>
-              <div className="ml-2 font-medium text-darkBlue text-sm md:text-base">Sarah</div>
+              <div className="ml-2 font-bold text-darkBlue text-2xl">Sarah</div>
               <Image src="/images/Dropdown.svg" alt="" width={36} height={49} />
             </div>
           </div>
