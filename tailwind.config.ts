@@ -23,6 +23,8 @@ const config: Config = {
         inputText: '#7898D2',
         hoverGreen: "#479306",
         white: "#F1F7FF",
+        skyBlue:"#ECF7FF",
+        orange:"#ED9A37"
       },
       backgroundImage: {
         'login-background': "url('/images/login_background.svg')",

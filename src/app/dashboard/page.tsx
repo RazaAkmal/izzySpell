@@ -1,11 +1,22 @@
+// pages/dashboardPage.js
+import React from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
+import UploadWord from '@/components/UploadWord';
+import WordList from '@/components/WordList';
+import List from '@/components/MyList';
 
-const Dashboard = () => {
+const DashboardPage = () => {
   return (
-    <DashboardLayout showFooter={true}> 
-      <h1>Dashboard Container</h1>
+    <DashboardLayout showFooter={true}>
+      <div className="flex flex-col md:flex-row justify-around gap-2 m-2">
+        
+        <UploadWord />
+
+        <WordList />
+      </div>
+      <List/>
     </DashboardLayout>
   );
 };
 
-export default Dashboard;
+export default DashboardPage;
