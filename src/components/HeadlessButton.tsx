@@ -9,32 +9,42 @@ const variantStyles = {
   danger: 'bg-red-500 text-white hover:bg-red-600',
 };
 
+// Define styles for each size
+const sizeStyles = {
+  small: 'py-2 px-4 text-xs',
+  medium: 'py-3 px-12 text-sm',
+  large: 'py-2 px-32 text-lg',
+};
+
 interface CustomButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   label: string;
   variant?: keyof typeof variantStyles; 
+  size?: keyof typeof sizeStyles; 
   fullWidth?: boolean;
-  disabled?: boolean
+  disabled?: boolean;
 }
 
 const CustomButton: React.FC<CustomButtonProps> = ({
   label,
   variant = 'primary',
+  size = 'medium', // Default to medium size
   fullWidth = false,
-  className = '', // Accept className prop
+  className = '', 
   onClick,
   disabled,
   ...props
 }) => {
   return (
     <Button
-      onClick={onClick}
-      aria-disabled={disabled}
-      className={`py-2 text-sm font-Pally transition-colors 
-        ${variantStyles[variant]} ${fullWidth ? 'w-full' : 'w-auto'} ${className}`}
-      {...props}
-    >
-      {label}
-    </Button>
+    onClick={onClick}
+    aria-disabled={disabled}
+    className={`font-Pally transition-colors border-[4px] border-[#FFFFFF] opacity-100 rounded-xl
+      shadow-[2px_2px_0px_rgba(0,0,250,0.4)] 
+      ${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? 'w-full' : 'w-auto'} ${className}`}
+    {...props}
+  >
+    {label}
+  </Button>
   );
 };
 

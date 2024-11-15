@@ -26,11 +26,11 @@ const List: React.FC = () => {
           className="w-52"
         />
       </div>
-      <div className="flex flex-wrap   gap-4  ">
+      <div className="flex flex-wrap gap-4  ">
         {list.map((item) => (
           <div
             key={item.id}
-            className="flex items-center p-1  bg-white border-[1px] border-gray-600 rounded-lg shadow-md space-x-3 w-72"
+            className="flex items-center p-2 bg-white border-[1px] border-gray-600 rounded-lg shadow-md space-x-3 flex-grow"    
           >
             {/* Circle Background */}
             <div
@@ -44,13 +44,13 @@ const List: React.FC = () => {
             {/* Cancel Icon */}
             <button
               className="text-gray-400 hover:text-gray-600"
-              onClick={() => setList(list.filter((el) => el.id !== item.id))} // Removes item on click
+              onClick={() => setList(list.filter((el) => el.id !== item.id))}
             >
               <Image
                 src="/images/Vector.svg"
-                alt="User avatar"
-                width={36}
-                height={49}
+                alt="Delete icon"
+                width={22}
+                height={22}
               />
             </button>
           </div>
