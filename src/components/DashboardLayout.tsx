@@ -1,3 +1,4 @@
+'use client'
 import React, { ReactNode } from "react";
 import Image from "next/image";
 
@@ -11,10 +12,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   showFooter = true,
 }) => {
   return (
-    <div className="bg-blue min-h-screen flex flex-col">
+    <div className="bg-dashboard-background bg-cover bg-center min-h-screen flex flex-col">
       {/* TopBar */}
       <div className="mx-4 md:mx-8 lg:mx-16">
-        <header className="bg-skyBlue m-2 md:m-8 opacity-70 p-6 md:p-4 rounded-lg shadow-md">
+        <header className="bg-sky-100 m-2 md:m-8 p-6 md:p-4 rounded-lg shadow-md">
           <div className="container mx-auto flex flex-row md:flex-row justify-between items-center">
             <div className="flex items-center  ">
               <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-blue"></div>
@@ -33,32 +34,31 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   height={49}
                 />
               </div>
-              <div className="ml-2 font-medium text-sm md:text-base">Sarah</div>
-              <Image
-                  src="/images/Dropdown.svg"
-                  alt=""
-                  width={36}
-                  height={49}
-                />
+              <div className="ml-2 font-medium text-darkBlue text-sm md:text-base">Sarah</div>
+              <Image src="/images/Dropdown.svg" alt="" width={36} height={49} />
             </div>
           </div>
         </header>
 
         {/* Main Content */}
-        <main className="">
-          {children}
-        </main>
+        <main className="">{children}</main>
 
         {/* Footer */}
         {showFooter && (
-          <footer className="bg-skyBlue opacity-60 p-4 shadow-md md:m-5 mt-4 rounded-lg">
-            <p className="text-center text-purple font-bold text-2xl">
-              Your Achievement
-            </p>
-            <div className="flex flex-wrap justify-center gap-4 md:gap-10 lg:gap-20 text-center text-gray-600 mt-4">
-              {[...Array(7)].map(( i) => (
+          <footer className="bg-sky-100 pb-4 shadow-md md:m-5 mt-4 rounded-lg">
+            <div className="flex justify-center">
+              <Image
+                src="/images/titles/ActhievementsTitle.svg"
+                alt="User avatar"
+                width={40}
+                height={40}
+                className="w-72"
+              />
+            </div>
+            <div className="flex flex-wrap justify-around text-center text-gray-600">
+              {[...Array(7)].map((_, index) => (
                 <Image
-                  key={i}
+                  key={index}
                   src="/images/Rectangle.svg"
                   alt="User avatar"
                   width={40}

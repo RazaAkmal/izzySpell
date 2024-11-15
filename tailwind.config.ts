@@ -28,6 +28,8 @@ const config: Config = {
       },
       backgroundImage: {
         'login-background': "url('/images/login_background.svg')",
+        'dashboard-background': "url('/images/BackgroundBlue.png')",
+        'profile-background': "url('/images/ProfileBackground.png')",
       },
     },
   },
