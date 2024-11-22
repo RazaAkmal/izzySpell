@@ -1,11 +1,12 @@
 "use client";
-import CustomButton from "@/components/HeadlessButton";
 import InputField from "@/components/Input";
 import React from "react";
 import { Controller, useForm } from "react-hook-form";
 import Image from "next/image";
 import { Radio, RadioGroup } from "@headlessui/react";
 import { ProfileFormValues } from "@/lib/defination";
+import AgeGradeSelectionButton from "@/components/AgeGradeSelectionButton";
+import CustomButton from "@/components/HeadlessButton";
 
 const ageOptions = ["6-7", "7-8", "8-9", "9-10", "10-11", "11-12"];
 const gradeOptions = [
@@ -129,7 +130,7 @@ const ProfileForm = ({onComplete, userId}: Props) => {
                   {ageOptions.map((age) => (
                     <Radio key={age} value={age}>
                       {({ checked }) => (
-                        <CustomButton
+                        <AgeGradeSelectionButton
                           label={age}
                           fullWidth={false}
                           className={`px-3 py-1 rounded-md border w-full ${
@@ -168,7 +169,7 @@ const ProfileForm = ({onComplete, userId}: Props) => {
                   {gradeOptions.map((grade) => (
                     <Radio key={grade} value={grade}>
                       {({ checked }) => (
-                        <CustomButton
+                        <AgeGradeSelectionButton
                           label={grade}
                           fullWidth={false}
                           className={`px-3 py-1 rounded-md border w-full ${

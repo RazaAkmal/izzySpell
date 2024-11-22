@@ -7,14 +7,13 @@ import Loading from "./Loading";
 import Modal from "@/components/WordListModal"; // Import the self-contained Modal component
 
 function UploadWord() {
-  const [files, setFiles] = useState<File[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const [file, setFile] = useState<File | null>(null); // Store the file
   const [progress, setProgress] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    setUploading(true); // Start uploading
     setProgress(0); // Reset progress
+    setFile(acceptedFiles[0]); // Store the selected file
 
     // Simulate file upload progress
     const totalSteps = 10;
@@ -26,9 +25,7 @@ function UploadWord() {
 
       if (currentStep === totalSteps) {
         clearInterval(uploadInterval);
-        setFiles((prevFiles) => [...prevFiles, ...acceptedFiles]);
-        setUploading(false); // Stop uploading
-        setIsModalOpen(true); // Open modal
+        setIsModalOpen(true);
       }
     }, 1000);
   }, []);
@@ -47,22 +44,21 @@ function UploadWord() {
       "image/jpeg": [".jpg"],
       "image/png": [".png"],
     },
-    multiple: true,
+    multiple: false,
   });
 
   return (
-    <div className="flex flex-wrap bg-sky-200 rounded-lg w-full md:m-4 p-4 md:p-3">
-      {/* Centered Content */}
+    <div className="flex bg-skyBlue rounded-2xl w-full md:m-4 p-4 md:p-3">
       <div className="text-center mx-auto max-w-full md:max-w-lg">
         {/* Title Image */}
         <Image
-          src="/images/titles/Add Your Spelling List Here!.svg"
+          src="/images/titles/AddSpellingListTitle.svg"
           alt="Add Spelling List"
           width={40}
           height={40}
           className="w-72 mx-auto"
         />
-        <p className="text-gray-700 text-sm md:text-base">
+        <p className="text-darkBlue font-semibold text-md">
           The list can have up to 5 words
         </p>
 
@@ -71,7 +67,7 @@ function UploadWord() {
           {...getRootProps()}
           className={`border-dashed rounded-lg border-[3px] border-[#6198e0] p-6 md:p-8 mt-4 mb-6 
     ${
-      isDragActive ? "bg-blue-100" : "bg-sky-200"
+      isDragActive ? "bg-blue-100" : "bg-skyBlue"
     } flex flex-col items-center justify-center mx-auto max-w-3xl`}
         >
           <input {...getInputProps()} />
@@ -95,8 +91,6 @@ function UploadWord() {
             <p className="text-darkBlue font-medium">Drop your files here...</p>
           ) : (
             <p className="text-darkBlue text-sm md:text-base text-center">
-              Drag & drop files, or click to select files.
-              <br />
               Allowed file types: .pdf, .xlsx, .csv, .txt, .docx, .jpg, .png
             </p>
           )}
@@ -110,9 +104,13 @@ function UploadWord() {
         </div>
 
         {/* Loading Progress */}
-        {uploading && (
+        {file && (
           <div className="mt-6">
-            <Loading progress={progress} />
+            <Loading
+              progress={progress}
+              fileName={file?.name || "Uploading..."}
+            />{" "}
+            {/* Pass file name */}
           </div>
         )}
       </div>

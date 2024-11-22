@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import Image from "next/image";
 
 interface LoadingProps {
-  progress: number; // Accepts the upload percentage
+  progress: number; 
+  fileName: string;
 }
 
-const Loading: React.FC<LoadingProps> = ({ progress }) => {
+const Loading: React.FC<LoadingProps> = ({ progress, fileName }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   //for cancel loading
@@ -16,7 +17,7 @@ const Loading: React.FC<LoadingProps> = ({ progress }) => {
   return (
     <>
       {isLoading && (
-        <div className="bg-white border-2 border-b-cyan-600 rounded-lg p-2 ">
+        <div className="bg-white border-2 rounded-2xl border-blue p-2 ">
           {/* Outer container for circle, cancel icon, and content */}
           <div className="flex justify-between items-center">
             {/* Circle */}
@@ -24,12 +25,12 @@ const Loading: React.FC<LoadingProps> = ({ progress }) => {
 
             {/* Content placed between circle and cancel icon */}
             <div className="flex flex-col items-center mx-4 flex-grow">
-              <p className="text-sm">Spelling List Name-1</p>
+              <p className="text-sm font-bold text-blue">{fileName}</p>
 
               {/* Progress information */}
-              <div className="flex justify-between items-center w-full">
-                <p className="text-sm">Progress</p>
-                <p className="text-gray-700 text-sm">{progress}%</p>
+              <div className=" text-darkGray font-semibold font-sm flex justify-between items-center w-full">
+                <p>Progress</p>
+                <p>{progress}%</p>
               </div>
 
               {/* Progress Bar Container */}

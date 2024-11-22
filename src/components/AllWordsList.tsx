@@ -4,7 +4,7 @@ import AllListData from "./Listdata";
 
 function AllWords() {
   return (
-    <div className="bg-[#98C3FF] bg-opacity-70 flex flex-col   rounded-lg border-2 border-sky-600">
+    <div className="bg-skyBlue flex flex-col md:m-6 px-8 md:px-4  rounded-2xl">
       {/* Title Image */}
       <div className="flex justify-center items-center h-20">
         <Image
@@ -15,7 +15,7 @@ function AllWords() {
         />
       </div>
 
-      <div className="grid grid-cols-3  sm:grid-cols-5  mx-10 p-3  bg-sky-200 border-2 border-sky-300 rounded-md">
+      <div className="grid grid-cols-3  sm:grid-cols-5  mx-10 p-3  bg-[#ECF7FF] border-2 border-sky-300 rounded-md">
         <p className="text-darkBlue font-bold text-xl text-center sm:text-left">
           List Name
         </p>

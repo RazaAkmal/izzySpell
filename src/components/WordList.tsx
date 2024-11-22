@@ -23,9 +23,9 @@ function WordList() {
 
 
   return (
-    <div className="flex flex-wrap bg-sky-200 rounded-lg w-full md:m-4 p-4 md:p-2">
+    <div className="flex flex-wrap bg-skyBlue rounded-2xl w-full md:m-4 p-4 md:p-2">
       {/* Centered Content */}
-      <div className="text-center mx-auto max-w-full md:max-w-lg">
+      <div className="text-center  mx-auto max-w-full md:max-w-lg">
         {/* Title Section */}
         <div className="relative flex items-center">
           <Image
@@ -40,11 +40,11 @@ function WordList() {
         {/* Toggle Button Section */}
         <div className="flex items-center justify-center space-x-4">
           {isTextAreaMode ? (
-            <span className="text-base font-bold text-gray-700">
+            <span className="text-darkBlue font-semibold text-md">
               To type multiple words at once, tap the toggle button:
             </span>
           ) : (
-            <span className="text-base font-bold text-gray-700">
+            <span className="text-darkBlue font-semibold text-md">
               To type Bulk of words at once, tap the toggle button:
             </span>
           )}
@@ -60,7 +60,7 @@ function WordList() {
             <Textarea
               rows={8}
               placeholder="Type or Paste your words here (like 'apple, banana, orange')...."
-              className="w-5/6 p-4 md:w-3/4 lg:w-full border-[3px] border-sky-300 mx-auto text-base md:text-base text-center bg-sky-100 text-[#739DE9] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none placeholder-[#739DE9]"
+              className="w-5/6 p-4 md:w-3/4 lg:w-full border-[2px] border-[#98C3FF] mx-auto text-base md:text-base text-center bg-skyBlue text-textColor rounded-2xl focus:outline-none resize-none placeholder-textColor"
             />
           ) : (
             <>
@@ -74,7 +74,7 @@ function WordList() {
                   value={field}
                   onChange={(e) => handleInputChange(index, e.target.value)}
                   placeholder="Type your Word"
-                  className="w-5/6 p-2 md:w-3/4 lg:w-5/6 border-[3px] border-sky-300 mx-auto text-base md:text-base text-center  text-[#739DE9] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-5/6 p-2 md:w-3/4 lg:w-5/6 border-[2px] border-[#98C3FF] rounded-2xl mx-auto text-base md:text-base text-center  text-textColor focus:outline-none placeholder-textColor"
                 />
               ))}
               </div>

@@ -15,8 +15,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     <div className="bg-dashboard-background bg-cover bg-center min-h-screen flex flex-col">
       {/* TopBar */}
       <div className="mx-4 md:mx-8 lg:mx-16">
-        <header className="bg-sky-200 m-2 md:m-6 p-4 md:p-2 rounded-lg shadow-md">
-          <div className="container mx-auto flex flex-row md:flex-row justify-between items-center">
+        <header className="bg-skyBlue m-2 md:m-6 px-8 md:px-4 rounded-2xl shadow-md">
+          <div className="container flex flex-row md:flex-row justify-between items-center">
             <div className="relative flex items-center h-20 w-52">
               <Image
                 src="/images/izzyLogo.svg"
@@ -47,11 +47,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </header>
 
         {/* Main Content */}
-        <main className="">{children}</main>
+        <main>{children}</main>
 
         {/* Footer */}
         {showFooter && (
-          <footer className="bg-sky-200 pb-4 shadow-md m-2 md:m-5 mt-4 rounded-lg">
+          <footer className="bg-skyBlue pb-4 shadow-md m-2 md:m-5 mt-4 rounded-2xl">
             <div className="flex justify-center">
               <Image
                 src="/images/titles/ActhievementsTitle.svg"

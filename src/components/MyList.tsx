@@ -23,7 +23,7 @@ const List: React.FC = () => {
   }
 
   return (
-    <div className="p-4 bg-sky-200 rounded-lg shadow-md m-2 md:m-5  mt-3">
+    <div className="p-4 bg-skyBlue rounded-2xl shadow-md m-2 md:m-5  mt-3">
       <div className="flex items-center justify-between relative ">
         {/* Centered Image */}
         <div className="absolute inset-0 flex md:justify-center">

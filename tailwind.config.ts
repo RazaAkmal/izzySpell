@@ -15,6 +15,7 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
         lightBlue: "#ECF4FF",
+        darkGray: "#413F3F",
         blue: "#4793FE",
         darkBlue: "#426096",
         blueStroke: '#98C3FF',
@@ -23,7 +24,8 @@ const config: Config = {
         inputText: '#7898D2',
         hoverGreen: "#479306",
         white: "#F1F7FF",
-        skyBlue:"#ECF7FF",
+        skyBlue:"#D5EDFF",
+        textColor: "#739DE9",
         orange:"#ED9A37"
        
       },
