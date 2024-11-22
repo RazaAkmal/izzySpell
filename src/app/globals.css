@@ -42,3 +42,44 @@ body {
     margin: 0;
   }
 }
+
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 10px; /* Adjust the scrollbar width */
+  height: 4px; /* Adjust the scrollbar height */
+
+}
+
+
+::-webkit-scrollbar-thumb {
+  -webkit-border-radius: 10px !important;
+  border-radius: 10px !important;
+  background: #426096 !important; 
+
+  
+
+}
+
+::-webkit-scrollbar-track {
+  background: #F7F7F7;
+  border-radius: 15px;
+  
+ 
+}
+
+::-webkit-scrollbar-button {
+  display: none; }
+::-webkit-scrollbar-corner {
+  background: transparent; 
+}
+
+/* Hover effect for the scrollbar thumb */
+::-webkit-scrollbar-thumb:hover {
+  background-color: #5686c7; }
+
+/* Firefox Scrollbar Support */
+/*  */
+::-webkit-scrollbar-button
+{
+  display: none !important;
+}

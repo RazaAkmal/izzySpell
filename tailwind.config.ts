@@ -25,14 +25,19 @@ const config: Config = {
         white: "#F1F7FF",
         skyBlue:"#ECF7FF",
         orange:"#ED9A37"
+       
       },
       backgroundImage: {
         'login-background': "url('/images/login_background.svg')",
         'dashboard-background': "url('/images/BackgroundBlue.png')",
         'profile-background': "url('/images/ProfileBackground.png')",
       },
+      
     },
   },
-  plugins: [],
+  plugins: [
+    require('tailwind-scrollbar'),
+
+  ],
 };
 export default config;
