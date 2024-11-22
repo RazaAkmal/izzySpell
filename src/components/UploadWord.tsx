@@ -34,7 +34,7 @@ function UploadWord() {
                 height={40}
                 className="w-72"
             />
-            <p className="text-xs md:text-sm">Allowed file types: .pdf, . xlxs, .csv, .txt, .docx, .jpg, .png</p>
+            <p className="text-xs text-darkBlue md:text-sm">Allowed file types: .pdf, . xlxs, .csv, .txt, .docx, .jpg, .png</p>
             <div className="flex justify-center">
           <CustomButton label="Upload Your Word List" fullWidth={false} />
         </div>
