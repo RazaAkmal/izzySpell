@@ -8,21 +8,15 @@ interface ModalProps {
   onClose: () => void;
 }
 
-interface ColorProps {
-  id: number;
-  color: string;
-}
+const color = [
+  { id: 1, color: "#9C52FC" },
+  { id: 2, color: "#CF8C09" },
+  { id: 3, color: "#F94DB5" },
+  { id: 4, color: "#FFB525" },
+  { id: 5, color: "#8DD54F" },
+];
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
-  const [color, setColor] = useState<ColorProps[]>([
-    { id: 1, color: "#9C52FC" },
-    { id: 2, color: "#CF8C09" },
-    { id: 3, color: "#F94DB5" },
-    { id: 4, color: "#FFB525" },
-    { id: 5, color: "#8DD54F" },
-
-  ]);
-
   //for store color and user input
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [listName, setListName] = useState<string>("");
@@ -37,85 +31,84 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
     }
     console.log("List Name:", listName);
     console.log("Selected Color:", selectedColor);
-    alert("Your list has been saved")
+    alert("Your list has been saved");
     onClose();
-
   };
 
   if (!isOpen) return null;
   return (
-<div>
-  <div className="fixed  inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-lightBlue border-2 border-sky-300 flex flex-col rounded-3xl shadow-lg p-8 max-w-screen-md w-full z-10">
-      {/* Close Button */}
-      <div className="flex justify-end">
-        <Button onClick={onClose} className="focus:outline-none">
+    <div>
+      <div className="fixed  inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-lightBlue border-2 border-sky-300 flex flex-col rounded-3xl shadow-lg p-8 max-w-screen-md w-full z-10">
+          {/* Close Button */}
+          <div className="flex justify-end">
+            <Button onClick={onClose} className="focus:outline-none">
+              <Image
+                src="/images/Vector.svg"
+                alt="Cancel Button"
+                width={24}
+                height={24}
+                className="w-6 h-6"
+              />
+            </Button>
+          </div>
+
+          {/* Title */}
           <Image
-            src="/images/Vector.svg"
-            alt="Cancel Button"
-            width={24}
-            height={24}
-            className="w-6 h-6"
+            src="/images/titles/Please Enter a Name for Your Word List.svg"
+            alt="Add Spelling List"
+            width={40}
+            height={40}
+            className="w-96 mx-auto "
           />
-        </Button>
-      </div>
 
-      {/* Title */}
-      <Image
-        src="/images/titles/Please Enter a Name for Your Word List.svg"
-        alt="Add Spelling List"
-        width={40}
-        height={40}
-        className="w-96 mx-auto "
-      />
+          {/* Input Field */}
+          <input
+            type="text"
+            placeholder="Enter the list name here..."
+            onChange={(e) => setListName(e.target.value)}
+            value={listName}
+            className="w-3/4 mx-auto bg-sky-100 rounded-lg border border-[#7898D2] text-[#4A6FA5] text-lg placeholder-[#A0B6D8] px-4 py-3 mt-4 focus:outline-none focus:ring-2 focus:ring-[#7898D2]"
+          />
 
-      {/* Input Field */}
-      <input
-        type="text"
-        placeholder="Enter the list name here..."
-        onChange={(e) => setListName(e.target.value)}
-        value={listName}
-        className="w-3/4 mx-auto bg-sky-100 rounded-lg border border-[#7898D2] text-[#4A6FA5] text-lg placeholder-[#A0B6D8] px-4 py-3 mt-4 focus:outline-none focus:ring-2 focus:ring-[#7898D2]"
-      />
+          {/* Color Selection Title */}
+          <Image
+            src="/images/titles/Select a Color for the List.svg"
+            alt="Add Spelling List"
+            width={40}
+            height={40}
+            className="w-64 mx-auto mt-5"
+          />
 
-      {/* Color Selection Title */}
-      <Image
-        src="/images/titles/Select a Color for the List.svg"
-        alt="Add Spelling List"
-        width={40}
-        height={40}
-        className="w-64 mx-auto mt-5"
-      />
+          {/* Color Options */}
+          <div className="flex justify-evenly items-center mt-6 w-full px-4 ">
+            {color.map((item) => (
+              <div
+                key={item.id}
+                className={`h-10 w-10 rounded-full cursor-pointer transition-transform transform hover:scale-105 ${
+                  selectedColor === item.color
+                    ? "ring-4 ring-offset-2 ring-blue-500"
+                    : "border border-gray-300"
+                }`}
+                style={{ background: item.color }}
+                onClick={() => setSelectedColor(item.color)}
+              ></div>
+            ))}
+          </div>
 
-      {/* Color Options */}
-      <div className="flex justify-evenly items-center mt-6 w-full px-4 ">
-        {color.map((item) => (
-          <div
-            key={item.id}
-            className={`h-10 w-10 rounded-full cursor-pointer transition-transform transform hover:scale-105 ${
-              selectedColor === item.color
-                ? "ring-4 ring-offset-2 ring-blue-500"
-                : "border border-gray-300"
-            }`}
-            style={{ background: item.color }}
-            onClick={() => setSelectedColor(item.color)}
-          ></div>
-        ))}
-      </div>
-
-      {/* Save Button */}
-      <div className="flex justify-center mt-8">
-        <CustomButton
-          label="Save & Start Learning"
-          fullWidth={false}
-          onClick={handleSave}
-          size="large"
-          className="bg-blue-500 text-white hover:bg-blue-600 transition-shadow shadow-md hover:shadow-lg"
-        />
+          {/* Save Button */}
+          <div className="flex justify-center mt-8">
+            <CustomButton
+              label="Save & Start Learning"
+              fullWidth={false}
+              onClick={handleSave}
+              size="large"
+              className="bg-blue-500 text-white hover:bg-blue-600 transition-shadow shadow-md hover:shadow-lg"
+            />
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
   );
 };
 

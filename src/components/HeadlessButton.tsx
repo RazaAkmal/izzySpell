@@ -1,5 +1,6 @@
 import { Button } from "@headlessui/react";
 import React from "react";
+import Image from "next/image";
 
 // Define styles for each variant
 const variantStyles = {
@@ -51,7 +52,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({
       {...props}
     >
       {label}
-      {arrow && <img src={arrow} alt="Arrow" className=" w-5 h-5" />}
+      {arrow && <Image width={50} height={50} src={arrow} alt="Arrow" className="w-5 h-5" />}
     </Button>
   );
 };
