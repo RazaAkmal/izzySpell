@@ -1,7 +1,8 @@
 "use client";
 import React, { useState } from "react";
 import Image from "next/image";
-
+import CustomButton from "./HeadlessButton";
+import { useRouter } from "next/navigation";
 interface ListItemProps {
   id: number;
   title: string;
@@ -14,23 +15,40 @@ const List: React.FC = () => {
     { id: 2, title: "Spelling list-2", color: "#CF8C09" },
     { id: 3, title: "Spelling list-3", color: "#F94DB5" },
   ]);
+  const router=useRouter()
+
+  const handleWordList=()=>
+  {
+    router.push('/Lists')
+  }
 
   return (
-    <div className="p-4 bg-skyBlue rounded-lg shadow-md m-2 md:m-5  mt-3">
-      <div className="flex justify-center">
-        <Image
-          src="/images/titles/MyListTitle.svg"
-          alt="User avatar"
-          width={40}
-          height={40}
-          className="w-52"
+    <div className="p-4 bg-sky-200 rounded-lg shadow-md m-2 md:m-5  mt-3">
+      <div className="flex items-center justify-between relative ">
+        {/* Centered Image */}
+        <div className="absolute inset-0 flex md:justify-center">
+          <Image
+            src="/images/titles/MyListTitle.svg"
+            alt="User avatar"
+            width={40}
+            height={40}
+            className="w-52"
+          />
+        </div>
+        <CustomButton
+          label="Manage Lists"
+          fullWidth={false}
+          size="small"
+          arrow="/images/arrow.svg"
+          className="ml-auto relative mb-3"
+          onClick={handleWordList}
         />
       </div>
       <div className="flex flex-wrap gap-4  ">
         {list.map((item) => (
           <div
             key={item.id}
-            className="flex items-center p-2 bg-white border-[1px] border-gray-600 rounded-lg shadow-md space-x-3 flex-grow"    
+            className="flex items-center p-2 bg-white border-[1px] border-gray-600 rounded-lg shadow-md space-x-3 flex-grow"
           >
             {/* Circle Background */}
             <div
