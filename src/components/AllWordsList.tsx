@@ -20,7 +20,7 @@ function AllWords() {
           List Name
         </p>
         <p className="text-darkBlue font-bold text-xl text-center sm:text-let">
-          Date
+          Created Date
         </p>
         <p className="text-darkBlue font-bold text-xl text-center sm:text-left">
           Status

@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -9,19 +9,19 @@ function AllListData() {
       id: 1,
       name: "Spelling list-1",
       date: "Oct, 18 2024",
-      progress: 70,
+      progress: 20,
     },
     {
       id: 2,
       name: "Spelling list-2",
       date: "Oct, 18 2024",
-      progress: 0,
+      progress: 35,
     },
     {
       id: 3,
       name: "Spelling list-3",
       date: "Oct, 18 2024",
-      progress: 30,
+      progress: 58,
     },
     {
       id: 4,
@@ -33,7 +33,7 @@ function AllListData() {
       id: 5,
       name: "Spelling list-5",
       date: "Oct, 18 2024",
-      progress: 20,
+      progress: 0,
     },
   ];
 
@@ -41,13 +41,13 @@ function AllListData() {
     let status = "Start Learning Now";
     let color = "bg-yellow-500";
     if (item.progress > 0 && item.progress <= 25) {
-      color = "bg-[#F1A40E]";
+      color = "bg-purple";
       status = "Continue Learning";
     } else if (item.progress > 25 && item.progress <= 50) {
-      color = "bg-[#A020F0]";
+      color = "bg-orange";
       status = "Continue Learning";
     } else if (item.progress > 50 && item.progress <= 75) {
-      color = "bg-[#FFA500]";
+      color = "bg-green";
       status = "Continue Learning";
     } else if (item.progress > 75) {
       color = "bg-blue";
@@ -100,12 +100,9 @@ function AllListData() {
           </div>
 
           <div className="md:col-span-4 flex flex-col sm:flex-row items-center gap-4 justify-end">
-            
             <button
               className={`px-5 py-2 ${
-                list.progress === 0
-                  ? "bg-red-500" 
-                  : "bg-blue" 
+                list.progress === 0 ? list.color : "bg-blue"
               } border-[3px] border-b-white rounded-lg text-white font-bold text-sm sm:text-lg`}
             >
               {list.status}

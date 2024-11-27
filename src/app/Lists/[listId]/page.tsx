@@ -16,7 +16,7 @@ function ListPage() {
     <div>
       <DashboardLayout showFooter={false}>
         {/* Header Section */}
-        <div className="flex    ">
+        <div className="flex">
           {/* Back Arrow */}
           <div className="flex items-center m-4">
             <Image

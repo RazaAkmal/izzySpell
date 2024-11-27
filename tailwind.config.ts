@@ -26,7 +26,7 @@ const config: Config = {
         white: "#F1F7FF",
         skyBlue:"#D5EDFF",
         textColor: "#739DE9",
-        orange:"#ED9A37"
+        orange:"#ED9A37",
        
       },
       backgroundImage: {

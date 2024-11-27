@@ -8,29 +8,18 @@ interface ModalProps {
   onClose: () => void;
 }
 
-const color = [
-  { id: 1, color: "#9C52FC" },
-  { id: 2, color: "#CF8C09" },
-  { id: 3, color: "#F94DB5" },
-  { id: 4, color: "#FFB525" },
-  { id: 5, color: "#8DD54F" },
-];
-
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
   //for store color and user input
-  const [selectedColor, setSelectedColor] = useState<string>("");
   const [listName, setListName] = useState<string>("");
   console.log(listName);
   console.log(setListName);
 
   // to check user enter right information
   const handleSave = () => {
-    if (!listName || !selectedColor) {
-      alert("Please enter a name and select a color for the list.");
+    if (!listName) {
+      alert("Please enter a name for the list.");
       return;
     }
-    console.log("List Name:", listName);
-    console.log("Selected Color:", selectedColor);
     alert("Your list has been saved");
     onClose();
   };
@@ -76,7 +65,6 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
               fullWidth={false}
               onClick={handleSave}
               size="large"
-              className="bg-blue-500 text-white hover:bg-blue-600 transition-shadow shadow-md hover:shadow-lg"
             />
           </div>
         </div>
