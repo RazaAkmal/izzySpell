@@ -1,4 +1,6 @@
 "use client";
+
+import { Switch } from "@headlessui/react";
 import React from "react";
 
 interface ToggleButtonProps {
@@ -8,18 +10,20 @@ interface ToggleButtonProps {
 
 function ToggleButton({ isOn, toggleSwitch }: ToggleButtonProps) {
   return (
-    <button
-      onClick={toggleSwitch}
-      className={`w-12 h-6 flex items-center rounded-full md:p-2 ${
+    <Switch
+      checked={isOn}
+      onChange={toggleSwitch}
+      className={`group inline-flex h-6 w-11 items-center rounded-full ${
         isOn ? "bg-green" : "bg-gray-300"
-      } transition-colors duration-1000 ease-in-out`}
+      } transition duration-300 ease-in-out`}
     >
-      <div
-        className={`w-4 h-4 bg-white rounded-full shadow-md transform ${
-          isOn ? "translate-x-5" : ""
-        } transition-transform duration-300 ease-in-out`}
-      ></div>
-    </button>
+      {" "}
+      <span
+        className={`h-4 w-4 transform rounded-full bg-white transition-transform ${
+          isOn ? "translate-x-6" : "translate-x-1"
+        }`}
+      />
+    </Switch>
   );
 }
 

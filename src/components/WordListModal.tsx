@@ -61,7 +61,6 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
             height={40}
             className="w-96 mx-auto "
           />
-
           {/* Input Field */}
           <input
             type="text"
@@ -70,32 +69,6 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
             value={listName}
             className="w-3/4 mx-auto bg-sky-100 rounded-lg border border-[#7898D2] text-[#4A6FA5] text-lg placeholder-[#A0B6D8] px-4 py-3 mt-4 focus:outline-none focus:ring-2 focus:ring-[#7898D2]"
           />
-
-          {/* Color Selection Title */}
-          <Image
-            src="/images/titles/Select a Color for the List.svg"
-            alt="Add Spelling List"
-            width={40}
-            height={40}
-            className="w-64 mx-auto mt-5"
-          />
-
-          {/* Color Options */}
-          <div className="flex justify-evenly items-center mt-6 w-full px-4 ">
-            {color.map((item) => (
-              <div
-                key={item.id}
-                className={`h-10 w-10 rounded-full cursor-pointer transition-transform transform hover:scale-105 ${
-                  selectedColor === item.color
-                    ? "ring-4 ring-offset-2 ring-blue-500"
-                    : "border border-gray-300"
-                }`}
-                style={{ background: item.color }}
-                onClick={() => setSelectedColor(item.color)}
-              ></div>
-            ))}
-          </div>
-
           {/* Save Button */}
           <div className="flex justify-center mt-8">
             <CustomButton
