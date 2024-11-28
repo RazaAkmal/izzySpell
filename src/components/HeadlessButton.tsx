@@ -8,14 +8,14 @@ const variantStyles = {
     "bg-blue text-white  data-[hover]:bg-darkBlue data-[active]:bg-blue border-[2px] border-[#FFFFFF] opacity-100 ",
   secondary:
     "bg-gray-200 text-gray-800 hover:bg-gray-300 border-[2px] border-blue opacity-100",
-  success: "bg-green-500 text-white hover:bg-green-600",
+  success: "bg-green border-2 border-white text-white hover:bg-green-600",
   danger: "bg-red-500 text-white hover:bg-red-600",
 };
 
 // Define styles for each size
 const sizeStyles = {
-  small: "py-3 px-4 text-base ",
-  medium: "py-2 px-6 text-sm",
+  small: "py-1 m-3 px-8 text-lg  ",
+  medium: " py-3 px-6 text-base",
   large: "py-2 px-16 text-lg",
   extralarge: "py-2 px-24 text-lg",
 };

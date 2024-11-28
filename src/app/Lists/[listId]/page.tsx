@@ -37,7 +37,6 @@ function ListPage() {
           <div className="flex gap-5 mx-auto justify-center items-center">
             <CustomButton
               fullWidth={false}
-              size="small"
               radius="rounded"
               label="Remaining Words"
               img="/images/bookIcon.svg"
@@ -46,13 +45,19 @@ function ListPage() {
 
             <CustomButton
               fullWidth={false}
-              size="small"
               label="Complete Words"
               radius="rounded"
               variant="secondary"
               img="/images/bookIcon.svg"
             />
           </div>
+          <CustomButton
+            fullWidth={false}
+            label="Continue Learning"
+            size="small"
+            radius="square"
+            variant="success"
+          />
         </div>
 
         <div className=" px-1">
