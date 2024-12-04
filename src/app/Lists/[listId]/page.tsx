@@ -4,13 +4,20 @@ import UserList from "@/components/UserList";
 import React from "react";
 import Image from "next/image";
 import CustomButton from "@/components/HeadlessButton";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 function ListPage() {
   const router = useRouter();
 
   const handleBack = () => {
     router.back();
+  };
+
+
+  const { listId } = useParams(); 
+
+  const handleContinueLearning = () => {
+    router.push(`/spellPractice/${listId}`); 
   };
   return (
     <div>
@@ -39,7 +46,7 @@ function ListPage() {
               fullWidth={false}
               radius="rounded"
               label="Remaining Words"
-              img="/images/bookIcon.svg"
+              img="/images/notesIcon.svg"
               className=" "
             />
 
@@ -48,16 +55,17 @@ function ListPage() {
               label="Complete Words"
               radius="rounded"
               variant="secondary"
-              img="/images/bookIcon.svg"
+              img="/images/notesIcon.svg"
             />
           </div>
           <CustomButton
-            fullWidth={false}
-            label="Continue Learning"
-            size="small"
-            radius="square"
-            variant="success"
-          />
+      fullWidth={false}
+      label="Continue Learning"
+      size="small"
+      radius="square"
+      variant="success"
+      onClick={handleContinueLearning} // Call the handler on click
+    />
         </div>
 
         <div className=" px-1">

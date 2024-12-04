@@ -27,6 +27,11 @@ const config: Config = {
         skyBlue:"#D5EDFF",
         textColor: "#739DE9",
         orange:"#ED9A37",
+        darkGreen:'#058D6E',
+        lightGreen:'#00DCA9',
+       lightOrange:'#FDAC40',
+       darkOrange:'#C57306',
+       pink:'#F181B9',
        
       },
       backgroundImage: {
