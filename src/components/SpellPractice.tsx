@@ -10,14 +10,13 @@ function PracticePage() {
 
   // Define spells
   const spells = [
-    ["HIGH", "EVERY", "NEAR",  "Continue"],
+    ["HIGH", "EVERY", "NEAR", "Continue"],
     ["LEARN", "CREATE", "EXPLORE"],
     ["GROW", "INSPIRE", "IMAGINE"],
     ["Ingenious", "Onomatopoeia", "Fuchsia"],
     ["DREAM", "SMART", "TASK", "CONTINUE", "WEATHER"],
     ["Spell", "Spell", "Spell"],
     ["Spell", "Spell", "Spell"],
-   
   ];
 
   const currentSpells = spells[currentPage - 1] || [];
@@ -31,8 +30,6 @@ function PracticePage() {
   // for speak the letter
   const pronounceText = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.8;
-    utterance.pitch = 0.8;
     speechSynthesis.speak(utterance);
   };
 
@@ -155,7 +152,6 @@ function PracticePage() {
             variant="primary"
             size="large"
             radius="square"
-
           />
         </div>
       </div>

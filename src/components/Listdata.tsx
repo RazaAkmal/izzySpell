@@ -58,7 +58,9 @@ function AllListData() {
   });
 
   const route = useRouter();
-
+  const handleContinueLearning = (listId: number) => {
+    route.push(`/spellPractice/${listId}`);
+  };
   // For dynamic routing
   const handleViewList = (id: number) => {
     route.push(`/lists/${id}`);
@@ -101,6 +103,7 @@ function AllListData() {
 
           <div className="md:col-span-4 flex flex-col sm:flex-row items-center gap-4 justify-end">
             <button
+              onClick={() => handleContinueLearning(list.id)}
               className={`px-5 py-2 ${
                 list.progress === 0 ? list.color : "bg-blue"
               } border-[3px] border-b-white rounded-lg text-white font-bold text-sm sm:text-lg`}
