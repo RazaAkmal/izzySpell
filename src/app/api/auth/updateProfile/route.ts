@@ -15,6 +15,12 @@ type UpdateProfile = {
 
 export async function PUT(req: Request) {
   const { data, userId } = await req.json() as { data: UpdateProfile; userId: string };
+  const allCardDetailsProvided =
+    data.cardCVC &&
+    data.cardName &&
+    data.expireMonth &&
+    data.expireYear &&
+    data.cardNumber;
 
   try {
     const updatedUser = await prisma.user.update({
@@ -24,7 +30,7 @@ export async function PUT(req: Request) {
         lastName: data.lastName,
         age: data.age,
         grade: data.grade,
-        profileUpdated: true,
+        profileUpdated: allCardDetailsProvided ? true : false,
         cardCVC: String(data.cardCVC),
         cardName: data.cardName,
         expireMonth: data.expireMonth,

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import CustomButton from "@/components/HeadlessButton";
 import InputField from "@/components/Input";
@@ -6,7 +7,9 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { loginFormValues } from "@/lib/defination";
-
+import { signIn } from "@/auth";
+import { useActionState } from "react";
+import { authenticate } from "@/app/actions/authenticate";
 
 const LoginForm = () => {
   const {
@@ -15,33 +18,36 @@ const LoginForm = () => {
     formState: { errors },
   } = useForm<loginFormValues>();
   const router = useRouter();
-
+  const [errorMessage, formAction, isPending] = useActionState(
+    authenticate,
+    undefined
+  );
   const submitForm = async (data: loginFormValues) => {
-    const {name, password} = data;
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
+    const { name, password } = data;
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ name, password }),
     });
-  
+
     const user = await response.json();
-  
+
     if (response.ok) {
       if (!user.profileUpdated) {
-        router.push(`profile/${user.id}`)
+        router.push(`profile/${user.id}`);
       } else {
-        router.push("/dashboard")
+        router.push("/dashboard");
       }
-      console.log('Login successful:', data);
+      console.log("Login successful:", data);
     } else {
-      console.error('Login failed:');
+      console.error("Login failed:");
     }
   };
   return (
     <form
-      onSubmit={handleSubmit(submitForm)}
+      action={formAction}
       className="space-y-4 w-full flex flex-col items-center"
     >
       <InputField
@@ -68,8 +74,18 @@ const LoginForm = () => {
         </Link>
       </div>
       <div className="w-full max-w-md px-4">
-        <CustomButton type="submit" label="Log in" fullWidth />
+        <CustomButton
+          disabled={isPending}
+          type="submit"
+          label="Log in"
+          fullWidth
+        />
       </div>
+      {errorMessage && (
+        <>
+          <p className="text-sm text-red-500">{errorMessage}</p>
+        </>
+      )}
     </form>
   );
 };

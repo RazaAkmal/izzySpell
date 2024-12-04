@@ -19,7 +19,7 @@ const List: React.FC = () => {
 
   const handleWordList=()=>
   {
-    router.push('/Lists')
+    router.push('/lists')
   }
 
   return (

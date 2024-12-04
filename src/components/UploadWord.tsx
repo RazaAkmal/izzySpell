@@ -10,12 +10,9 @@ function UploadWord() {
   const [file, setFile] = useState<File | null>(null); // Store the file
   const [progress, setProgress] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    setProgress(0); // Reset progress
+  const [aiResponse, setAiResponse] = useState(null);
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
     setFile(acceptedFiles[0]); // Store the selected file
-
-    // Simulate file upload progress
     const totalSteps = 10;
     let currentStep = 0;
 
@@ -25,9 +22,32 @@ function UploadWord() {
 
       if (currentStep === totalSteps) {
         clearInterval(uploadInterval);
-        setIsModalOpen(true);
       }
     }, 1000);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", acceptedFiles[0]);
+
+      // Upload the file and wait for AI response
+      const response = await fetch("/api/upload-file", {
+        method: "POST",
+        body: formData,
+      });
+
+      const aiResponse = await response.json();
+
+      // Simulate the end of progress and show modal after AI response is ready
+      clearInterval(uploadInterval);
+      setProgress(100);
+      setAiResponse(aiResponse);
+      setIsModalOpen(true);
+
+    } catch (error) {
+      clearInterval(uploadInterval);
+      console.error("File upload failed:", error);
+      alert("File upload failed. Please try again.");
+    }
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -116,7 +136,17 @@ function UploadWord() {
       </div>
 
       {/* Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      {aiResponse && (
+        <Modal
+          aiResponse={aiResponse}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setFile(null)
+            setProgress(0);
+            setIsModalOpen(false)
+          }}
+        />
+      )}
     </div>
   );
 }

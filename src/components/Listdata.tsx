@@ -61,7 +61,7 @@ function AllListData() {
 
   // For dynamic routing
   const handleViewList = (id: number) => {
-    route.push(`/Lists/${id}`);
+    route.push(`/lists/${id}`);
   };
 
   return (

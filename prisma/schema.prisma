@@ -9,26 +9,62 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL") // uses connection pooling
   directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
 }
 
 model User {
-  id            String     @default(cuid()) @id
-  name          String     @unique
-  password      String
-  firstName     String?    @map(name: "first_name")
-  lastName      String?    @map(name: "last_name")
-  age           String?
-  grade         String?
-  profileUpdated Boolean  @default(false)
-  createdAt     DateTime  @default(now()) @map(name: "created_at")
-  updatedAt     DateTime  @updatedAt @map(name: "updated_at")
-  cardNumber    String?   @map(name: "card_number")
-  cardName      String?   @map(name: "card_name")
-  expireMonth   String?   @map(name: "expire_month")
-  expireYear    String?   @map(name: "expire_year")
-  cardCVC       String?   @map(name: "card_cvc")
+  id             String         @id @default(cuid())
+  name           String         @unique
+  password       String
+  firstName      String?        @map(name: "first_name")
+  lastName       String?        @map(name: "last_name")
+  age            String?
+  grade          String?
+  profileUpdated Boolean        @default(false)
+  createdAt      DateTime       @default(now()) @map(name: "created_at")
+  updatedAt      DateTime       @updatedAt @map(name: "updated_at")
+  cardNumber     String?        @map(name: "card_number")
+  cardName       String?        @map(name: "card_name")
+  expireMonth    String?        @map(name: "expire_month")
+  expireYear     String?        @map(name: "expire_year")
+  cardCVC        String?        @map(name: "card_cvc")
+  spellingLists  SpellingList[] // Relation to SpellingList
+
   @@map(name: "users")
+}
+
+model SpellingList {
+  id           Int           @id @default(autoincrement())
+  listName     String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  userId       String // Foreign key to the User model
+  user         User          @relation(fields: [userId], references: [id])
+  words        Word[]
+  groupedWords GroupedWord[]
+
+  @@map(name: "spelling_list")
+}
+
+model Word {
+  id              Int          @id @default(autoincrement())
+  listId          Int
+  word            String
+  difficultyLevel String       @default("medium")
+  type            String       @default("original") // original, syllabus, or grouped
+  spellingList    SpellingList @relation(fields: [listId], references: [id])
+
+  @@map(name: "words")
+}
+
+model GroupedWord {
+  id           Int          @id @default(autoincrement())
+  listId       Int
+  groupName    String
+  word         String
+  spellingList SpellingList @relation(fields: [listId], references: [id])
+
+  @@map(name: "grouped_words")
 }
