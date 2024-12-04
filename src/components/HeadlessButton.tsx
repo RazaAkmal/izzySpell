@@ -7,7 +7,7 @@ const variantStyles = {
   primary:
     "bg-blue text-white  data-[hover]:bg-darkBlue data-[active]:bg-blue border-[2px] border-[#FFFFFF] opacity-100 ",
   secondary:
-    "bg-gray-200 text-gray-800 hover:bg-gray-300 border-[2px] border-blue opacity-100",
+    "bg-gray-200 text-blue font-bold hover:bg-gray-300 border-2 border-blue ",
   success: "bg-green border-2 border-white text-white hover:bg-green-600",
   danger: "bg-red-500 text-white hover:bg-red-600",
 };
@@ -15,7 +15,7 @@ const variantStyles = {
 // Define styles for each size
 const sizeStyles = {
   small: "py-1 m-3 px-8 text-lg  ",
-  medium: " py-3 px-6 text-base",
+  medium: " py-3 px-8 text-lg",
   large: "py-2 px-16 text-lg",
   extralarge: "py-2 px-24 text-lg",
 };
