@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Pagination from "rc-pagination";
 import Image from "next/image";
 import CustomButton from "./HeadlessButton";
+import CustomPagination from "./CustomPagination";
 
 function PracticePage() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,49 +53,10 @@ function PracticePage() {
         </div>
 
         <div className="flex-grow">
-          <Pagination
-            current={currentPage}
-            total={spells.length * 10}
-            pageSize={10}
-            prevIcon={
-              <span
-                className={`relative${
-                  currentPage === 1
-                    ? "bg-white opacity-70 cursor-not-allowed"
-                    : "cursor-pointer"
-                }`}
-              >
-                <Image
-                  alt="prev arrow"
-                  width={10}
-                  height={10}
-                  src="/images/PrevArrow.svg"
-                  className="w-6 m-3"
-                />
-              </span>
-            }
-            nextIcon={
-              <span
-                className={`relative
-              ${
-                currentPage === spells.length
-                  ? "opacity-50 cursor-not-allowed"
-                  : "cursor-pointer"
-              }
-              `}
-              >
-                <Image
-                  alt="Next arrow"
-                  width={10}
-                  height={10}
-                  src="/images/NextArrow.svg"
-                  className="w-6 m-3"
-                />
-              </span>
-            }
-            onChange={handlePageChange}
-            className="custom-pagination"
-          />
+        <CustomPagination
+        currentPage={currentPage}
+        totalPages={spells.length}
+        onPageChange={handlePageChange}/>
         </div>
 
         <div className="flex-shrink-0">
