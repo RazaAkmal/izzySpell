@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Pagination from "rc-pagination";
 import Image from "next/image";
 import CustomButton from "./HeadlessButton";
 import CustomPagination from "./CustomPagination";
