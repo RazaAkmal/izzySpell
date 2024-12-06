@@ -2,6 +2,7 @@
 import CustomButton from "@/components/HeadlessButton";
 import InputField from "@/components/Input";
 import { SignupFormValues } from "@/lib/defination";
+import { useRouter } from "next/navigation";
 import React from "react";
 import { useForm } from "react-hook-form";
 
@@ -11,24 +12,24 @@ const ResetPassword = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<SignupFormValues>();
+  const router = useRouter();
 
   const submitForm = async (data: SignupFormValues) => {
     try {
-      const response = await fetch('/api/auth/resetPassword', {
-        method: 'POST',
+      const response = await fetch("/api/auth/resetPassword", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ name: data.name, password: data.password }),
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Password reset failed');
+        throw new Error(errorData.error || "Password reset failed");
       }
-  
-      const result = await response.json();
-      alert(result.message); // Show success message
+
+      router.push(`/sign-in`);
     } catch (error) {
       alert(error);
     }
