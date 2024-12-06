@@ -94,21 +94,21 @@ body {
 .custom-pagination .rc-pagination-item {
   width: 40px;
   height: 40px;
-  line-height: 40px;
+  align-content: center;
   border-radius: 200px;
-  background-color: #e0f7fa; /* Light Blue */
+  background-color: #e0f7fa; 
   color: blue;
-  border: 2px solid skyblue; /* Tailwind's blue-500 */
+  border: 2px solid skyblue; 
   text-align: center;
   cursor: pointer;
   font-weight: 500;
   transition: all 0.3s ease;
-  font: bolder;
+  font:900;
   font-size: larger;
 }
 
 .custom-pagination .rc-pagination-item:hover {
-  background-color: #93c5fd; /* Tailwind's blue-300 */
+  background-color: #93c5fd; 
   color: white;
   border-color: #2563eb;
 }
