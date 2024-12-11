@@ -40,10 +40,11 @@ model SpellingList {
   listName     String
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-  userId       String // Foreign key to the User model
+  userId       String 
   user         User          @relation(fields: [userId], references: [id])
   words        Word[]
   groupedWords GroupedWord[]
+  progress     Float         @default(0) // New field to store progress percentage
 
   @@map(name: "spelling_list")
 }
@@ -55,6 +56,7 @@ model Word {
   difficultyLevel String       @default("medium")
   type            String       @default("original") // original, syllabus, or grouped
   spellingList    SpellingList @relation(fields: [listId], references: [id])
+  studied         Boolean      @default(false) // Field to track if the word is studied
 
   @@map(name: "words")
 }

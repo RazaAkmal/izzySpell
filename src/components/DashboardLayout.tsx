@@ -1,16 +1,18 @@
-"use client";
 import React, { ReactNode } from "react";
 import Image from "next/image";
-
+import { auth } from "@/auth";
+import { Session } from "next-auth";
 interface DashboardLayoutProps {
   children: ReactNode;
   showFooter?: boolean;
 }
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({
+const DashboardLayout: React.FC<DashboardLayoutProps> = async ({
   children,
   showFooter = true,
 }) => {
+  const session = (await auth()) as Session | null;
+  const user = session?.user;
   return (
     <div className="bg-dashboard-background bg-cover bg-center min-h-screen flex flex-col">
       {/* TopBar */}
@@ -39,7 +41,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 />
               </div>
               <div className="ml-2 font-bold text-darkBlue text-lg md:text-2xl">
-                Sarah
+                {user?.name}
               </div>
               <Image src="/images/Dropdown.svg" alt="" width={24} height={24} />
             </div>

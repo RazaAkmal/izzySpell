@@ -3,10 +3,10 @@ import React, { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import CustomButton from "./HeadlessButton";
 import Image from "next/image";
-import Loading from "./Loading";
+import Progress from "./Progress";
 import Modal from "@/components/WordListModal"; // Import the self-contained Modal component
 
-function UploadWord() {
+function UploadWord({user}: any) {
   const [file, setFile] = useState<File | null>(null); // Store the file
   const [progress, setProgress] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,7 +37,6 @@ function UploadWord() {
 
       const aiResponse = await response.json();
 
-      // Simulate the end of progress and show modal after AI response is ready
       clearInterval(uploadInterval);
       setProgress(100);
       setAiResponse(aiResponse);
@@ -126,7 +125,7 @@ function UploadWord() {
         {/* Loading Progress */}
         {file && (
           <div className="mt-6">
-            <Loading
+            <Progress
               progress={progress}
               fileName={file?.name || "Uploading..."}
             />{" "}
@@ -140,6 +139,7 @@ function UploadWord() {
         <Modal
           aiResponse={aiResponse}
           isOpen={isModalOpen}
+          user={user}
           onClose={() => {
             setFile(null)
             setProgress(0);

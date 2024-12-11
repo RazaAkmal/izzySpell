@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma"; // Import your Prisma client instance
+import { revalidatePath } from 'next/cache'
 
 export async function POST(req: Request) {
   try {
@@ -35,8 +36,7 @@ export async function POST(req: Request) {
         words: true, // Include the related words in the response
       },
     });
-
-    // Respond with the created data
+    revalidatePath('/dashboard')
     return NextResponse.json(
       { message: "Spelling list created successfully!", spellingList },
       { status: 201 }

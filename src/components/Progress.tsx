@@ -6,7 +6,7 @@ interface LoadingProps {
   fileName: string;
 }
 
-const Loading: React.FC<LoadingProps> = ({ progress, fileName }) => {
+const Progress: React.FC<LoadingProps> = ({ progress, fileName }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   //for cancel loading
@@ -62,4 +62,4 @@ const Loading: React.FC<LoadingProps> = ({ progress, fileName }) => {
   );
 };
 
-export default Loading;
+export default Progress;

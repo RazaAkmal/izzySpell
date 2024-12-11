@@ -9,9 +9,10 @@ interface ModalProps {
     OriginalWords: string[];
   };
   onClose: () => void;
+  user: any;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, aiResponse, onClose }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, aiResponse, onClose, user }) => {
   const [listName, setListName] = useState<string>("");
   const [spellList, setSpellList] = useState<{ id: number; word: string }[]>([]);
   const [editingSpellId, setEditingSpellId] = useState<number | null>(null);
@@ -57,7 +58,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, aiResponse, onClose }) => {
         body: JSON.stringify({
           listName,
           words: spellList.map((spell) => spell.word), // Only send words
-          userId: 'cm4868bs90000qag5etvqonvd'
+          userId: user.id
         }),
       });
   
@@ -117,17 +118,6 @@ const Modal: React.FC<ModalProps> = ({ isOpen, aiResponse, onClose }) => {
             </p>
           </div>
 
-          {/* Save Button */}
-          <div className="flex justify-center mt-4">
-            <CustomButton
-              label="Save & Start Learning"
-              fullWidth={false}
-              onClick={handleSave}
-              size="large"
-            />
-          </div>
-
-          {/* Spell List */}
           <div className="m-3 rounded-md">
             <h2 className="text-center text-xl font-bold text-purple mb-4">
               View and Edit Your List
@@ -178,6 +168,14 @@ const Modal: React.FC<ModalProps> = ({ isOpen, aiResponse, onClose }) => {
                 </div>
               ))}
             </div>
+          </div>
+          <div className="flex justify-center mt-4">
+            <CustomButton
+              label="Save & Start Learning"
+              fullWidth={false}
+              onClick={handleSave}
+              size="large"
+            />
           </div>
         </div>
       </div>
