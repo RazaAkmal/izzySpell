@@ -32,6 +32,7 @@ const config: Config = {
        lightOrange:'#FDAC40',
        darkOrange:'#C57306',
        pink:'#F181B9',
+       greenLite:'#E2FFF8'
        
       },
       backgroundImage: {

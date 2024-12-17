@@ -2,6 +2,7 @@ import React, { ReactNode } from "react";
 import Image from "next/image";
 import { auth } from "@/auth";
 import { Session } from "next-auth";
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 interface DashboardLayoutProps {
   children: ReactNode;
   showFooter?: boolean;
@@ -43,7 +44,29 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = async ({
               <div className="ml-2 font-bold text-darkBlue text-lg md:text-2xl">
                 {user?.name}
               </div>
-              <Image src="/images/Dropdown.svg" alt="" width={24} height={24} />
+              <Menu as="div" className="relative">
+                <MenuButton className="focus:outline-none">
+                  <Image
+                    src="/images/Dropdown.svg"
+                    alt="Dropdown Button"
+                    width={30}
+                    height={30}
+                    className="cursor-pointer mt-2"
+                  />
+                </MenuButton>
+                <MenuItems className="absolute right-[-48] mt-2 w-60 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                  <MenuItem>
+                    <button className="block px-4 py-1 w-full text-left text-gray-700 hover:bg-gray-100 hover:text-black">
+                      My Profile
+                    </button>
+                  </MenuItem>
+                  <MenuItem>
+                    <button className="block px-4 py-1 w-full text-left text-gray-700 hover:bg-gray-100 hover:text-black">
+                      Sign Out
+                    </button>
+                  </MenuItem>
+                </MenuItems>
+              </Menu>
             </div>
           </div>
         </header>
