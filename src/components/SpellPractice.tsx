@@ -4,9 +4,12 @@ import React, { useState } from "react";
 import Image from "next/image";
 import CustomButton from "./HeadlessButton";
 import CustomPagination from "./CustomPagination";
+import PracticeWordModal from "./PraticeWordModal";
 
 function PracticePage() {
   const [currentPage, setCurrentPage] = useState(1);
+ //for open the modal here 
+ const [openModal,setOpenModal]=useState(false);
 
   // Define spells
   const spells = [
@@ -21,6 +24,18 @@ function PracticePage() {
 
   const currentSpells = spells[currentPage - 1] || [];
   const totalWords = spells.flat().length;
+
+  //for modal open function
+  const handleModalOpen =()=>
+  {
+    
+setOpenModal(true)
+  }
+
+// for close the modal
+  const handleCloseModal = () => {
+    setOpenModal(false);
+  };
 
   // Handle page change
   const handlePageChange = (page: number) => {
@@ -113,9 +128,13 @@ function PracticePage() {
             variant="primary"
             size="large"
             radius="square"
+            onClick={handleModalOpen}
           />
         </div>
+          
+     
       </div>
+      {openModal && <PracticeWordModal isOpen={openModal} onClose={handleCloseModal} />}
     </div>
   );
 }
