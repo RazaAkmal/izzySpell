@@ -25,23 +25,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   callbacks: {
     async jwt({ token, user }) {
+      console.log('JWT Callback:', { token, user });
       if (user) {
-        const {
-          password,
-          cardNumber,
-          cardName,
-          expireMonth,
-          expireYear,
-          cardCVC,
-          ...safeUser
-        } = user as any;
-        token.id = user?.id?.toString();
+        const { password, ...safeUser } = user as any;
+        token.id = user.id?.toString();
         token.name = user.name;
         return { ...token, ...safeUser };
       }
       return token;
     },
     async session({ session, token }) {
+      console.log('Session Callback:', { session, token });
       session.user = token as any;
       return session;
     },

@@ -4,6 +4,9 @@ import { getToken } from 'next-auth/jwt';
 
 export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  console.log(token, 'token')
+  console.log(request.headers.get('cookie'), 'cookie');
+
   const url = request.nextUrl;
   // If the user has a valid token and tries to access the login/signup, redirect to dashboard
   if (token && !token.profileUpdated && ['/dashboard', '/lists', '/'].some(path => url.pathname.startsWith(path))) {
@@ -22,5 +25,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/login', '/sign-in', '/forgot-password', '/profile/:path*', '/signup', '/lists/:path*', '/dashboard/:path*'],
+  matcher: ['/login', '/sign-in', '/forgot-password', '/profile/:path*', '/signup', '/lists/:path*', '/dashboard/:path*'],
 };
