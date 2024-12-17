@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@headlessui/react";
 import CustomButton from "./HeadlessButton";
+import { revalidateRoute } from "@/app/actions/revalidate";
 
 interface ModalProps {
   isOpen: boolean;
@@ -9,12 +10,19 @@ interface ModalProps {
     OriginalWords: string[];
   };
   onClose: () => void;
-  user: any;
+  userId?: string;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, aiResponse, onClose, user }) => {
+const Modal: React.FC<ModalProps> = ({
+  isOpen,
+  aiResponse,
+  onClose,
+  userId,
+}) => {
   const [listName, setListName] = useState<string>("");
-  const [spellList, setSpellList] = useState<{ id: number; word: string }[]>([]);
+  const [spellList, setSpellList] = useState<{ id: number; word: string }[]>(
+    []
+  );
   const [editingSpellId, setEditingSpellId] = useState<number | null>(null);
   const [editedWord, setEditedWord] = useState<string>("");
 
@@ -44,10 +52,12 @@ const Modal: React.FC<ModalProps> = ({ isOpen, aiResponse, onClose, user }) => {
 
   const handleSave = async () => {
     if (spellList.some((spell) => !spell.word.trim()) || !listName.trim()) {
-      alert("Please ensure all spells are valid and the list name is provided.");
+      alert(
+        "Please ensure all spells are valid and the list name is provided."
+      );
       return;
     }
-  
+
     try {
       // Example API call to save the list
       const response = await fetch("/api/save-words", {
@@ -58,15 +68,16 @@ const Modal: React.FC<ModalProps> = ({ isOpen, aiResponse, onClose, user }) => {
         body: JSON.stringify({
           listName,
           words: spellList.map((spell) => spell.word), // Only send words
-          userId: user.id
+          userId: userId,
         }),
       });
-  
+      await revalidateRoute("/dashboard");
+
       if (!response.ok) {
         throw new Error("Failed to save the list");
       }
-  
-      setListName('')  
+
+      setListName("");
       alert("Your list has been saved successfully!");
       onClose(); // Close the modal after saving
     } catch (error) {
@@ -74,7 +85,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, aiResponse, onClose, user }) => {
       alert("An error occurred while saving the list. Please try again.");
     }
   };
-  
+
   if (!isOpen) return null;
 
   return (
@@ -135,7 +146,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, aiResponse, onClose, user }) => {
                     <input
                       value={editedWord}
                       onChange={(e) => setEditedWord(e.target.value)}
-                      className="text-gray-700 font-semibold border rounded p-1 w-28"
+                      className="text-gray-700 font-semibold border-b-2 bg-transparent border-gray-200 p-1 focus:outline-none focus:border-blue-500"
                     />
                   ) : (
                     <span className="text-gray-700 font-semibold">

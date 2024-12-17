@@ -139,7 +139,7 @@ function UploadWord({user}: any) {
         <Modal
           aiResponse={aiResponse}
           isOpen={isModalOpen}
-          user={user}
+          userId={user.id}
           onClose={() => {
             setFile(null)
             setProgress(0);
