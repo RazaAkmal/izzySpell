@@ -1,61 +1,32 @@
-"use client";
+"use server";
 
-import React, { useState } from "react";
 import Image from "next/image";
 import CustomButton from "./HeadlessButton";
-import CustomPagination from "./CustomPagination";
 import PracticeWordModal from "./PraticeWordModal";
+import { getWordsByListId } from "@/app/actions/prismaActions";
+import TextToSpeech from "./TextToSpeach";
+import SpellPracticeClient from "@/app/spellPractice/[listId]/spellPracticeClient";
 
-function PracticePage() {
-  const [currentPage, setCurrentPage] = useState(1);
- //for open the modal here 
- const [openModal,setOpenModal]=useState(false);
+export default async function WordsPage({
+  listId,
+  page,
+}: {
+  listId: string;
+  page: number;
+}) {
+  const { words, total, pageSize } = await getWordsByListId(
+    parseInt(listId),
+    page
+  );
 
-  // Define spells
-  const spells = [
-    ["HIGH", "EVERY", "NEAR", "Continue"],
-    ["LEARN", "CREATE", "EXPLORE"],
-    ["GROW", "INSPIRE", "IMAGINE"],
-    ["Ingenious", "Onomatopoeia", "Fuchsia"],
-    ["DREAM", "SMART", "TASK", "CONTINUE", "WEATHER"],
-    ["Spell", "Spell", "Spell"],
-    ["Spell", "Spell", "Spell"],
-  ];
-
-  const currentSpells = spells[currentPage - 1] || [];
-  const totalWords = spells.flat().length;
-
-  //for modal open function
-  const handleModalOpen =()=>
-  {
-    
-setOpenModal(true)
-  }
-
-// for close the modal
-  const handleCloseModal = () => {
-    setOpenModal(false);
-  };
-
-  // Handle page change
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  // for speak the letter
-  const pronounceText = (text: string) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    speechSynthesis.speak(utterance);
-  };
+  const totalPages = Math.ceil(total / pageSize);
 
   return (
     <div className="bg-skyBlue m-3 max-h-max rounded-md p-6">
-      {/* Pagination and Buttons */}
-
       <div className="w-full flex flex-wrap justify-between items-center mb-4 gap-4">
         <div className="flex-shrink-0">
           <CustomButton
-            label={`Page ${currentPage} / ${spells.length}`}
+            label={`Page ${page} / ${totalPages}`}
             variant="success"
             size="small"
             radius="rounded"
@@ -64,15 +35,12 @@ setOpenModal(true)
         </div>
 
         <div className="flex-grow">
-        <CustomPagination
-        currentPage={currentPage}
-        totalPages={spells.length}
-        onPageChange={handlePageChange}/>
+          <SpellPracticeClient listId={listId} totalPages={totalPages} page={page} />
         </div>
 
         <div className="flex-shrink-0">
           <CustomButton
-            label={`Words: ${totalWords}`}
+            label={`Words: ${total}`}
             size="small"
             variant="success"
             radius="rounded"
@@ -89,16 +57,14 @@ setOpenModal(true)
           src="/images/titles/Here Are Your Words to Practice.svg"
         />
       </div>
-
-      {/* Spell Content */}
       <div className="flex flex-col space-y-3">
-        {currentSpells.length > 0 ? (
-          currentSpells.map((spell, index) => (
+        {words.length > 0 ? (
+          words.map((word, index) => (
             <div
               key={index}
               className="bg-white border-[2px] border-darkGreen rounded-2xl shadow-md p-2 flex gap-2 items-center justify-center max-w-full mx-auto flex-wrap"
             >
-              {spell.split("").map((letter, letterIndex) => (
+              {word.word.split("").map((letter, letterIndex) => (
                 <div
                   key={letterIndex}
                   className="text-white text-xl border-2 border-darkGreen bg-lightGreen font-bold px-4 py-2 rounded-xl flex justify-center items-center"
@@ -106,37 +72,16 @@ setOpenModal(true)
                   {letter}
                 </div>
               ))}
-
-              <Image
-                alt="speaker"
-                width={10}
-                height={10}
-                src="/images/SpeakerIcon.svg"
-                className="w-12 cursor-pointer"
-                onClick={() => pronounceText(spell)}
-              />
+              <TextToSpeech spell={word.word} />
             </div>
           ))
         ) : (
           <p className="text-gray-500 text-center">
-            No spells available on this page.
+            No words available on this page.
           </p>
         )}
-        <div className="flex justify-center ">
-          <CustomButton
-            label="Practice Your Words"
-            variant="primary"
-            size="large"
-            radius="square"
-            onClick={handleModalOpen}
-          />
-        </div>
-          
-     
+        <PracticeWordModal />
       </div>
-      {openModal && <PracticeWordModal isOpen={openModal} onClose={handleCloseModal} />}
     </div>
   );
 }
-
-export default PracticePage;
