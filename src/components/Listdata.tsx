@@ -1,17 +1,62 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { SpellingListItem } from "@/lib/defination";
 import moment from "moment";
+import EditWordModal from "./EditWordsModal";
+import { deleteList, fetchWordsForList } from "@/app/actions/prismaActions";
+import { revalidateRoute } from "@/app/actions/revalidate";
 
-function AllListData({ spellingLists }: { spellingLists: SpellingListItem[] }) {
+function AllListData({
+  spellingLists,
+  userId,
+}: {
+  spellingLists: SpellingListItem[];
+  userId?: string;
+}) {
   const route = useRouter();
+  const [listWithWords, setListWithWords] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const handleContinueLearning = (listId: number) => {
     route.push(`/spellPractice/${listId}`);
   };
   const handleViewList = (id: number) => {
     route.push(`/lists/${id}`);
+  };
+  const fetchWordsFromList = async (listId: number) => {
+    try {
+      const response = await fetchWordsForList(userId!, listId);
+      setListWithWords(response);
+      setIsModalOpen(true);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+  const handleDelete = async (listId: number) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this list?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const result = await deleteList(listId, userId!);
+
+      if (result.success) {
+        console.log("List deleted successfully");
+        revalidateRoute("/lists");
+      } else {
+        console.error(
+          "Error deleting list:",
+          result.message || "Unknown error"
+        );
+      }
+    } catch (error) {
+      console.error("Error in handleDelete:", error);
+    }
   };
   return (
     <div className="mt-5 rounded-lg px-4">
@@ -66,18 +111,34 @@ function AllListData({ spellingLists }: { spellingLists: SpellingListItem[] }) {
               alt="all word list"
               width={40}
               height={40}
-              className="w-10 h-10"
+              className="w-10 h-10 cursor-pointer"
+              onClick={() => {
+                fetchWordsFromList(item.id);
+              }}
             />
             <Image
               src="/images/deleteIcon.svg"
               alt="all word list"
               width={40}
               height={40}
-              className="w-10 h-10"
+              className="w-10 h-10 cursor-pointer"
+              onClick={() => {
+                handleDelete(item.id);
+              }}
             />
           </div>
         </div>
       ))}
+      {listWithWords && (
+        <EditWordModal
+          listWithWords={listWithWords}
+          isOpen={isModalOpen}
+          userId={userId}
+          onClose={() => {
+            setIsModalOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

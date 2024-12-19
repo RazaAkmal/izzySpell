@@ -50,7 +50,7 @@ const AllListsPage = async () => {
           <div className="col-span-4 text-center">Actions</div>
         </div>
         </div>
-        <AllListData spellingLists={spellingWithColors} />
+        {user ? <AllListData userId={user.id} spellingLists={spellingWithColors} /> : <div>Loading...</div>}
       </div>
     </DashboardLayout>
   );

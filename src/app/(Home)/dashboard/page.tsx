@@ -22,7 +22,7 @@ const DashboardPage = async () => {
         {user ? <UploadWord user={user} /> : <div>Loading...</div>}
         <WordList />
       </div>
-      <List user={user} />
+      {user ? <List user={user} /> : <div>Loading...</div>}
     </DashboardLayout>
   );
 };
