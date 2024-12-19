@@ -9,7 +9,7 @@ interface ClientComponentProps {
   page: number;
 }
 
-const SpellPracticeClient: React.FC<ClientComponentProps> = ({ listId, totalPages, page }) => {
+const SpellPracticePagination: React.FC<ClientComponentProps> = ({ listId, totalPages, page }) => {
   const router = useRouter();
 
   const handlePageChange = (newPage: number) => {
@@ -26,4 +26,4 @@ const SpellPracticeClient: React.FC<ClientComponentProps> = ({ listId, totalPage
   );
 }
 
-export default SpellPracticeClient
+export default SpellPracticePagination

@@ -5,7 +5,7 @@ import CustomButton from "./HeadlessButton";
 import PracticeWordModal from "./PraticeWordModal";
 import { getWordsByListId } from "@/app/actions/prismaActions";
 import TextToSpeech from "./TextToSpeach";
-import SpellPracticeClient from "@/app/spellPractice/[listId]/spellPracticeClient";
+import SpellPracticePagination from "@/app/spellPractice/[listId]/SpellPracticePagination";
 
 export default async function WordsPage({
   listId,
@@ -35,7 +35,7 @@ export default async function WordsPage({
         </div>
 
         <div className="flex-grow">
-          <SpellPracticeClient listId={listId} totalPages={totalPages} page={page} />
+          <SpellPracticePagination listId={listId} totalPages={totalPages} page={page} />
         </div>
 
         <div className="flex-shrink-0">
