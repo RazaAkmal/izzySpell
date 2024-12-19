@@ -63,3 +63,22 @@ export async function fetchWordsForList(userId: string, listId: number) {
   const { spellingListWithWords } = await response.json(); 
   return spellingListWithWords;
 }
+
+export async function getWordsByListId(listId: number, page = 1, pageSize = 5) {
+  const skip = (page - 1) * pageSize;
+  const take = pageSize;
+
+  const [words, total] = await Promise.all([
+    prisma.word.findMany({
+      where: { listId },
+      skip,
+      take,
+      orderBy: { id: 'asc' },
+    }),
+    prisma.word.count({
+      where: { listId },
+    }),
+  ]);
+
+  return { words, total, page, pageSize };
+}
