@@ -7,12 +7,22 @@ import CustomButton from "./HeadlessButton";
 import { Button } from "@headlessui/react";
 
 const DefaultModePage: React.FC = () => {
-  const words = ["HIGH", "EVERY", "NEAR", "CONTINUE"]; // Page 1 words
+  const words = ["HIGH", "EVERY", "NEAR", "CONTINUE"];
+  
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedLetter, setSelectedLetter] = useState<string[]>([]);
+  const currentWords = words[currentPage - 1];
 
   // Handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    setSelectedLetter([]);
+  };
+  //handle letter in box
+  const handleLetterClicked = (letter: string) => {
+    if (selectedLetter.length < currentWords.length) {
+      setSelectedLetter((prevLetter) => [...prevLetter, letter]);
+    }
   };
 
   return (
@@ -40,9 +50,8 @@ const DefaultModePage: React.FC = () => {
           <Image
             src="/images/Vector.svg"
             alt="Cancel Button"
-            width={24}
-            height={24}
-            className="w-10 h-10"
+            width={30}
+            height={30}
           />
         </Button>
       </div>
@@ -63,9 +72,13 @@ const DefaultModePage: React.FC = () => {
           {Array.from({ length: words[currentPage - 1].length }).map((_, i) => (
             <div
               key={i}
-              className="w-14 h-14 border-2 border-darkGreen rounded-xl bg-greenLite   flex items-center justify-center shadow-md"
+              className={`w-14 h-14 border-2 border-darkGreen rounded-xl bg-greenLite   flex items-center justify-center shadow-md ${
+                selectedLetter[i] ? "bg-darkGreen" : "bg-greenLite"
+              }`}
             >
-              <span className="text-2xl font-bold text-darkBlue"></span>
+              <span className="text-2xl font-bold text-white">
+                {selectedLetter[i] || ""}
+              </span>
             </div>
           ))}
         </div>
@@ -78,6 +91,7 @@ const DefaultModePage: React.FC = () => {
               <div
                 key={index}
                 className="w-16 h-16 bg-lightGreen border-[3px] border-darkGreen text-white font-bold text-3xl flex items-center justify-center rounded-2xl cursor-pointer hover:bg-teal-600 shadow-md"
+                onClick={() => handleLetterClicked(letter)}
               >
                 {letter}
               </div>
