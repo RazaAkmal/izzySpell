@@ -2,40 +2,115 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import CustomButton from "./HeadlessButton";
-import { Button } from "@headlessui/react";
+import { syllableData, SyllableOption } from "@/app/syllableData";
+import CustomPagination from "./CustomPagination";
 
 function SyllabusModePage() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [syllableBoxes, setSyllableBoxes] = useState<string[]>([
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
+
+  const options = syllableData[currentPage - 1];
+  console.log("options", options);
+
+  const handleOptionClick = (option: SyllableOption) => {
+    setSelectedOption(option.id);
+
+    if (option.isCorrect) {
+      const correctText = option.text.replace(/-/g, "");
+      setSyllableBoxes(correctText.split(""));
+    }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    resetState();
+  };
+
+  const resetState = () => {
+    setSelectedOption(null);
+    setSyllableBoxes(["", "", "", "", ""]);
+  };
+
   return (
-    <div className="bg-skyBlue m-3 max-h-max rounded-md p-6">
-      <div className="w-full flex flex-wrap justify-between items-center mb-4 gap-4">
-        <div className="flex-shrink-0">
-          <CustomButton
-            label={`Page 1/5`}
-            variant="success"
-            size="small"
-            radius="rounded"
-            img="/images/bookIcon.svg"
+    <>
+      <div className="bg-skyBlue m-7 p-10 rounded-lg shadow-lg">
+        <div className="w-full flex items-center justify-between mb-4">
+          {/* Title centered */}
+          <p className="text-4xl font-bold text-center w-full">Syllabus Mode</p>
+
+          <button className="absolute right-32 focus:outline-none">
+            <Image
+              src="/images/Vector.svg"
+              alt="Cancel Button"
+              width={24}
+              height={24}
+              className="w-10 h-10 mb-4"
+            />
+          </button>
+        </div>
+        <div className="mt-6">
+          <CustomPagination
+            currentPage={currentPage}
+            totalPages={syllableData.length}
+            onPageChange={handlePageChange}
           />
         </div>
+        <div className="flex flex-col items-center mt-4">
+          <p className="font-semibold text-2xl mb-2 text-gray-700">
+            Please choose the correct syllable word below.
+          </p>
 
-        <div className="flex-grow">
-          <div className="flex-shrink-0">
-            <div className="flex justify-end">
-              <Button className="focus:outline-none">
-                <Image
-                  src="/images/Vector.svg"
-                  alt="Cancel Button"
-                  width={24}
-                  height={24}
-                  className="w-8 h-8"
-                />
-              </Button>
+          {/* Syllable Boxes */}
+          <div className="flex gap-5">
+            <div className="flex gap-2 p-5 rounded-2xl bg-gray-200 mb-4">
+              {syllableBoxes.map((letter, index) => (
+                <div
+                  key={index}
+                  className="w-12 h-12 md:w-14 md:h-14 rounded-lg bg-white flex items-center justify-center text-xl font-bold text-gray-700 border-2 border-black"
+                >
+                  {letter}
+                </div>
+              ))}
             </div>
+            <button className="focus:outline-none">
+              <Image
+                src="/images/speakerIcon.svg"
+                alt="Speaker"
+                width={32}
+                height={32}
+                className="w-16 h-16 cursor-pointer mb-5  "
+              />
+            </button>
+          </div>
+
+          {/* Word Options */}
+          <div className="grid grid-cols-2 gap-4 mt-6">
+            {options.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => handleOptionClick(option)}
+                className={`w-full px-10 py-4 border-2 rounded-2xl text-3xl text-center font-semibold ${
+                  selectedOption === option.id
+                    ? option.isCorrect
+                      ? "bg-green border-green"
+                      : "bg-red-200 border-red-500"
+                    : "bg-gray-100 border-gray-300 hover:bg-gray-200"
+                }`}
+              >
+                {option.text}
+              </button>
+            ))}
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
