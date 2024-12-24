@@ -25,7 +25,7 @@ const PracticeWordModal: React.FC = () => {
   };
   //for Slyyabus mode
   const handleSyllabusMode = () => {
-    router.push(`/spellPractice/${listId}/SllyabusModePractice`);
+    router.push(`/spellPractice/${listId}/SyllabusModePractice`);
   };
   //for group word mode
   const handleGroupMode = () => {

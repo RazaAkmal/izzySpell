@@ -8,20 +8,31 @@ import { Button } from "@headlessui/react";
 
 const DefaultModePage: React.FC = () => {
   const words = ["HIGH", "EVERY", "NEAR", "CONTINUE"];
-  
+
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedLetter, setSelectedLetter] = useState<string[]>([]);
+  const [isCorrect, setIsCorrect] = useState(true);
   const currentWords = words[currentPage - 1];
 
   // Handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     setSelectedLetter([]);
+    setIsCorrect(true);
   };
+
+  // Check  letters match the current word
+  const validateWord = (letter: string[]) => {
+    const isMatching = currentWords.startsWith(letter.join(""));
+    setIsCorrect(isMatching);
+  };
+
   //handle letter in box
   const handleLetterClicked = (letter: string) => {
     if (selectedLetter.length < currentWords.length) {
-      setSelectedLetter((prevLetter) => [...prevLetter, letter]);
+      const updatedLetters = [...selectedLetter, letter];
+      setSelectedLetter(updatedLetters);
+      validateWord(updatedLetters);
     }
   };
 
@@ -68,11 +79,15 @@ const DefaultModePage: React.FC = () => {
           Click on a letter to add it to the box and create the word!
         </p>
 
-        <div className="flex border-darkGreen border-[3px] rounded-2xl p-4 bg-white justify-center gap-3 mb-6">
-          {Array.from({ length: words[currentPage - 1].length }).map((_, i) => (
+        <div
+          className={`flex border-[3px] rounded-2xl p-4 bg-white justify-center gap-3 mb-6 ${
+            isCorrect ? "border-darkGreen" : "border-red-500"
+          }`}
+        >
+          {Array.from({ length: currentWords.length }).map((_, i) => (
             <div
               key={i}
-              className={`w-14 h-14 border-2 border-darkGreen rounded-xl bg-greenLite   flex items-center justify-center shadow-md ${
+              className={`w-14 h-14 border-2 border-darkGreen rounded-xl flex items-center justify-center shadow-md ${
                 selectedLetter[i] ? "bg-darkGreen" : "bg-greenLite"
               }`}
             >
