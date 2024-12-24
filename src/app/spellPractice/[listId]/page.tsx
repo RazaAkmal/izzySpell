@@ -3,15 +3,16 @@ import DashboardLayout from "@/components/DashboardLayout";
 import CustomButton from "@/components/HeadlessButton";
 import SpellPractice from "./SpellPractice";
 
-function page({
+async function page({
   params,
   searchParams,
 }: {
-  params: { listId: string };
-  searchParams: { page?: string };
+  params: Promise<{ listId: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
-  const { listId } = params;
-  const page = parseInt(searchParams.page as string) || 1;
+  const listId = (await params).listId
+
+  const page = parseInt((await searchParams).page as string) || 1;
   return (
     <>
       <DashboardLayout showFooter={false}>

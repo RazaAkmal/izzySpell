@@ -7,11 +7,12 @@ async function page({
   params,
   searchParams,
 }: {
-  params: { listId: string };
-  searchParams: { page?: string };
+  params: Promise<{ listId: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
-  const { listId } = params;
-  const page = parseInt(searchParams.page as string) || 1;
+  const listId = (await params).listId
+
+  const page = parseInt((await searchParams).page as string) || 1;
   const { words } = await getWordsByListId(parseInt(listId), page);
 
   return (
