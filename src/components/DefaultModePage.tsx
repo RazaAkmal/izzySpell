@@ -62,6 +62,11 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
     }
   };
 
+  const handleReset = () => {
+    setSelectedLetter([]);
+    setIsCorrect(true);
+  };
+
   useEffect(() => {
     if (currentWord) {
       setScrambledLetters(scrambleWord(currentWord));
@@ -106,23 +111,55 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
           Click on a letter to add it to the box and create the word!
         </p>
 
-        <div
-          className={`flex border-[3px] rounded-2xl p-4 bg-white justify-center gap-3 mb-6 ${
-            isCorrect ? "border-darkGreen" : "border-red-500"
-          }`}
-        >
-          {Array.from({ length: currentWord.length }).map((_, i) => (
-            <div
-              key={i}
-              className={`w-14 h-14 border-2 border-darkGreen rounded-xl flex items-center justify-center shadow-md ${
-                selectedLetter[i] ? "bg-darkGreen" : "bg-greenLite"
-              }`}
-            >
-              <span className="text-2xl font-bold text-white">
-                {selectedLetter[i] || ""}
-              </span>
+        <div className="flex">
+          <div
+            className={`flex border-[3px] rounded-2xl p-4 bg-white justify-center gap-3 mb-6 ${
+              isCorrect ? "border-darkGreen" : "border-red-500"
+            }`}
+          >
+            {Array.from({ length: currentWord.length }).map((_, i) => (
+              <div
+                key={i}
+                className={`w-14 h-14 border-2 border-darkGreen rounded-xl flex items-center justify-center shadow-md ${
+                  selectedLetter[i] ? "bg-darkGreen" : "bg-greenLite"
+                }`}
+              >
+                <span className="text-2xl font-bold text-white">
+                  {selectedLetter[i] || ""}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <div className="relative">
+              {!isCorrect && (
+                <button
+                  onClick={handleReset}
+                  className="absolute ml-5 top-[-25px] left-0 flex items-center justify-center w-14 h-14 bg-red-500  rounded-2xl"
+                >
+                  <Image
+                    src="/images/resetIcon.svg"
+                    alt="Reset"
+                    width={30}
+                    height={30}
+                    className="w-8 h-8"
+                  />
+                </button>
+              )}
             </div>
-          ))}
+
+            {isCorrect && selectedLetter.length === currentWord.length && (
+              <button className="flex items-center justify-center w-14 h-14 bg-green text-white font-bold text-lg rounded-full hover:scale-110">
+                <Image
+                  src="/images/completeIcon.svg"
+                  alt="OK"
+                  width={30}
+                  height={30}
+                  className="w-8 h-8"
+                />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex justify-center gap-4">
