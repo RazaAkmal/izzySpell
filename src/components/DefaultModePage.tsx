@@ -55,6 +55,9 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
     if (selectedLetter.length < currentWord.length) {
       const updatedLetters = [...selectedLetter, letter];
       setSelectedLetter(updatedLetters);
+      setScrambledLetters((prevScrambled) =>
+        prevScrambled.filter((l, index) => index !== prevScrambled.indexOf(letter))
+      );
       validateWord(updatedLetters);
     }
   };
