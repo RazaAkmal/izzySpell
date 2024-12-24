@@ -65,6 +65,9 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
   const handleReset = () => {
     setSelectedLetter([]);
     setIsCorrect(true);
+    if (currentWord) {
+      setScrambledLetters(scrambleWord(currentWord)); // Re-scramble the current word
+    }
   };
 
   useEffect(() => {
