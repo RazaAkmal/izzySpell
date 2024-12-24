@@ -1,7 +1,7 @@
 import React from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import SpellPractice from "@/components/SpellPractice";
 import CustomButton from "@/components/HeadlessButton";
+import SpellPractice from "./SpellPractice";
 
 function page({
   params,

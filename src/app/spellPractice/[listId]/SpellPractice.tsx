@@ -1,11 +1,12 @@
 "use server";
 
 import Image from "next/image";
-import CustomButton from "./HeadlessButton";
-import PracticeWordModal from "./PraticeWordModal";
 import { getWordsByListId } from "@/app/actions/prismaActions";
-import TextToSpeech from "./TextToSpeach";
 import SpellPracticePagination from "@/app/spellPractice/[listId]/SpellPracticePagination";
+import CustomButton from "@/components/HeadlessButton";
+import TextToSpeech from "@/components/TextToSpeach";
+import PracticeWordModal from "@/components/PraticeWordModal";
+import MarkAsStudiedButton from "@/components/MarkAsStudiedButton";
 
 export default async function WordsPage({
   listId,
@@ -20,6 +21,7 @@ export default async function WordsPage({
   );
 
   const totalPages = Math.ceil(total / pageSize);
+  const wordIds = words.map((word) => word.id); // Extract word IDs
 
   return (
     <div className="bg-skyBlue m-3 max-h-max rounded-md p-6">
@@ -31,6 +33,7 @@ export default async function WordsPage({
             size="small"
             radius="rounded"
             img="/images/bookIcon.svg"
+            className="cursor-default"
           />
         </div>
 
@@ -45,8 +48,11 @@ export default async function WordsPage({
             variant="success"
             radius="rounded"
             img="/images/AlphaIcon.svg"
+            className="cursor-default"
           />
+          <MarkAsStudiedButton wordIds={wordIds} />
         </div>
+        
       </div>
 
       <div className="flex justify-center ">
