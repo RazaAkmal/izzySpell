@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 
-function TextToSpeech({ spell }: { spell: string }) {
+function TextToSpeech({ spell, heightWidth }: { spell: string, heightWidth: number }) {
   const pronounceText = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
     speechSynthesis.speak(utterance);
@@ -12,10 +12,10 @@ function TextToSpeech({ spell }: { spell: string }) {
     <>
       <Image
         alt="speaker"
-        width={10}
-        height={10}
+        width={heightWidth}
+        height={heightWidth}
         src="/images/SpeakerIcon.svg"
-        className="w-12 cursor-pointer"
+        className=" cursor-pointer"
         onClick={() => pronounceText(spell)}
       />
     </>

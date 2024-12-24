@@ -21,7 +21,7 @@ export default async function WordsPage({
   );
 
   const totalPages = Math.ceil(total / pageSize);
-  const wordIds = words.map((word) => word.id); // Extract word IDs
+  const wordIds = words.map((word) => word.id);
 
   return (
     <div className="bg-skyBlue m-3 max-h-max rounded-md p-6">
@@ -38,7 +38,11 @@ export default async function WordsPage({
         </div>
 
         <div className="flex-grow">
-          <SpellPracticePagination listId={listId} totalPages={totalPages} page={page} />
+          <SpellPracticePagination
+            listId={listId}
+            totalPages={totalPages}
+            page={page}
+          />
         </div>
 
         <div className="flex-shrink-0">
@@ -52,7 +56,6 @@ export default async function WordsPage({
           />
           <MarkAsStudiedButton wordIds={wordIds} />
         </div>
-        
       </div>
 
       <div className="flex justify-center ">
@@ -78,7 +81,7 @@ export default async function WordsPage({
                   {letter}
                 </div>
               ))}
-              <TextToSpeech spell={word.word} />
+              <TextToSpeech heightWidth={48} spell={word.word} />
             </div>
           ))
         ) : (
@@ -86,7 +89,7 @@ export default async function WordsPage({
             No words available on this page.
           </p>
         )}
-        <PracticeWordModal />
+        <PracticeWordModal page={page} />
       </div>
     </div>
   );

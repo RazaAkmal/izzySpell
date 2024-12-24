@@ -1,53 +1,79 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import CustomPagination from "./CustomPagination";
 import Image from "next/image";
 import CustomButton from "./HeadlessButton";
 import { Button } from "@headlessui/react";
+import { Word } from "@prisma/client";
+import TextToSpeech from "./TextToSpeach";
+import { useRouter } from "next/navigation";
 
-const DefaultModePage: React.FC = () => {
-  const words = ["HIGH", "EVERY", "NEAR", "CONTINUE"];
+interface DefaultModePageProps {
+  words: Word[];
+  listId: string;
+}
+
+const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
+  const wordsSpell = words.map((word) => word.word);
+  const router = useRouter();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedLetter, setSelectedLetter] = useState<string[]>([]);
   const [isCorrect, setIsCorrect] = useState(true);
-  const currentWords = words[currentPage - 1];
+  const [scrambledLetters, setScrambledLetters] = useState<string[]>([]);
 
-  // Handle page change
+  const currentWord = wordsSpell[currentPage - 1];
+
+  const scrambleWord = useCallback((word: string): string[] => {
+    const letters = [...word];
+    for (let i = letters.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [letters[i], letters[j]] = [letters[j], letters[i]];
+    }
+    return letters;
+  }, []);
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     setSelectedLetter([]);
     setIsCorrect(true);
   };
 
-  // Check  letters match the current word
-  const validateWord = (letter: string[]) => {
-    const isMatching = currentWords.startsWith(letter.join(""));
-    setIsCorrect(isMatching);
+  const validateWord = (letters: string[]) => {
+    if (letters.length === currentWord.length) {
+      const isMatching = currentWord === letters.join("");
+      setIsCorrect(isMatching);
+      if (isMatching) {
+        setCurrentPage((prevPage) => prevPage + 1);
+        setSelectedLetter([]);
+      }
+    }
   };
 
-  //handle letter in box
-  const handleLetterClicked = (letter: string) => {
-    if (selectedLetter.length < currentWords.length) {
+  const handleLetterClick = (letter: string) => {
+    if (selectedLetter.length < currentWord.length) {
       const updatedLetters = [...selectedLetter, letter];
       setSelectedLetter(updatedLetters);
       validateWord(updatedLetters);
     }
   };
 
+  useEffect(() => {
+    if (currentWord) {
+      setScrambledLetters(scrambleWord(currentWord));
+    }
+  }, [currentWord, scrambleWord]);
+
   return (
     <div className="bg-skyBlue m-7 mt-1 p-6 rounded-lg shadow-lg">
       <div className="flex items-center justify-between mb-6">
-        {/* Page Button */}
-
         <CustomButton
-          label={`Page ${currentPage} / ${words.length}`}
+          label={`Page ${currentPage} / ${wordsSpell.length}`}
           variant="success"
           size="small"
           img="/images/bookIcon.svg"
         />
-
         <Image
           src="/images/titles/Default Mode.svg"
           alt="Default title"
@@ -55,23 +81,21 @@ const DefaultModePage: React.FC = () => {
           height={24}
           className="mr-40"
         />
-
-        {/* Cross Button */}
         <Button className="focus:outline-none">
           <Image
             src="/images/Vector.svg"
             alt="Cancel Button"
             width={30}
             height={30}
+            onClick={() => router.push(`/spellPractice/${listId}`)}
           />
         </Button>
       </div>
 
       <div className="flex flex-col items-center space-y-6">
-        {/* Pagination */}
         <CustomPagination
           currentPage={currentPage}
-          totalPages={words.length}
+          totalPages={wordsSpell.length}
           onPageChange={handlePageChange}
         />
 
@@ -84,7 +108,7 @@ const DefaultModePage: React.FC = () => {
             isCorrect ? "border-darkGreen" : "border-red-500"
           }`}
         >
-          {Array.from({ length: currentWords.length }).map((_, i) => (
+          {Array.from({ length: currentWord.length }).map((_, i) => (
             <div
               key={i}
               className={`w-14 h-14 border-2 border-darkGreen rounded-xl flex items-center justify-center shadow-md ${
@@ -99,28 +123,19 @@ const DefaultModePage: React.FC = () => {
         </div>
 
         <div className="flex justify-center gap-4">
-          {words[currentPage - 1]
-            .split("")
-            .sort()
-            .map((letter, index) => (
-              <div
-                key={index}
-                className="w-16 h-16 bg-lightGreen border-[3px] border-darkGreen text-white font-bold text-3xl flex items-center justify-center rounded-2xl cursor-pointer hover:bg-teal-600 shadow-md"
-                onClick={() => handleLetterClicked(letter)}
-              >
-                {letter}
-              </div>
-            ))}
+          {scrambledLetters.map((letter, index) => (
+            <div
+              key={index}
+              className="w-16 h-16 bg-lightGreen border-[3px] border-darkGreen text-white font-bold text-3xl flex items-center justify-center rounded-2xl cursor-pointer hover:bg-teal-600 shadow-md"
+              onClick={() => handleLetterClick(letter)}
+            >
+              {letter}
+            </div>
+          ))}
         </div>
 
-        {/* Sound Button */}
         <div>
-          <Image
-            src="/images/Speakericon.svg"
-            alt="Sound Button"
-            width={60}
-            height={60}
-          />
+          <TextToSpeech heightWidth={60} spell={currentWord} />
         </div>
       </div>
     </div>
