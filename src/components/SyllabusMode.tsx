@@ -68,14 +68,16 @@ function SyllabusModePage() {
           </p>
 
           {/* Syllable Boxes */}
-          <div className="flex gap-5">
-            <div className="flex gap-2 p-5 rounded-2xl bg-gray-200 mb-4">
+          <div className="flex gap-5 justify-center items-center ml-20">
+            <div className="flex gap-2 p-5 rounded-2xl bg-white mb-4 border-darkGreen border-2">
               {syllableBoxes.map((letter, index) => (
                 <div
                   key={index}
-                  className="w-12 h-12 md:w-14 md:h-14 rounded-lg bg-white flex items-center justify-center text-xl font-bold text-gray-700 border-2 border-black"
+                  className={`w-14 h-14 md:w-16 md:h-16 border-2 border-darkGreen rounded-xl flex items-center justify-center ${
+                    letter ? "bg-darkGreen" : "bg-greenLite"
+                  }`}
                 >
-                  {letter}
+                  <span className="text-2xl font-bold text-white">{letter}</span>
                 </div>
               ))}
             </div>
@@ -85,7 +87,7 @@ function SyllabusModePage() {
                 alt="Speaker"
                 width={32}
                 height={32}
-                className="w-16 h-16 cursor-pointer mb-5  "
+                className="w-16 h-16 cursor-pointer mb-5"
               />
             </button>
           </div>
