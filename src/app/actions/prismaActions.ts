@@ -102,7 +102,7 @@ export async function markWordsAsStudied(wordIds: number[]) {
         where: { listId, studied: true },
       });
 
-      const progress = (studiedWords / totalWords) * 100;
+      const progress = Math.round((studiedWords / totalWords) * 100);
 
       await prisma.spellingList.update({
         where: { id: listId },

@@ -108,7 +108,7 @@ function AllListData({
             </button>
             <Image
               src="/images/EditICon.svg"
-              alt="all word list"
+              alt="editIcon"
               width={40}
               height={40}
               className="w-10 h-10 cursor-pointer"
@@ -118,7 +118,7 @@ function AllListData({
             />
             <Image
               src="/images/deleteIcon.svg"
-              alt="all word list"
+              alt="deleteIcon"
               width={40}
               height={40}
               className="w-10 h-10 cursor-pointer"

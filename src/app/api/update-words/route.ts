@@ -45,20 +45,43 @@ export async function PATCH(req: Request) {
 
     // Iterate through the provided words to update them
     for (const word of words) {
-      if (word.id && word.word) {
+      if (word.id) {
+        // Existing word - update logic
         const existingWord = spellingList.words.find((w) => w.id === word.id);
-
         if (existingWord && existingWord.word !== word.word) {
-          // Update the word if it has changed
           const updatedWord = await prisma.word.update({
             where: { id: word.id },
             data: { word: word.word },
           });
-
           updatedWords.push(updatedWord);
         }
+      } else if (word.word) {
+        // New word - create logic
+        const newWord = await prisma.word.create({
+          data: {
+            word: word.word,
+            listId: listId,
+          },
+        });
+        const totalWords = await prisma.word.count({
+          where: { listId: listId },
+        });
+        
+        const studiedWords = await prisma.word.count({
+          where: { listId: listId, studied: true },
+        });
+        
+        const progress = Math.round((studiedWords / totalWords) * 100);
+        
+        // Update the progress in the spelling list
+        await prisma.spellingList.update({
+          where: { id: listId },
+          data: { progress },
+        });
+        updatedWords.push(newWord);
       }
     }
+    
 
     // Revalidate the path after the update
     revalidatePath('/lists')

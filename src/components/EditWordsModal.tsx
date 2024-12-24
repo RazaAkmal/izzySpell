@@ -12,10 +12,18 @@ interface ModalProps {
   userId?: string;
 }
 
-const EditWordModal: React.FC<ModalProps> = ({ isOpen, listWithWords, onClose, userId }) => {
+const EditWordModal: React.FC<ModalProps> = ({
+  isOpen,
+  listWithWords,
+  onClose,
+  userId,
+}) => {
   const [listName, setListName] = useState<string>(listWithWords.listName);
   const [spellList, setSpellList] = useState(listWithWords.words);
-  const [modifiedWords, setModifiedWords] = useState<{ id: number; word: string }[]>([]);
+  const [modifiedWords, setModifiedWords] = useState<
+    { id: number; word: string }[]
+  >([]);
+  const [newWords, setNewWords] = useState<string[]>([]);
 
   const handleWordChange = (id: number, newWord: string) => {
     setSpellList((prevList) =>
@@ -24,9 +32,10 @@ const EditWordModal: React.FC<ModalProps> = ({ isOpen, listWithWords, onClose, u
       )
     );
 
-    // Track modified words
     setModifiedWords((prevModifiedWords) => {
-      const isAlreadyModified = prevModifiedWords.some((word) => word.id === id);
+      const isAlreadyModified = prevModifiedWords.some(
+        (word) => word.id === id
+      );
       if (isAlreadyModified) {
         return prevModifiedWords.map((word) =>
           word.id === id ? { ...word, word: newWord } : word
@@ -37,13 +46,47 @@ const EditWordModal: React.FC<ModalProps> = ({ isOpen, listWithWords, onClose, u
     });
   };
 
+  const handleNewWordChange = (index: number, newWord: string) => {
+    setNewWords((prevNewWords) =>
+      prevNewWords.map((word, i) => (i === index ? newWord : word))
+    );
+  };
+
+  const addNewWordField = () => {
+    setNewWords((prevNewWords) => [...prevNewWords, ""]);
+  };
+
   useEffect(() => {
-    setSpellList(listWithWords.words)
-    setListName(listWithWords.listName)
-  }, [listWithWords])
+    setSpellList(listWithWords.words);
+    setListName(listWithWords.listName);
+  }, [listWithWords]);
+
+  const handleDelete = async (wordId: number) => {
+    const confirmed = confirm('Are you sure you want to delete this word?');
+    if (!confirmed) return;
+
+    try {
+      // Call the delete API route
+      await fetch(`/api/delete-word?wordId=${wordId}&&listId=${listWithWords.id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      setSpellList(spellList.filter((word) => word.id !== wordId));
+      await revalidateRoute("/lists");
+    } catch (error) {
+      console.error('Error deleting word:', error);
+      alert('Failed to delete the word. Please try again.');
+    }
+  };
 
   const handleSave = async () => {
-    if (modifiedWords.some((word) => !word.word.trim()) || !listName.trim()) {
+    if (
+      modifiedWords.some((word) => !word.word.trim()) ||
+      !listName.trim() ||
+      newWords.some((word) => !word.trim())
+    ) {
       alert("Please ensure all words are valid and the list name is provided.");
       return;
     }
@@ -57,7 +100,10 @@ const EditWordModal: React.FC<ModalProps> = ({ isOpen, listWithWords, onClose, u
         body: JSON.stringify({
           listId: listWithWords.id,
           listName,
-          words: modifiedWords,
+          words: [
+            ...modifiedWords,
+            ...newWords.map((word) => ({ id: null, word })),
+          ],
           userId,
         }),
       });
@@ -67,8 +113,9 @@ const EditWordModal: React.FC<ModalProps> = ({ isOpen, listWithWords, onClose, u
       }
 
       alert("Your changes have been saved successfully!");
-      await revalidateRoute('/lists');
-      setModifiedWords([]); 
+      await revalidateRoute("/lists");
+      setModifiedWords([]);
+      setNewWords([]);
       onClose();
     } catch (error) {
       console.error("Error saving the list:", error);
@@ -113,7 +160,10 @@ const EditWordModal: React.FC<ModalProps> = ({ isOpen, listWithWords, onClose, u
             className="w-3/4 mx-auto bg-sky-100 rounded-lg border border-[#7898D2] text-[#4A6FA5] text-lg placeholder-[#A0B6D8] px-4 py-3 mt-4 focus:outline-none focus:ring-2 focus:ring-[#7898D2]"
           />
           <div className="text-center text-base mt-2">
-            <p>Please review your list carefully, edit if needed, and then save it.</p>
+            <p>
+              Please review your list carefully, edit if needed, and then save
+              it.
+            </p>
           </div>
 
           {/* Editable Word List */}
@@ -122,25 +172,56 @@ const EditWordModal: React.FC<ModalProps> = ({ isOpen, listWithWords, onClose, u
               View and Edit Your List
             </h2>
             <div className="grid grid-cols-3 gap-3 overflow-auto h-auto max-h-screen p-4">
-              {spellList.map((spell) => (
+              {spellList.map((spell, index) => (
                 <div
                   key={spell.id}
-                  className="flex items-center justify-start bg-white rounded-2xl shadow-md p-3"
+                  className="flex items-center gap-3 justify-start bg-white rounded-2xl shadow-md p-3"
                 >
-                  <span className="text-green bg-green bg-opacity-25 opacity-45 p-1 rounded-full text-center h-8 w-8 border-2 border-green font-bold mr-3">
-                    {spell.id}
+                  <span className="text-green bg-green bg-opacity-25 opacity-45 p-1 rounded-full text-center h-8 w-8 border-2 border-green font-bold">
+                    {index + 1}
                   </span>
                   <input
                     value={spell.word}
                     onChange={(e) => handleWordChange(spell.id, e.target.value)}
                     className="text-gray-700 font-semibold border-b-2 bg-transparent border-gray-200 p-1 focus:outline-none focus:border-blue-500"
-                    />
+                  />
+                  <Image
+                    src="/images/deleteIcon.svg"
+                    alt="deleteIcon"
+                    width={30}
+                    height={30}
+                    className="cursor-pointer"
+                    onClick={()=> handleDelete(spell.id)}
+                  />
+                </div>
+              ))}
+
+              {newWords.map((word, index) => (
+                <div
+                  key={`new-word-${index}`}
+                  className="flex items-center justify-start bg-white rounded-2xl shadow-md p-3"
+                >
+                  <span className="text-gray-500 bg-gray-200 p-1 rounded-full text-center h-8 w-8 font-bold mr-3">
+                    {spellList.length + index + 1}
+                  </span>
+                  <input
+                    value={word}
+                    onChange={(e) => handleNewWordChange(index, e.target.value)}
+                    className="text-gray-700 font-semibold border-b-2 bg-transparent border-gray-200 p-1 focus:outline-none focus:border-blue-500"
+                  />
                 </div>
               ))}
             </div>
+            <div className="flex justify-center mt-2">
+              <CustomButton
+                label="Add New Word"
+                fullWidth={false}
+                onClick={addNewWordField}
+                size="small"
+              />
+            </div>
           </div>
 
-          {/* Save Button */}
           <div className="flex justify-center mt-4">
             <CustomButton
               label="Save & Start Learning"

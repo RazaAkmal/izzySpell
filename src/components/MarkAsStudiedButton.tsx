@@ -12,7 +12,6 @@ const MarkAsStudiedButton: React.FC<MarkAsStudiedButtonProps> = ({ wordIds }) =>
     const result = await markWordsAsStudied(wordIds);
     if (result.success) {
       alert("Words marked as studied successfully!");
-      location.reload(); 
     } else {
       alert(`${result.error}`);
     }
