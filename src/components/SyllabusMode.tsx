@@ -70,7 +70,7 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
               alt="Cancel Button"
               width={24}
               height={24}
-              className="w-10 h-10 mb-4"
+              className="w-8 h-8 mb-4"
               onClick={() => router.push(`/spellPractice/${listId}`)}
             />
           </button>
