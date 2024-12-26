@@ -25,7 +25,7 @@ const Modal: React.FC<ModalProps> = ({
   );
   const [editingSpellId, setEditingSpellId] = useState<number | null>(null);
   const [editedWord, setEditedWord] = useState<string>("");
-
+  console.log(aiResponse)
   // Initialize spell list when the modal opens with AI response data
   useEffect(() => {
     if (aiResponse?.OriginalWords) {
