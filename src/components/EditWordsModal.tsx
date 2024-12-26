@@ -167,17 +167,17 @@ const EditWordModal: React.FC<ModalProps> = ({
           </div>
 
           {/* Editable Word List */}
-          <div className="m-3 rounded-md">
+          <div className="m-3 rounded-md ">
             <h2 className="text-center text-xl font-bold text-purple mb-4">
               View and Edit Your List
             </h2>
-            <div className="grid grid-cols-3 gap-3 overflow-auto h-auto max-h-screen p-4">
+            <div className="grid grid-cols-3 gap-3 overflow-auto h-auto max-h-80 p-4">
               {spellList.map((spell, index) => (
                 <div
                   key={spell.id}
                   className="flex items-center gap-3 justify-start bg-white rounded-2xl shadow-md p-3"
                 >
-                  <span className="text-green bg-green bg-opacity-25 opacity-45 p-1 rounded-full text-center h-8 w-8 border-2 border-green font-bold">
+                  <span className="text-green bg-green bg-opacity-25 opacity-45 p-1 rounded-full text-center  h-8 w-8 border-2 border-green font-bold">
                     {index + 1}
                   </span>
                   <input

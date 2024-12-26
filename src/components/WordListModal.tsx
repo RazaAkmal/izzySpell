@@ -133,7 +133,7 @@ const Modal: React.FC<ModalProps> = ({
             <h2 className="text-center text-xl font-bold text-purple mb-4">
               View and Edit Your List
             </h2>
-            <div className="grid grid-cols-3 gap-3 overflow-auto h-auto max-h-screen p-4">
+            <div className="grid grid-cols-3 gap-3 overflow-auto h-auto max-h-80 p-4">
               {spellList.map((spell) => (
                 <div
                   key={spell.id}

@@ -4,8 +4,20 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { syllableData, SyllableOption } from "@/app/syllableData";
 import CustomPagination from "./CustomPagination";
+import { Word } from "@prisma/client";
+import { useRouter } from "next/navigation";
 
-function SyllabusModePage() {
+interface SyllabusModePageProps {
+  listId: string;
+  words: Word[];
+}
+
+const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
+  listId,
+  words,
+}) => {
+  const syllableWords = words.map((word) => word.word);
+  console.log("syllableWords", syllableWords);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [syllableBoxes, setSyllableBoxes] = useState<string[]>([
@@ -16,16 +28,14 @@ function SyllabusModePage() {
     "",
   ]);
 
+  const router = useRouter();
+  const currentWord = syllableWords[currentPage - 1];
   const options = syllableData[currentPage - 1];
   console.log("options", options);
 
-  const handleOptionClick = (option: SyllableOption) => {
-    setSelectedOption(option.id);
-
-    if (option.isCorrect) {
-      const correctText = option.text.replace(/-/g, "");
-      setSyllableBoxes(correctText.split(""));
-    }
+  const handleOptionClick = (optionId: number) => {
+    setSelectedOption(optionId);
+    setSyllableBoxes(currentWord.split(""));
   };
 
   const handlePageChange = (page: number) => {
@@ -36,6 +46,15 @@ function SyllabusModePage() {
   const resetState = () => {
     setSelectedOption(null);
     setSyllableBoxes(["", "", "", "", ""]);
+  };
+
+  //for speaker icon functional
+  const handleSpeak = () => {
+    const wordToSpeak = syllableBoxes.join("");
+    if (wordToSpeak) {
+      const utterance = new SpeechSynthesisUtterance(wordToSpeak);
+      speechSynthesis.speak(utterance);
+    }
   };
 
   return (
@@ -52,13 +71,14 @@ function SyllabusModePage() {
               width={24}
               height={24}
               className="w-10 h-10 mb-4"
+              onClick={() => router.push(`/spellPractice/${listId}`)}
             />
           </button>
         </div>
         <div className="mt-6">
           <CustomPagination
             currentPage={currentPage}
-            totalPages={syllableData.length}
+            totalPages={syllableWords.length}
             onPageChange={handlePageChange}
           />
         </div>
@@ -77,11 +97,13 @@ function SyllabusModePage() {
                     letter ? "bg-darkGreen" : "bg-greenLite"
                   }`}
                 >
-                  <span className="text-2xl font-bold text-white">{letter}</span>
+                  <span className="text-2xl font-bold text-white">
+                    {letter}
+                  </span>
                 </div>
               ))}
             </div>
-            <button className="focus:outline-none">
+            <button className="focus:outline-none" onClick={handleSpeak}>
               <Image
                 src="/images/speakerIcon.svg"
                 alt="Speaker"
@@ -92,28 +114,27 @@ function SyllabusModePage() {
             </button>
           </div>
 
-          {/* Word Options */}
           <div className="grid grid-cols-2 gap-4 mt-6">
-            {options.map((option) => (
-              <button
-                key={option.id}
-                onClick={() => handleOptionClick(option)}
-                className={`w-full px-10 py-4 border-2 rounded-2xl text-3xl text-center font-semibold ${
-                  selectedOption === option.id
-                    ? option.isCorrect
+            {Array(4)
+              .fill(0)
+              .map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleOptionClick(index)}
+                  className={`w-full px-10 py-4 border-2 rounded-2xl text-3xl text-center font-semibold ${
+                    selectedOption === index
                       ? "bg-green border-green"
-                      : "bg-red-200 border-red-500"
-                    : "bg-gray-100 border-gray-300 hover:bg-gray-200"
-                }`}
-              >
-                {option.text}
-              </button>
-            ))}
+                      : "bg-gray-100 border-gray-300 hover:bg-gray-200"
+                  }`}
+                >
+                  {currentWord}
+                </button>
+              ))}
           </div>
         </div>
       </div>
     </>
   );
-}
+};
 
 export default SyllabusModePage;
