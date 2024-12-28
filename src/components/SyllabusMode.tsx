@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { syllableData, SyllableOption } from "@/app/syllableData";
+import { syllableData } from "@/app/syllableData";
 import CustomPagination from "./CustomPagination";
 import { Word } from "@prisma/client";
 import { useRouter } from "next/navigation";
