@@ -5,6 +5,7 @@ import Image from "next/image";
 import CustomPagination from "./CustomPagination";
 import { SyllableWord } from "@prisma/client";
 import { useRouter } from "next/navigation";
+import TextToSpeech from "./TextToSpeach";
 
 interface SyllabusModePageProps {
   listId: string;
@@ -22,6 +23,7 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
   const [options, setOptions] = useState<string[]>([]); // State to hold the syllable options
 
   const router = useRouter();
+  const orignalWord = syllableWords[currentPage - 1].word;
   const currentWord = syllableWords[currentPage - 1].syllables;
   const correctSyllable = currentWord;
 
@@ -86,15 +88,6 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
     setSyllableBoxes(["", "", "", "", ""]);
   };
 
-  // Speaker icon functionality
-  const handleSpeak = () => {
-    const wordToSpeak = syllableBoxes.join("");
-    if (wordToSpeak) {
-      const utterance = new SpeechSynthesisUtterance(wordToSpeak);
-      speechSynthesis.speak(utterance);
-    }
-  };
-
   return (
     <>
       <div className="bg-skyBlue m-7 p-10 rounded-lg shadow-lg">
@@ -139,15 +132,7 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
                 </div>
               ))}
             </div>
-            <button className="focus:outline-none" onClick={handleSpeak}>
-              <Image
-                src="/images/speakerIcon.svg"
-                alt="Speaker"
-                width={32}
-                height={32}
-                className="w-16 h-16 cursor-pointer mb-5"
-              />
-            </button>
+            <TextToSpeech heightWidth={60} spell={orignalWord} />
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-6">
