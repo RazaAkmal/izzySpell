@@ -36,15 +36,16 @@ model User {
 }
 
 model SpellingList {
-  id           Int           @id @default(autoincrement())
-  listName     String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  userId       String 
-  user         User          @relation(fields: [userId], references: [id])
-  words        Word[]
-  groupedWords GroupedWord[]
-  progress     Float         @default(0) // New field to store progress percentage
+  id            Int            @id @default(autoincrement())
+  listName      String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  userId        String 
+  user          User           @relation(fields: [userId], references: [id])
+  words         Word[]
+  groupedWords  GroupedWord[]
+  syllableWords SyllableWord[] // Relation to SyllableWord
+  progress      Float          @default(0) // Field to store progress percentage
 
   @@map(name: "spelling_list")
 }
@@ -69,4 +70,14 @@ model GroupedWord {
   spellingList SpellingList @relation(fields: [listId], references: [id])
 
   @@map(name: "grouped_words")
+}
+
+model SyllableWord {
+  id           Int          @id @default(autoincrement())
+  listId       Int
+  syllables    String        // Field to store syllable-specific data
+  word         String
+  spellingList SpellingList @relation(fields: [listId], references: [id])
+
+  @@map(name: "syllable_words")
 }

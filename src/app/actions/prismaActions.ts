@@ -82,6 +82,25 @@ export async function getWordsByListId(listId: number, page = 1, pageSize = 5) {
 
   return { words, total, page, pageSize };
 }
+export async function getSyllableWordsByListId(listId: number, page = 1, pageSize = 5) {
+  const skip = (page - 1) * pageSize;
+  const take = pageSize;
+
+  const [syllableWords, total] = await Promise.all([
+    prisma.syllableWord.findMany({
+      where: { listId },
+      skip,
+      take,
+      orderBy: { id: 'asc' },
+    }),
+    prisma.syllableWord.count({
+      where: { listId },
+    }),
+  ]);
+
+  return { syllableWords, total, page, pageSize };
+}
+
 
 export async function markWordsAsStudied(wordIds: number[]) {
   try {

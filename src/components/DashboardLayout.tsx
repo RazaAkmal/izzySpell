@@ -3,6 +3,7 @@ import Image from "next/image";
 import { auth } from "@/auth";
 import { Session } from "next-auth";
 import UserMenu from "./UserMenu";
+import Link from "next/link";
 interface DashboardLayoutProps {
   children: ReactNode;
   showFooter?: boolean;
@@ -21,6 +22,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = async ({
         <header className="bg-skyBlue m-2 md:m-6 px-8 md:px-4 rounded-2xl shadow-md">
           <div className="container flex flex-row md:flex-row justify-between items-center">
             <div className="relative flex items-center h-20 w-52">
+            <Link href="/dashboard">
               <Image
                 src="/images/izzyLogo.svg"
                 alt="Logo"
@@ -28,6 +30,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = async ({
                 height={40}
                 className="mx-auto"
               />
+              </Link>
             </div>
 
             {/* Profile of user */}

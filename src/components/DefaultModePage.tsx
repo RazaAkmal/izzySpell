@@ -45,8 +45,10 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
       const isMatching = currentWord === letters.join("");
       setIsCorrect(isMatching);
       if (isMatching) {
-        setCurrentPage((prevPage) => prevPage + 1);
-        setSelectedLetter([]);
+        setTimeout(() => {
+          setCurrentPage((prevPage) => prevPage + 1);
+          setSelectedLetter([]);
+        }, 1000);
       }
     }
   };
@@ -56,7 +58,9 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
       const updatedLetters = [...selectedLetter, letter];
       setSelectedLetter(updatedLetters);
       setScrambledLetters((prevScrambled) =>
-        prevScrambled.filter((l, index) => index !== prevScrambled.indexOf(letter))
+        prevScrambled.filter(
+          (l, index) => index !== prevScrambled.indexOf(letter)
+        )
       );
       validateWord(updatedLetters);
     }
@@ -109,77 +113,80 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
           totalPages={wordsSpell.length}
           onPageChange={handlePageChange}
         />
+        {currentWord && (
+          <>
+            <p className="text-2xl font-bold text-darkBlue text-center">
+              Click on a letter to add it to the box and create the word!
+            </p>
 
-        <p className="text-2xl font-bold text-darkBlue text-center">
-          Click on a letter to add it to the box and create the word!
-        </p>
-
-        <div className="flex">
-          <div
-            className={`flex border-[3px] rounded-2xl p-4 bg-white justify-center gap-3 mb-6 ${
-              isCorrect ? "border-darkGreen" : "border-red-500"
-            }`}
-          >
-            {Array.from({ length: currentWord.length }).map((_, i) => (
+            <div className="flex">
               <div
-                key={i}
-                className={`w-14 h-14 border-2 border-darkGreen rounded-xl flex items-center justify-center shadow-md ${
-                  selectedLetter[i] ? "bg-darkGreen" : "bg-greenLite"
+                className={`flex border-[3px] rounded-2xl p-4 bg-white justify-center gap-3 mb-6 ${
+                  isCorrect ? "border-darkGreen" : "border-red-500"
                 }`}
               >
-                <span className="text-2xl font-bold text-white">
-                  {selectedLetter[i] || ""}
-                </span>
+                {Array.from({ length: currentWord.length }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-14 h-14 border-2 border-darkGreen rounded-xl flex items-center justify-center shadow-md ${
+                      selectedLetter[i] ? "bg-darkGreen" : "bg-greenLite"
+                    }`}
+                  >
+                    <span className="text-2xl font-bold text-white">
+                      {selectedLetter[i] || ""}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <div className="relative">
-              {!isCorrect && (
-                <button
-                  onClick={handleReset}
-                  className="absolute ml-5 top-[-25px] left-0 flex items-center justify-center w-14 h-14 bg-red-500  rounded-2xl"
+              <div className="flex items-center justify-center gap-4 mb-6">
+                <div className="relative">
+                  {!isCorrect && (
+                    <button
+                      onClick={handleReset}
+                      className="absolute ml-5 top-[-25px] left-0 flex items-center justify-center w-14 h-14 bg-red-500  rounded-2xl"
+                    >
+                      <Image
+                        src="/images/resetIcon.svg"
+                        alt="Reset"
+                        width={30}
+                        height={30}
+                        className="w-8 h-8"
+                      />
+                    </button>
+                  )}
+                </div>
+
+                {isCorrect && selectedLetter.length === currentWord.length && (
+                  <button className="flex absolute ml-20 items-center justify-center w-14 h-14 bg-green text-white font-bold text-lg rounded-full hover:scale-110">
+                    <Image
+                      src="/images/completeIcon.svg"
+                      alt="OK"
+                      width={30}
+                      height={30}
+                      className="w-10 h-10"
+                    />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-center gap-4">
+              {scrambledLetters.map((letter, index) => (
+                <div
+                  key={index}
+                  className="w-16 h-16 bg-lightGreen border-[3px] border-darkGreen text-white font-bold text-3xl flex items-center justify-center rounded-2xl cursor-pointer hover:bg-teal-600 shadow-md"
+                  onClick={() => handleLetterClick(letter)}
                 >
-                  <Image
-                    src="/images/resetIcon.svg"
-                    alt="Reset"
-                    width={30}
-                    height={30}
-                    className="w-8 h-8"
-                  />
-                </button>
-              )}
+                  {letter}
+                </div>
+              ))}
             </div>
 
-            {isCorrect && selectedLetter.length === currentWord.length && (
-              <button className="flex items-center justify-center w-14 h-14 bg-green text-white font-bold text-lg rounded-full hover:scale-110">
-                <Image
-                  src="/images/completeIcon.svg"
-                  alt="OK"
-                  width={30}
-                  height={30}
-                  className="w-8 h-8"
-                />
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="flex justify-center gap-4">
-          {scrambledLetters.map((letter, index) => (
-            <div
-              key={index}
-              className="w-16 h-16 bg-lightGreen border-[3px] border-darkGreen text-white font-bold text-3xl flex items-center justify-center rounded-2xl cursor-pointer hover:bg-teal-600 shadow-md"
-              onClick={() => handleLetterClick(letter)}
-            >
-              {letter}
+            <div>
+              <TextToSpeech heightWidth={60} spell={currentWord} />
             </div>
-          ))}
-        </div>
-
-        <div>
-          <TextToSpeech heightWidth={60} spell={currentWord} />
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
