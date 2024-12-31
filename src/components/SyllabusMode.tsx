@@ -1,41 +1,78 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { syllableData } from "@/app/syllableData";
 import CustomPagination from "./CustomPagination";
-import { Word } from "@prisma/client";
+import { SyllableWord } from "@prisma/client";
 import { useRouter } from "next/navigation";
 
 interface SyllabusModePageProps {
   listId: string;
-  words: Word[];
+  syllableWords: SyllableWord[];
 }
 
 const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
   listId,
-  words,
+  syllableWords,
 }) => {
-  const syllableWords = words.map((word) => word.word);
-  console.log("syllableWords", syllableWords);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [syllableBoxes, setSyllableBoxes] = useState<string[]>([
-    "",
-    "",
-    "",
-    "",
-    "",
-  ]);
+  const [syllableBoxes, setSyllableBoxes] = useState<string[]>(["", "", "", "", ""]);
+  const [isCorrectAnswer, setIsCorrectAnswer] = useState<boolean | null>(null);
+  const [options, setOptions] = useState<string[]>([]); // State to hold the syllable options
 
   const router = useRouter();
-  const currentWord = syllableWords[currentPage - 1];
-  const options = syllableData[currentPage - 1];
-  console.log("options", options);
+  const currentWord = syllableWords[currentPage - 1].syllables;
+  const correctSyllable = currentWord;
 
-  const handleOptionClick = (optionId: number) => {
+  // Generate wrong syllables based on the correct syllable
+  const generateWrongSyllables = (correctSyllable: string) => {
+    const word = correctSyllable.replace(/-/g, ""); // Remove the dash to get the raw word
+    const wrongSyllables = new Set<string>();
+  
+    while (wrongSyllables.size < 3) {
+      const splitPoint = Math.floor(Math.random() * (word.length - 1)) + 1; // Random split point
+      const newSyllable = word.substring(0, splitPoint) + "-" + word.substring(splitPoint);
+  
+      // Ensure the new syllable is unique and not the same as the correct one
+      if (newSyllable !== correctSyllable && !wrongSyllables.has(newSyllable)) {
+        wrongSyllables.add(newSyllable);
+      }
+    }
+  
+    return Array.from(wrongSyllables);
+  };
+  
+  
+  
+  
+
+  // Create the options array (1 correct syllable + 3 wrong syllables)
+  const createOptions = () => {
+    const wrongSyllables = generateWrongSyllables(correctSyllable);
+    console.log(wrongSyllables)
+    const allOptions = [correctSyllable, ...wrongSyllables];
+    return allOptions;
+  };
+
+  // Set the options only when the page is loaded or when the current word changes
+  useEffect(() => {
+    const generatedOptions = createOptions();
+    setOptions(generatedOptions); 
+  }, [currentPage, syllableWords]);
+
+  const handleOptionClick = (optionId: number, option: string) => {
     setSelectedOption(optionId);
-    setSyllableBoxes(currentWord.split(""));
+    setSyllableBoxes(option.split("")); 
+    checkAnswer(option);
+  };
+
+  const checkAnswer = (selectedOption: string) => {
+    if (selectedOption === correctSyllable) {
+      setIsCorrectAnswer(true); // Correct answer
+    } else {
+      setIsCorrectAnswer(false); // Wrong answer
+    }
   };
 
   const handlePageChange = (page: number) => {
@@ -45,10 +82,11 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
 
   const resetState = () => {
     setSelectedOption(null);
+    setIsCorrectAnswer(null); // Reset the answer status
     setSyllableBoxes(["", "", "", "", ""]);
   };
 
-  //for speaker icon functional
+  // Speaker icon functionality
   const handleSpeak = () => {
     const wordToSpeak = syllableBoxes.join("");
     if (wordToSpeak) {
@@ -61,9 +99,7 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
     <>
       <div className="bg-skyBlue m-7 p-10 rounded-lg shadow-lg">
         <div className="w-full flex items-center justify-between mb-4">
-          {/* Title centered */}
           <p className="text-4xl font-bold text-center w-full">Syllabus Mode</p>
-
           <button className="absolute right-32 focus:outline-none">
             <Image
               src="/images/Vector.svg"
@@ -75,6 +111,7 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
             />
           </button>
         </div>
+
         <div className="mt-6">
           <CustomPagination
             currentPage={currentPage}
@@ -82,6 +119,7 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
             onPageChange={handlePageChange}
           />
         </div>
+
         <div className="flex flex-col items-center mt-4">
           <p className="font-semibold text-2xl mb-2 text-gray-700">
             Please choose the correct syllable word below.
@@ -97,9 +135,7 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
                     letter ? "bg-darkGreen" : "bg-greenLite"
                   }`}
                 >
-                  <span className="text-2xl font-bold text-white">
-                    {letter}
-                  </span>
+                  <span className="text-2xl font-bold text-white">{letter}</span>
                 </div>
               ))}
             </div>
@@ -115,21 +151,21 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-6">
-            {Array(4)
-              .fill(0)
-              .map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleOptionClick(index)}
-                  className={`w-full px-10 py-4 border-2 rounded-2xl text-3xl text-center font-semibold ${
-                    selectedOption === index
+            {options.map((option, index) => (
+              <button
+                key={index}
+                onClick={() => handleOptionClick(index, option)}
+                className={`text-darkBlue w-full px-10 py-4 border-2 rounded-2xl text-3xl text-center font-semibold ${
+                  selectedOption === index
+                    ? isCorrectAnswer
                       ? "bg-green border-green"
-                      : "bg-gray-100 border-gray-300 hover:bg-gray-200"
-                  }`}
-                >
-                  {currentWord}
-                </button>
-              ))}
+                      : "bg-red-500 border-red-500"
+                    : "bg-gray-100 border-gray-300 hover:bg-gray-200"
+                }`}
+              >
+                {option}
+              </button>
+            ))}
           </div>
         </div>
       </div>
