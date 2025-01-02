@@ -90,7 +90,7 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
           img="/images/bookIcon.svg"
         />
         <Image
-          src="/images/titles/Default Mode.svg"
+          src="/images/titles/DefaultModeTitle.svg"
           alt="Default title"
           width={250}
           height={24}

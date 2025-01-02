@@ -92,7 +92,7 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
     <>
       <div className="bg-skyBlue m-7 p-10 rounded-lg shadow-lg">
         <div className="w-full flex items-center justify-between mb-4">
-          <p className="text-4xl font-bold text-center w-full">Syllabus Mode</p>
+          <p className="text-4xl font-bold text-center w-full text-purple">Syllabus Mode</p>
           <button className="absolute right-32 focus:outline-none">
             <Image
               src="/images/Vector.svg"

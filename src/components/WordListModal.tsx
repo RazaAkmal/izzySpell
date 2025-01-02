@@ -105,7 +105,7 @@ const Modal: React.FC<ModalProps> = ({
 
           {/* Title */}
           <Image
-            src="/images/titles/Please Enter a Name for Your Word List.svg"
+            src="/images/titles/WordListTitle.svg"
             alt="Add Spelling List"
             width={40}
             height={40}

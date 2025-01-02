@@ -1,7 +1,7 @@
 import React from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import GroupModePage from "@/components/GroupModePage";
-import { getWordsByListId } from "@/app/actions/prismaActions";
+import { getGroupedWordsByListId } from "@/app/actions/prismaActions";
 
 async function page({
   params,
@@ -13,12 +13,13 @@ async function page({
   const listId = (await params).listId
 
   const page = parseInt((await searchParams).page as string) || 1;
-  const { words } = await getWordsByListId(parseInt(listId), page);
+  const { groupedWords } = await getGroupedWordsByListId(parseInt(listId), page);
+  console.log(groupedWords, 'groupedWords')
   return (
     <>
       <DashboardLayout showFooter={false}>
 
-      {words.length > 0 && <GroupModePage words={words} listId={listId} />}
+      {groupedWords.length > 0 && <GroupModePage groupedWords={groupedWords} listId={listId} />}
       </DashboardLayout>
     </>
   );

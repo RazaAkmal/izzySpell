@@ -77,7 +77,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({ page }) => {
             {/* Modal Title */}
             <div className="flex justify-between items-center mb-6">
               <Image
-                src="/images/titles/Please Choose a Mode to Practice Your Word List.svg"
+                src="/images/titles/ChooseModeTitle.svg"
                 alt="Title"
                 width={500}
                 height={40}

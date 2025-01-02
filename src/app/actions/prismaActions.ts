@@ -101,6 +101,26 @@ export async function getSyllableWordsByListId(listId: number, page = 1, pageSiz
   return { syllableWords, total, page, pageSize };
 }
 
+export async function getGroupedWordsByListId(listId: number, page = 1, pageSize = 5) {
+  const skip = (page - 1) * pageSize;
+  const take = pageSize;
+
+  const [groupedWords, total] = await Promise.all([
+    prisma.groupedWord.findMany({
+      where: { listId },
+      skip,
+      take,
+      orderBy: { id: 'asc' },
+    }),
+    prisma.groupedWord.count({
+      where: { listId },
+    }),
+  ]);
+
+  return { groupedWords, total, page, pageSize };
+}
+
+
 
 export async function markWordsAsStudied(wordIds: number[]) {
   try {
