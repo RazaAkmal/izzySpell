@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import React, { useState } from "react";
 import Image from "next/image";
 import { Button } from "@headlessui/react";
@@ -28,14 +28,10 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
     return acc;
   }, {} as Record<string, GroupedWord[]>);
 
-  const groupNames = Object.keys(groups);
-
-  // Filter out groups that have only one word
   const validGroups = Object.keys(groups).filter(
     (groupName) => groups[groupName].length > 1
   );
   console.log("valid", validGroups);
- 
 
   // State to manage the current group index
   const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
@@ -48,9 +44,8 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
     groupedWords.map((word) => Array(word.word.length).fill(""))
   );
 
-  // State to track the correctness of user inputs
-  const [isCorrect, setIsCorrect] = useState<boolean[][]>(
-    groupedWords.map((word) => Array(word.word.length).fill(false))
+  const [validationStates, setValidationStates] = useState<string[][]>(
+    groupedWords.map((word) => Array(word.word.length).fill("default"))
   );
 
   const handleInputChange = (
@@ -59,17 +54,27 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
     value: string
   ) => {
     const updatedInputs = [...userInputs];
-    updatedInputs[rowIndex][boxIndex] = value.slice(-1);
+    updatedInputs[rowIndex][boxIndex + 2] = value.slice(-1); // Offset by 2 due to pre-filled letters
     setUserInputs(updatedInputs);
 
-    // Check if the input is correct
+    //  word is fully type or not
     const word = currentGroup[rowIndex].word;
-    console.log('word',word)
-    const updatedCorrectness = [...isCorrect];
-    console.log('input word',updatedCorrectness)
+    const userWord = [
+      ...word.slice(0, 2),
+      ...updatedInputs[rowIndex].slice(2),
+    ].join("");
 
-    updatedCorrectness[rowIndex][boxIndex] = word[boxIndex] === value;
-    setIsCorrect(updatedCorrectness);
+    const updatedValidation = [...validationStates];
+    if (userWord.length === word.length) {
+      updatedValidation[rowIndex] =
+        word === userWord
+          ? Array(word.length).fill("valid")
+          : Array(word.length).fill("invalid");
+    } else {
+      // Reset to default during typing
+      updatedValidation[rowIndex][boxIndex + 2] = "default";
+    }
+    setValidationStates(updatedValidation);
   };
 
   const handleSpeak = (word: string) => {
@@ -86,6 +91,21 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
     }
   };
 
+  //reset buttonn
+  const handleReset = (rowIndex: number) => {
+    const updatedInputs = [...userInputs];
+    updatedInputs[rowIndex] = Array(currentGroup[rowIndex].word.length).fill(
+      ""
+    );
+    setUserInputs(updatedInputs);
+
+    const updatedValidation = [...validationStates];
+    updatedValidation[rowIndex] = Array(
+      currentGroup[rowIndex].word.length
+    ).fill("default");
+    setValidationStates(updatedValidation);
+  };
+
   return (
     <div className="bg-skyBlue m-5 max-h-max rounded-md p-6">
       <div className="w-full flex flex-wrap justify-between items-center mb-4 gap-4">
@@ -97,7 +117,6 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
           className="w-8 h-8"
         />
         <p className="text-3xl font-bold">Word Group Mode</p>
-
         <Button
           className="focus:outline-none"
           onClick={() => router.push(`/spellPractice/${listId}`)}
@@ -151,29 +170,61 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
                 type="text"
                 key={boxIndex}
                 maxLength={1}
-                value={userInputs[rowIndex][boxIndex]}
+                value={userInputs[rowIndex][boxIndex + 2]}
                 onChange={(e) =>
                   handleInputChange(rowIndex, boxIndex, e.target.value)
                 }
-                className={`w-12 h-12 text-center border-[3px] rounded-lg text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                  isCorrect[rowIndex][boxIndex] ? "border-green-500" : "border-red-500"
+                className={`w-12 h-12 text-center border-[3px] rounded-lg text-2xl border-darkGreen font-bold focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                  validationStates[rowIndex][boxIndex + 2] === "valid"
+                    ? "border-green-500"
+                    : validationStates[rowIndex][boxIndex + 2] === "invalid"
+                    ? "border-red-500"
+                    : "border-lightGreen "
                 }`}
               />
             ))}
 
             {/* Speaker Button */}
-            <Button
-              className="focus:outline-none"
-              onClick={() => handleSpeak(word.word)}
-            >
-              <Image
-                src="/images/speakerIcon.svg"
-                alt="Speaker"
-                width={32}
-                height={32}
-                className="w-12 h-12 cursor-pointer"
-              />
-            </Button>
+            <div className="flex  ">
+              <Button
+                className="focus:outline-none"
+                onClick={() => handleSpeak(word.word)}
+              >
+                <Image
+                  src="/images/speakerIcon.svg"
+                  alt="Speaker"
+                  width={32}
+                  height={32}
+                  className="w-12 h-12 cursor-pointer"
+                />
+              </Button>
+              <div
+                className="mt-1 mb-12 m-4
+            "
+              >
+                {validationStates[rowIndex].every(
+                  (state) => state === "valid"
+                ) ? (
+                  <Image
+                    src="/images/completeIcon.svg"
+                    alt="Correct"
+                    width={44}
+                    height={44}
+                    className="absolute "
+                  />
+                ) : validationStates[rowIndex].includes("invalid") ? (
+                  <Button onClick={() => handleReset(rowIndex)}>
+                    <Image
+                      src="/images/resetIcon.svg"
+                      alt="Reset"
+                      width={35}
+                      height={35}
+                      className="absolute "
+                    />
+                  </Button>
+                ) : null}
+              </div>
+            </div>
           </div>
         ))}
       </div>
