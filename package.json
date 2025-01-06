@@ -19,6 +19,7 @@
     "moment": "^2.30.1",
     "next": "15.0.2",
     "next-auth": "^5.0.0-beta.25",
+    "openai": "^4.77.3",
     "rc-pagination": "^4.3.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
