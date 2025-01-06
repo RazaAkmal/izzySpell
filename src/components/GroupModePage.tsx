@@ -116,7 +116,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
           height={24}
           className="w-8 h-8"
         />
-        <p className="text-3xl font-bold">Word Group Mode</p>
+        <p className="text-3xl font-bold text-purple">Word Group Mode</p>
         <Button
           className="focus:outline-none"
           onClick={() => router.push(`/spellPractice/${listId}`)}
@@ -144,7 +144,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
         Tap the speaker to hear the word, then type it below.
       </p>
 
-      <div className="space-y-6">
+      <div className="space-y-6 text-darkBlue">
         {/* Render current group of words */}
         {currentGroup.map((word, rowIndex) => (
           <div
