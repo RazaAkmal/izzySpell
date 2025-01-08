@@ -82,30 +82,37 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
 
   return (
     <div className="bg-skyBlue m-7 mt-1 p-6 rounded-lg shadow-lg">
-      <div className="flex items-center justify-between mb-6">
-        <CustomButton
-          label={`Page ${currentPage} / ${wordsSpell.length}`}
-          variant="success"
-          size="small"
-          img="/images/bookIcon.svg"
-        />
-        <Image
-          src="/images/titles/DefaultModeTitle.svg"
-          alt="Default title"
-          width={250}
-          height={24}
-          className="mr-40"
-        />
-        <Button className="focus:outline-none">
-          <Image
-            src="/images/Vector.svg"
-            alt="Cancel Button"
-            width={30}
-            height={30}
-            onClick={() => router.push(`/spellPractice/${listId}`)}
-          />
-        </Button>
-      </div>
+  <div className="w-full flex flex-wrap items-center justify-between gap-4 px-4 sm:px-8 mb-4">
+  {/* Custom Button */}
+  <CustomButton
+    label={`Page ${currentPage} / ${wordsSpell.length}`}
+    variant="success"
+    size="small"
+    img="/images/bookIcon.svg"
+    className="w-fit"
+  />
+
+  {/* Title */}
+  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-center flex-1">
+    Word Group Mode
+  </p>
+
+  {/* Cancel Button */}
+  <Button
+    className="focus:outline-none sm:block items-center justify-center hidden"
+    onClick={() => router.push(`/spellPractice/${listId}`)}
+  >
+    <Image
+      src="/images/Vector.svg"
+      alt="Cancel Button"
+      width={24}
+      height={24}
+      className="w-6 h-6 sm:w-8 sm:h-8"
+    />
+  </Button>
+</div>
+
+
 
       <div className="flex flex-col items-center space-y-6">
         <CustomPagination
@@ -115,20 +122,20 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
         />
         {currentWord && (
           <>
-            <p className="text-2xl font-bold text-darkBlue text-center">
+            <p className="text-center font-semibold text-sm sm:text-lg md:text-xl lg:text-2xl mb-4 text-gray-700">
               Click on a letter to add it to the box and create the word!
             </p>
 
-            <div className="flex">
+            <div className="flex flex-col justify-center md:flex-row items-center gap-6 md:gap-10 w-full max-w-4xl">
               <div
-                className={`flex border-[3px] rounded-2xl p-4 bg-white justify-center gap-3 mb-6 ${
+                className={`flex flex-wrap gap-1 sm:gap-4 p-1 sm:p-3 rounded-lg md:rounded-xl bg-white ${
                   isCorrect ? "border-darkGreen" : "border-red-500"
                 }`}
               >
                 {Array.from({ length: currentWord.length }).map((_, i) => (
                   <div
                     key={i}
-                    className={`w-14 h-14 border-2 border-darkGreen rounded-xl flex items-center justify-center shadow-md ${
+                    className={`w-10 h-10 md:w-14 md:h-14  border-2 border-darkGreen rounded-xl flex items-center justify-center shadow-md ${
                       selectedLetter[i] ? "bg-darkGreen" : "bg-greenLite"
                     }`}
                   >
@@ -143,14 +150,14 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
                   {!isCorrect && (
                     <button
                       onClick={handleReset}
-                      className="absolute ml-5 top-[-25px] left-0 flex items-center justify-center w-14 h-14 bg-red-500  rounded-2xl"
+                      className="absolute  top-[-25px] left-0 flex items-center justify-center w-10 h-10 md:w-14 bg-red-500 ml-20 md:m-2 mt-2  rounded-2xl"
                     >
                       <Image
                         src="/images/resetIcon.svg"
                         alt="Reset"
                         width={30}
                         height={30}
-                        className="w-8 h-8"
+                        className="w-8 h-8  md:w-8"
                       />
                     </button>
                   )}
@@ -170,11 +177,11 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
               </div>
             </div>
 
-            <div className="flex justify-center gap-4">
+            <div className="flex flex-wrap gap-2 sm:gap-4  ">
               {scrambledLetters.map((letter, index) => (
                 <div
                   key={index}
-                  className="w-16 h-16 bg-lightGreen border-[3px] border-darkGreen text-white font-bold text-3xl flex items-center justify-center rounded-2xl cursor-pointer hover:bg-teal-600 shadow-md"
+                  className="w-10 h-10 md:w-16 md:h-16 bg-lightGreen border-[3px] border-darkGreen text-white font-bold text-2xl md:text-3xl flex items-center justify-center rounded-2xl cursor-pointer hover:bg-teal-600 shadow-md"
                   onClick={() => handleLetterClick(letter)}
                 >
                   {letter}

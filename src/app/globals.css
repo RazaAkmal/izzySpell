@@ -87,7 +87,6 @@ body {
   width:fit-content;
   margin-left: auto;
   margin-right: auto;
-  border: 4px solid skyblue;
   border-radius: 30px;
 }
 
@@ -98,13 +97,13 @@ body {
   border-radius: 200px;
   background-color: #e0f7fa; 
   color: blue;
-  border: 2px solid skyblue; 
   text-align: center;
   cursor: pointer;
   font-weight: 500;
   transition: all 0.3s ease;
   font:900;
   font-size: larger;
+  
 }
 
 .custom-pagination .rc-pagination-item:hover {
@@ -140,4 +139,47 @@ body {
 
 .custom-pagination .rc-pagination-next {
   right: -70px;
+}
+
+
+
+
+/* For mobile-specific pagination */
+.mobile-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 10px;
+  background-color: white;
+  
+  border-radius: 15px;
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.mobile-pagination .prev-button,
+.mobile-pagination .next-button {
+  background-color: white;
+  border: 2px solid skyblue;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mobile-pagination .prev-button:disabled,
+.mobile-pagination .next-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.mobile-pagination .current-page {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: blue;
 }

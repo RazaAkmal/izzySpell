@@ -108,17 +108,23 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
 
   return (
     <div className="bg-skyBlue m-5 max-h-max rounded-md p-6">
-      <div className="w-full flex flex-wrap justify-between items-center mb-4 gap-4">
+      <div className="w-full flex flex-wrap items-center justify-between gap-4 px-4 sm:px-8 mb-4">
+        {/* Left Icon */}
         <Image
           src="/images/settingIcon.svg"
-          alt="Cancel Button"
+          alt="Settings Icon"
           width={24}
           height={24}
-          className="w-8 h-8"
+          className="w-6 h-6 sm:w-8 sm:h-8"
         />
-        <p className="text-3xl font-bold">Word Group Mode</p>
+
+        {/* Title */}
+        <p className="text-xl sm:text-2xl md:text-3xl font-bold text-center flex-1">
+          Word Group Mode
+        </p>
+
         <Button
-          className="focus:outline-none"
+          className="focus:outline-none flex items-center justify-center"
           onClick={() => router.push(`/spellPractice/${listId}`)}
         >
           <Image
@@ -126,7 +132,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
             alt="Cancel Button"
             width={24}
             height={24}
-            className="w-8 h-8"
+            className="w-6 h-6 sm:w-8 sm:h-8"
           />
         </Button>
       </div>
@@ -144,20 +150,20 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
         Tap the speaker to hear the word, then type it below.
       </p>
 
-      <div className="space-y-6">
+      <div className="space-y-6 px-4 md:px-8">
         {/* Render current group of words */}
         {currentGroup.map((word, rowIndex) => (
           <div
-            className="flex items-center justify-center gap-4"
+            className="flex flex-wrap items-center justify-center gap-4 md:gap-6"
             key={rowIndex}
           >
-            {/* letters already shown at the start */}
+            {/* Letters already shown at the start */}
             {word.word
               .split("")
               .slice(0, 2)
               .map((letter, index) => (
                 <div
-                  className="w-12 h-12 flex items-center justify-center border-[3px] border-darkGreen bg-gray-100 rounded-lg font-bold text-2xl"
+                  className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center border-[3px] border-darkGreen bg-gray-100 rounded-lg font-bold text-xl md:text-2xl"
                   key={index}
                 >
                   {letter}
@@ -174,12 +180,12 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
                 onChange={(e) =>
                   handleInputChange(rowIndex, boxIndex, e.target.value)
                 }
-                className={`w-12 h-12 text-center border-[3px] rounded-lg text-2xl border-darkGreen font-bold focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                className={`w-10 h-10 md:w-12 md:h-12 text-center border-[3px] rounded-lg text-xl md:text-2xl border-darkGreen font-bold focus:outline-none focus:ring-2 focus:ring-sky-500 ${
                   validationStates[rowIndex][boxIndex + 2] === "valid"
                     ? "border-green-500"
                     : validationStates[rowIndex][boxIndex + 2] === "invalid"
                     ? "border-red-500"
-                    : "border-lightGreen "
+                    : "border-lightGreen"
                 }`}
               />
             ))}
