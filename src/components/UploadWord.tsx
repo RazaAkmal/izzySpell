@@ -6,49 +6,64 @@ import Image from "next/image";
 import Progress from "./Progress";
 import Modal from "@/components/WordListModal"; // Import the self-contained Modal component
 import { readFileContent } from "@/app/utils/fileReaderUtil";
+import { processFileWithAI } from "@/app/actions/AiService";
 
 function UploadWord({ user }: any) {
   const [file, setFile] = useState<File | null>(null); // Store the file
   const [progress, setProgress] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [fileData, setFileData] = useState<string[]>([]);
+  const [aiResponse, setAiResponse] = useState(null);
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const uploadedFile = acceptedFiles[0];
     setFile(uploadedFile);
-      const totalSteps = 10;
-      let currentStep = 0;
+    const totalSteps = 20;
+    let currentStep = 0;
 
-      const uploadInterval = setInterval(() => {
-        currentStep += 1;
-        setProgress((currentStep / totalSteps) * 100);
+    const uploadInterval = setInterval(() => {
+      currentStep += 1;
+      setProgress((currentStep / totalSteps) * 100);
 
-        if (currentStep === totalSteps) {
-          clearInterval(uploadInterval);
-        }
-      }, 1000);
+      if (currentStep === totalSteps - 1) {
+        clearInterval(uploadInterval);
+      }
+    }, 1000);
     try {
-      // Use the utility to read the file content
       const content = await readFileContent(uploadedFile);
+
       if (!content) {
-        // Handle empty or invalid content
         alert(
           "The file content is empty or could not be read. Please try another file."
         );
         setProgress(0);
         return;
       }
-      const contentArray = content.split("\n").map((word) => word.trim());
-      setFileData(contentArray);
-      clearInterval(uploadInterval);
-      setProgress(100);
-      setIsModalOpen(true);
 
+      const response = await processFileWithAI(content);
+
+      if (response.success) {
+        setProgress(100);
+        clearInterval(uploadInterval);
+        setTimeout(() => {
+          setAiResponse(response.data);
+          setIsModalOpen(true);
+        }, 1000);
+      } else {
+        alert(`${response.error}`);
+        clearInterval(uploadInterval);
+        setFile(null);
+        setProgress(0);
+      }
     } catch (error) {
-      console.error("Error reading file:", error);
-      alert("Failed to read the file. Please try again.");
+      // Catch unexpected errors during execution
+      console.error("Unexpected Error:", error);
+      alert(
+        "An unexpected error occurred while processing the file. Please try again."
+      );
+      clearInterval(uploadInterval);
+      setFile(null);
+      setProgress(0);
     }
   }, []);
-  
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -129,16 +144,15 @@ function UploadWord({ user }: any) {
             <Progress
               progress={progress}
               fileName={file?.name || "Uploading..."}
-            />{" "}
-            {/* Pass file name */}
+            />
           </div>
         )}
       </div>
 
       {/* Modal */}
-      {fileData && (
+      {aiResponse && (
         <Modal
-          fileData={fileData}
+          aiResponse={aiResponse}
           isOpen={isModalOpen}
           userId={user.id}
           onClose={() => {
