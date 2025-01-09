@@ -14,6 +14,7 @@ const CustomPagination: React.FC<CustomPaginationProps> = ({
   totalPages,
   onPageChange,
 }) => {
+  const isSmallScreen = typeof window !== "undefined" && window.innerWidth <= 768;
   return (
     <Pagination
       current={currentPage}
@@ -54,7 +55,7 @@ const CustomPagination: React.FC<CustomPaginationProps> = ({
         </span>
       }
       onChange={onPageChange}
-      className="custom-pagination"
+      className={`custom-pagination ${isSmallScreen ? "small-screen" : ""}`}
     />
   );
 };

@@ -82,7 +82,7 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
 
   return (
     <div className="bg-skyBlue m-7 mt-1 p-6 rounded-lg shadow-lg">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between  flex-col-reverse md:flex-row relative">
         <CustomButton
           label={`Page ${currentPage} / ${wordsSpell.length}`}
           variant="success"
@@ -94,15 +94,16 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
           alt="Default title"
           width={250}
           height={24}
-          className="mr-40"
+          className="md:mr-40 "
         />
-        <Button className="focus:outline-none">
+        <Button className="focus:outline-none md:relative absolute md:right-0 top-0 right-[-10]">
           <Image
             src="/images/Vector.svg"
             alt="Cancel Button"
             width={30}
             height={30}
             onClick={() => router.push(`/spellPractice/${listId}`)}
+            className=""
           />
         </Button>
       </div>
@@ -115,20 +116,20 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
         />
         {currentWord && (
           <>
-            <p className="text-2xl font-bold text-darkBlue text-center">
+            <p className="text-base md:text-2xl font-bold text-darkBlue text-center">
               Click on a letter to add it to the box and create the word!
             </p>
 
-            <div className="flex">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4">
               <div
-                className={`flex border-[3px] rounded-2xl p-4 bg-white justify-center gap-3 mb-6 ${
+                className={`flex flex-wrap border-[3px] rounded-2xl md:ml-10 p-4 bg-white justify-center gap-3 mb-6 ${
                   isCorrect ? "border-darkGreen" : "border-red-500"
                 }`}
               >
                 {Array.from({ length: currentWord.length }).map((_, i) => (
                   <div
                     key={i}
-                    className={`w-14 h-14 border-2 border-darkGreen rounded-xl flex items-center justify-center shadow-md ${
+                    className={`flex flex-wrap w-14 h-14 border-2 border-darkGreen rounded-xl  items-center justify-center shadow-md ${
                       selectedLetter[i] ? "bg-darkGreen" : "bg-greenLite"
                     }`}
                   >
@@ -138,26 +139,26 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
                   </div>
                 ))}
               </div>
-              <div className="flex items-center justify-center gap-4 mb-6">
-                <div className="relative">
-                  {!isCorrect && (
-                    <button
-                      onClick={handleReset}
-                      className="absolute ml-5 top-[-25px] left-0 flex items-center justify-center w-14 h-14 bg-red-500  rounded-2xl"
-                    >
-                      <Image
-                        src="/images/resetIcon.svg"
-                        alt="Reset"
-                        width={30}
-                        height={30}
-                        className="w-8 h-8"
-                      />
-                    </button>
-                  )}
-                </div>
+              <div className="flex items-center justify-center gap-2">
+                {!isCorrect && (
+                  <button
+                    onClick={handleReset}
+                    className=" flex items-center justify-center w-14 h-14 bg-red-500 rounded-2xl"
+                  >
+                    <Image
+                      src="/images/resetIcon.svg"
+                      alt="Reset"
+                      width={30}
+                      height={30}
+                      className="w-8 h-8"
+                    />
+                  </button>
+                )}
+              </div>
 
-                {isCorrect && selectedLetter.length === currentWord.length && (
-                  <button className="flex absolute ml-20 items-center justify-center w-14 h-14 bg-green text-white font-bold text-lg rounded-full hover:scale-110">
+              {isCorrect && selectedLetter.length === currentWord.length && (
+                <div className="flex items-center justify-center ">
+                  <button className="flex items-center justify-center md:w-14 md:h-14 text-white font-bold text-lg rounded-full ">
                     <Image
                       src="/images/completeIcon.svg"
                       alt="OK"
@@ -166,11 +167,11 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
                       className="w-10 h-10"
                     />
                   </button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
-            <div className="flex justify-center gap-4">
+            <div className="flex flex-wrap justify-center gap-3">
               {scrambledLetters.map((letter, index) => (
                 <div
                   key={index}

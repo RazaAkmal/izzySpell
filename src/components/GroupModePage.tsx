@@ -108,15 +108,19 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
 
   return (
     <div className="bg-skyBlue m-5 max-h-max rounded-md p-6">
-      <div className="w-full flex flex-wrap justify-between items-center mb-4 gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        {/* Left Icon */}
         <Image
           src="/images/settingIcon.svg"
-          alt="Cancel Button"
+          alt="Settings Icon"
           width={24}
           height={24}
           className="w-8 h-8"
         />
-        <p className="text-3xl font-bold text-purple">Word Group Mode</p>
+
+        <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-purple text-center">
+          Word Group Mode
+        </p>
         <Button
           className="focus:outline-none"
           onClick={() => router.push(`/spellPractice/${listId}`)}
@@ -140,7 +144,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
         />
       </div>
 
-      <p className="text-xl text-darkBlue mb-6 text-center">
+      <p className="text-xl text-darkBlue mb-6 text-center mt-7">
         Tap the speaker to hear the word, then type it below.
       </p>
 
@@ -148,7 +152,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
         {/* Render current group of words */}
         {currentGroup.map((word, rowIndex) => (
           <div
-            className="flex items-center justify-center gap-4"
+            className="flex flex-wrap items-center justify-start flex-row md:justify-center gap-4"
             key={rowIndex}
           >
             {/* letters already shown at the start */}
@@ -185,7 +189,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
             ))}
 
             {/* Speaker Button */}
-            <div className="flex  ">
+            
               <Button
                 className="focus:outline-none"
                 onClick={() => handleSpeak(word.word)}
@@ -225,7 +229,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
                 ) : null}
               </div>
             </div>
-          </div>
+        
         ))}
       </div>
     </div>

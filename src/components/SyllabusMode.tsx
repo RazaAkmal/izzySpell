@@ -18,7 +18,13 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [syllableBoxes, setSyllableBoxes] = useState<string[]>(["", "", "", "", ""]);
+  const [syllableBoxes, setSyllableBoxes] = useState<string[]>([
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
   const [isCorrectAnswer, setIsCorrectAnswer] = useState<boolean | null>(null);
   const [options, setOptions] = useState<string[]>([]); // State to hold the syllable options
 
@@ -31,28 +37,25 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
   const generateWrongSyllables = (correctSyllable: string) => {
     const word = correctSyllable.replace(/-/g, ""); // Remove the dash to get the raw word
     const wrongSyllables = new Set<string>();
-  
+
     while (wrongSyllables.size < 3) {
       const splitPoint = Math.floor(Math.random() * (word.length - 1)) + 1; // Random split point
-      const newSyllable = word.substring(0, splitPoint) + "-" + word.substring(splitPoint);
-  
+      const newSyllable =
+        word.substring(0, splitPoint) + "-" + word.substring(splitPoint);
+
       // Ensure the new syllable is unique and not the same as the correct one
       if (newSyllable !== correctSyllable && !wrongSyllables.has(newSyllable)) {
         wrongSyllables.add(newSyllable);
       }
     }
-  
+
     return Array.from(wrongSyllables);
   };
-  
-  
-  
-  
 
   // Create the options array (1 correct syllable + 3 wrong syllables)
   const createOptions = () => {
     const wrongSyllables = generateWrongSyllables(correctSyllable);
-    console.log(wrongSyllables)
+    console.log(wrongSyllables);
     const allOptions = [correctSyllable, ...wrongSyllables];
     return allOptions;
   };
@@ -60,12 +63,12 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
   // Set the options only when the page is loaded or when the current word changes
   useEffect(() => {
     const generatedOptions = createOptions();
-    setOptions(generatedOptions); 
+    setOptions(generatedOptions);
   }, [currentPage, syllableWords]);
 
   const handleOptionClick = (optionId: number, option: string) => {
     setSelectedOption(optionId);
-    setSyllableBoxes(option.split("")); 
+    setSyllableBoxes(option.split(""));
     checkAnswer(option);
   };
 
@@ -91,16 +94,20 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
   return (
     <>
       <div className="bg-skyBlue m-7 p-10 rounded-lg shadow-lg">
-        <div className="w-full flex items-center justify-between mb-4">
-          <p className="text-4xl font-bold text-center w-full text-purple">Syllabus Mode</p>
-          <button className="absolute right-32 focus:outline-none">
+        <div className="w-full flex  md:flex-row items-center justify-between mb-4">
+          <p className="text-2xl md:text-4xl md:ml-8 font-bold text-center w-full text-purple">
+            Syllabus Mode
+          </p>
+          <button
+            className="  md:ml-4 focus:outline-none"
+            onClick={() => router.push(`/spellPractice/${listId}`)}
+          >
             <Image
               src="/images/Vector.svg"
               alt="Cancel Button"
               width={24}
               height={24}
-              className="w-8 h-8 mb-4"
-              onClick={() => router.push(`/spellPractice/${listId}`)}
+              className="w-8 h-8"
             />
           </button>
         </div>
@@ -114,24 +121,42 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
         </div>
 
         <div className="flex flex-col items-center mt-4">
-          <p className="font-semibold text-2xl mb-2 text-gray-700">
+          <p className="text-lg text-center mt-3  font-semibold md:text-2xl mb-3 text-gray-700">
             Please choose the correct syllable word below.
           </p>
 
           {/* Syllable Boxes */}
-          <div className="flex gap-5 justify-center items-center ml-20">
-          <div className={`flex gap-2 p-5 rounded-2xl bg-white mb-4 ${isCorrectAnswer === null ? "border-darkGreen" : (isCorrectAnswer ? "border-green" : "border-red-500")} border-4`}>
+          <div className="flex flex-wrap gap-2 justify-center  md:ml-20">
+            <div
+              className={`flex flex-wrap gap-1 md:p-4 p-2 rounded-2xl bg-white mb-4 ${
+                isCorrectAnswer === null
+                  ? "border-darkGreen"
+                  : isCorrectAnswer
+                  ? "border-green"
+                  : "border-red-500"
+              } border-4`}
+            >
               {syllableBoxes.map((letter, index) => (
                 <div
                   key={index}
-                  className={`w-14 h-14 md:w-16 md:h-16 border-2 border-darkGreen rounded-xl flex items-center justify-center  ${isCorrectAnswer === null ? "border-darkGreen" : (isCorrectAnswer ? "border-green" : "border-red-500")} rounded-xl flex items-center justify-center ${letter  ? "bg-darkGreen" : "bg-greenLite"}`}
+                  className={`w-14 h-14 md:w-16 md:h-16 border-2 border-darkGreen rounded-xl flex items-center justify-center  ${
+                    isCorrectAnswer === null
+                      ? "border-darkGreen"
+                      : isCorrectAnswer
+                      ? "border-green"
+                      : "border-red-500"
+                  } rounded-xl flex items-center justify-center ${
+                    letter ? "bg-darkGreen" : "bg-greenLite"
+                  }`}
                 >
-                  <span className="text-2xl font-bold text-white">{letter}</span>
+                  <span className="text-2xl font-bold text-white">
+                    {letter}
+                  </span>
                 </div>
               ))}
             </div>
-            <div className="mb-5">
-            <TextToSpeech heightWidth={80} spell={orignalWord}  />
+            <div className="mt-2">
+              <TextToSpeech heightWidth={80} spell={orignalWord}  />
             </div>
           </div>
 
@@ -140,7 +165,7 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
               <button
                 key={index}
                 onClick={() => handleOptionClick(index, option)}
-                className={`text-darkBlue w-full px-10 py-4 border-2 rounded-2xl text-3xl text-center font-semibold ${
+                className={`text-darkBlue w-full px-4 py-3 border-2 rounded-2xl text-xl text-center font-semibold sm:text-2xl lg:text-3xl ${
                   selectedOption === index
                     ? isCorrectAnswer
                       ? "bg-green border-green"

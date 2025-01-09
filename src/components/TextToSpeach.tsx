@@ -15,8 +15,9 @@ function TextToSpeech({ spell, heightWidth }: { spell: string, heightWidth: numb
         width={heightWidth}
         height={heightWidth}
         src="/images/SpeakerIcon.svg"
-        className=" cursor-pointer"
+        className=" h-16 w-16 md:h-20 md:w-20 cursor-pointer"
         onClick={() => pronounceText(spell)}
+        
       />
     </>
   );
