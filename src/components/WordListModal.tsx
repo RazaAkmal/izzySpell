@@ -3,34 +3,37 @@ import Image from "next/image";
 import { Button } from "@headlessui/react";
 import CustomButton from "./HeadlessButton";
 import { revalidateRoute } from "@/app/actions/revalidate";
-import LoadingComponent from "./LoadingComponent";
 
 interface ModalProps {
   isOpen: boolean;
-  fileData: string[];
+  aiResponse: {
+    OriginalWords: string[];
+  };
   onClose: () => void;
   userId?: string;
 }
 
 const Modal: React.FC<ModalProps> = ({
   isOpen,
-  fileData,
+  aiResponse,
   onClose,
   userId,
 }) => {
   const [listName, setListName] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false)
   const [spellList, setSpellList] = useState<{ id: number; word: string }[]>(
     []
   );
   const [editingSpellId, setEditingSpellId] = useState<number | null>(null);
   const [editedWord, setEditedWord] = useState<string>("");
+  console.log(aiResponse)
   // Initialize spell list when the modal opens with AI response data
   useEffect(() => {
+    if (aiResponse?.OriginalWords) {
       setSpellList(
-        fileData.map((word, index) => ({ id: index + 1, word }))
+        aiResponse.OriginalWords.map((word, index) => ({ id: index + 1, word }))
       );
-  }, [fileData]);
+    }
+  }, [aiResponse]);
 
   const handleSaveEdit = (id: number) => {
     if (!editedWord.trim()) {
@@ -54,7 +57,7 @@ const Modal: React.FC<ModalProps> = ({
       );
       return;
     }
-    setLoading(true)
+
     try {
       // Example API call to save the list
       const response = await fetch("/api/save-words", {
@@ -64,7 +67,8 @@ const Modal: React.FC<ModalProps> = ({
         },
         body: JSON.stringify({
           listName,
-          content: spellList.map((spell) => spell.word), // Only send words
+          words: spellList.map((spell) => spell.word),
+          extractedWords: aiResponse,
           userId: userId,
         }),
       });
@@ -73,7 +77,7 @@ const Modal: React.FC<ModalProps> = ({
       if (!response.ok) {
         throw new Error("Failed to save the list");
       }
-      setLoading(false)
+
       setListName("");
       alert("Your list has been saved successfully!");
       onClose(); // Close the modal after saving
@@ -87,7 +91,6 @@ const Modal: React.FC<ModalProps> = ({
 
   return (
     <div>
-      {loading && <LoadingComponent />}
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-lightBlue border-2 border-sky-300 flex flex-col rounded-md shadow-lg p-4 max-w-screen-lg w-full z-10">
           {/* Close Button */}
@@ -180,7 +183,6 @@ const Modal: React.FC<ModalProps> = ({
           </div>
           <div className="flex justify-center mt-4">
             <CustomButton
-              disabled={loading}
               label="Save & Start Learning"
               fullWidth={false}
               onClick={handleSave}
