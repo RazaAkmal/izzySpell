@@ -29,7 +29,7 @@ function UploadWord({ user }: any) {
     }, 1000);
     try {
       const content = await readFileContent(uploadedFile);
-
+        
       if (!content) {
         alert(
           "The file content is empty or could not be read. Please try another file."
@@ -159,8 +159,8 @@ function UploadWord({ user }: any) {
             setFile(null);
             setProgress(0);
             setIsModalOpen(false);
-          }}
-        />
+          } } 
+          spellingLists={[]}        />
       )}
     </div>
   );

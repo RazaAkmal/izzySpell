@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Button } from "@headlessui/react";
 import CustomButton from "./HeadlessButton";
 import { revalidateRoute } from "@/app/actions/revalidate";
+import { SpellingListItem } from "@/lib/defination";
 
 interface ModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface ModalProps {
   };
   onClose: () => void;
   userId?: string;
+  spellingLists: SpellingListItem[];
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -18,14 +20,17 @@ const Modal: React.FC<ModalProps> = ({
   aiResponse,
   onClose,
   userId,
+  spellingLists,
 }) => {
   const [listName, setListName] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [isInvalid, setIsInvalid] = useState<boolean>(false);
   const [spellList, setSpellList] = useState<{ id: number; word: string }[]>(
     []
   );
   const [editingSpellId, setEditingSpellId] = useState<number | null>(null);
   const [editedWord, setEditedWord] = useState<string>("");
-  console.log(aiResponse)
+  console.log(aiResponse);
   // Initialize spell list when the modal opens with AI response data
   useEffect(() => {
     if (aiResponse?.OriginalWords) {
@@ -87,6 +92,26 @@ const Modal: React.FC<ModalProps> = ({
     }
   };
 
+  //for validation
+
+  const handleListNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputName = e.target.value;
+    setListName(inputName);
+    if (
+      spellingLists.some(
+        (list) => list.listName.toLowerCase() === inputName.toLowerCase()
+      )
+    ) {
+      setErrorMessage(
+        "A list with this name already exists. Please enter unique name."
+      );
+      setIsInvalid(true);
+    } else {
+      setErrorMessage("");
+      setIsInvalid(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -119,10 +144,19 @@ const Modal: React.FC<ModalProps> = ({
           <input
             type="text"
             placeholder="Enter the list name here..."
-            onChange={(e) => setListName(e.target.value)}
+            onChange={handleListNameChange}
             value={listName}
-            className="w-3/4 mx-auto bg-sky-100 rounded-lg border border-[#7898D2] text-[#4A6FA5] text-lg placeholder-[#A0B6D8] px-4 py-3 mt-4 focus:outline-none focus:ring-2 focus:ring-[#7898D2]"
+            className={`w-3/4 mx-auto bg-sky-100 rounded-lg border ${
+              isInvalid ? "border-red-500 border-4" : "border-[#7898D2]"
+            } text-[#4A6FA5] text-lg placeholder-[#A0B6D8] px-4 py-3 mt-4 focus:outline-none 
+              
+            }`}
           />
+          {errorMessage && (
+            <p className="text-red-500 text-sm mt-1 text-center">
+              {errorMessage}
+            </p>
+          )}
           <div className="text-center text-base mt-2">
             <p>
               Please review your list carefully, edit if needed, and then save
