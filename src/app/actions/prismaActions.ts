@@ -36,8 +36,9 @@ export const deleteList = async (listId: number | string, userId: string) => {
     await prisma.word.deleteMany({
       where: { listId: numericListId },
     });
+    await prisma.groupedWord.deleteMany({ where: { listId: numericListId } });
+    await prisma.syllableWord.deleteMany({ where: { listId: numericListId } });
 
-    // Now delete the list
     await prisma.spellingList.delete({
       where: { id: numericListId },
     });

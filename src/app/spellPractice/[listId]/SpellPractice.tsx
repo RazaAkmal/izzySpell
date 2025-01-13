@@ -25,7 +25,7 @@ export default async function WordsPage({
 
   return (
     <div className="bg-skyBlue m-3 max-h-max rounded-md p-6">
-      <div className="w-full flex flex-col md:flex-row flex-wrap justify-between items-center mb-4 gap-4">
+      <div className="w-full flex flex-col md:flex-row flex-wrap justify-between items-center gap-4">
         <div className="flex-shrink-0">
           <CustomButton
             label={`Page ${page} / ${totalPages}`}

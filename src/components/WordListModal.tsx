@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { Button } from "@headlessui/react";
 import CustomButton from "./HeadlessButton";
 import { revalidateRoute } from "@/app/actions/revalidate";
 import { SpellingListItem } from "@/lib/defination";
+import { debounce } from "lodash";
 
 interface ModalProps {
   isOpen: boolean;
@@ -23,7 +24,6 @@ const Modal: React.FC<ModalProps> = ({
   spellingLists,
 }) => {
   const [listName, setListName] = useState<string>("");
-  const [errorMessage, setErrorMessage] = useState<string>("");
   const [isInvalid, setIsInvalid] = useState<boolean>(false);
   const [spellList, setSpellList] = useState<{ id: number; word: string }[]>(
     []
@@ -64,6 +64,12 @@ const Modal: React.FC<ModalProps> = ({
     }
 
     try {
+      console.log({
+        listName,
+        words: spellList.map((spell) => spell.word),
+        extractedWords: aiResponse,
+        userId: userId,
+      });
       // Example API call to save the list
       const response = await fetch("/api/save-words", {
         method: "POST",
@@ -93,23 +99,25 @@ const Modal: React.FC<ModalProps> = ({
   };
 
   //for validation
-
+  const debouncedValidation = useMemo(() => 
+    debounce((inputName: string) => {
+      if (
+        spellingLists.some(
+          (list) => list.listName.toLowerCase() === inputName.toLowerCase()
+        )
+      ) {
+        setIsInvalid(true);
+      } else {
+        setIsInvalid(false);
+      }
+    }, 300),
+    [spellingLists, setIsInvalid] // Include all dependencies
+  );
+  
   const handleListNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputName = e.target.value;
     setListName(inputName);
-    if (
-      spellingLists.some(
-        (list) => list.listName.toLowerCase() === inputName.toLowerCase()
-      )
-    ) {
-      setErrorMessage(
-        "A list with this name already exists. Please enter unique name."
-      );
-      setIsInvalid(true);
-    } else {
-      setErrorMessage("");
-      setIsInvalid(false);
-    }
+    debouncedValidation(inputName); // Call the debounced validation function
   };
 
   if (!isOpen) return null;
@@ -147,14 +155,14 @@ const Modal: React.FC<ModalProps> = ({
             onChange={handleListNameChange}
             value={listName}
             className={`w-3/4 mx-auto bg-sky-100 rounded-lg border ${
-              isInvalid ? "border-red-500 border-4" : "border-[#7898D2]"
+              isInvalid ? "border-red-500 border-2" : "border-[#7898D2]"
             } text-[#4A6FA5] text-lg placeholder-[#A0B6D8] px-4 py-3 mt-4 focus:outline-none 
               
             }`}
           />
-          {errorMessage && (
+          {isInvalid && (
             <p className="text-red-500 text-sm mt-1 text-center">
-              {errorMessage}
+              A list with this name already exists. Please enter unique name.
             </p>
           )}
           <div className="text-center text-base mt-2">
@@ -221,6 +229,7 @@ const Modal: React.FC<ModalProps> = ({
               fullWidth={false}
               onClick={handleSave}
               size="large"
+              disabled={isInvalid}
             />
           </div>
         </div>

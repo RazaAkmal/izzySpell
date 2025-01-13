@@ -7,7 +7,6 @@ export async function POST(req: Request) {
     // Parse the request body to extract the userId and file content
     const { userId, words, extractedWords, listName } = await req.json();
 
-  
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
@@ -39,11 +38,6 @@ export async function POST(req: Request) {
               }))
           ),
         },
-      },
-      include: {
-        words: true,
-        syllableWords: true,
-        groupedWords: true,
       },
     });
     revalidatePath('/dashboard')

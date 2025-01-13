@@ -46,7 +46,7 @@ function AllListData({
       const result = await deleteList(listId, userId!);
 
       if (result.success) {
-        console.log("List deleted successfully");
+        alert(result.message)
         revalidateRoute("/lists");
       } else {
         console.error(

@@ -4,7 +4,7 @@ import { useDropzone } from "react-dropzone";
 import CustomButton from "./HeadlessButton";
 import Image from "next/image";
 import Progress from "./Progress";
-import Modal from "@/components/WordListModal"; // Import the self-contained Modal component
+import Modal from "@/components/WordListModal";
 import { readFileContent } from "@/app/utils/fileReaderUtil";
 import { processFileWithAI } from "@/app/actions/AiService";
 

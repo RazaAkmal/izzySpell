@@ -44,21 +44,21 @@ const CustomButton: React.FC<CustomButtonProps> = ({
   fullWidth = false,
   className = "",
   onClick,
-  disabled,
+  disabled = false,
   arrow,
   img,
   ...props
 }) => {
   return (
     <Button
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
       aria-disabled={disabled}
-      className={`font-Pally transition-colors 
-      shadow-[2px_2px_0px_rgba(0,0,250,0.4)] 
+      disabled={disabled}
+      className={`font-Pally transition-colors shadow-[2px_2px_0px_rgba(0,0,250,0.4)] 
       flex items-center justify-center gap-2 
       ${variantStyles[variant]} ${sizeStyles[size]} ${radiusStyle[radius]} ${
         fullWidth ? "w-full" : "w-auto"
-      } ${className}`}
+      } ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${className}`}
       {...props}
     >
       {img && (

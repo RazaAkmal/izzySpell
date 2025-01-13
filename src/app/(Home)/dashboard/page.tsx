@@ -9,10 +9,13 @@ import { SpellingListItem } from "@/lib/defination";
 import { getColorForProgress } from "@/app/utils/colors";
 
 async function fetchSpellingLists(userId: any) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL; 
-  const response = await fetch(`${baseUrl}/api/spelling-list?userId=${userId}`, {
-    cache: 'no-store'
-  });
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  const response = await fetch(
+    `${baseUrl}/api/spelling-list?userId=${userId}`,
+    {
+      cache: "no-store",
+    }
+  );
   const { spellingLists } = await response.json();
   return (
     spellingLists?.map((item: SpellingListItem) => ({
@@ -31,19 +34,22 @@ const DashboardPage = async () => {
   }
 
   const spellingLists = await fetchSpellingLists(user.id);
- 
-  // Fetch data for the list (API request on the server side)
   
   return (
     <DashboardLayout showFooter={true}>
-      <div className="flex flex-col md:flex-row justify-around gap-2 m-2">
-        {user ? <UploadWord user={user} /> : <div>Loading...</div>}
-        <WordList spellingLists={spellingLists} />
-      </div>
-      {user ?<div className="p-4 bg-skyBlue rounded-2xl shadow-md m-2 md:m-5 mt-3">
-      {/* Pass data to client component */}
-      <ClientList spellingLists={spellingLists} />
-    </div> : <div>Loading...</div>}
+      {user ? (
+        <div>
+          <div className="flex flex-col md:flex-row justify-around gap-2 m-2">
+            <UploadWord user={user} />
+            <WordList user={user} spellingLists={spellingLists} />
+          </div>
+          <div className="p-4 bg-skyBlue rounded-2xl shadow-md m-2 md:m-5 mt-3">
+            <ClientList spellingLists={spellingLists} />
+          </div>
+        </div>
+      ) : (
+        <div>Loading ...</div>
+      )}
     </DashboardLayout>
   );
 };
