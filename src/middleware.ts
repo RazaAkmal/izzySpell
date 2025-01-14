@@ -3,18 +3,9 @@ import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
 export async function middleware(request: NextRequest) {
-  const sessionToken = request.cookies.get(`__Secure-authjs.session-token`); 
-
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
-
-  console.log('Middleware Debug:', {
-    token,
-    headers: request.headers,
-    sessionToken, // Log the sessionToken directly
-  });
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  console.log(token, 'token from middleware',  process.env.NEXTAUTH_SECRET )
+  console.log(request.headers.get('cookie'), 'cookie');
 
   const url = request.nextUrl;
   // If the user has a valid token and tries to access the login/signup, redirect to dashboard

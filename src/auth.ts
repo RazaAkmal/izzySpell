@@ -17,17 +17,6 @@ async function getUser(name: string): Promise<User | null> {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  cookies: {
-    sessionToken: {
-      name: `__Secure-authjs.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production' || !!process.env.VERCEL, 
-      },
-    },
-  },
   pages: {
     signIn: '/login',
   },
