@@ -16,8 +16,6 @@ import bcrypt from 'bcryptjs';
  }
 export default { providers: [
     Credentials({
-      // You can specify which fields should be submitted, by adding keys to the `credentials` object.
-      // e.g. domain, username, password, 2FA token, etc.
       credentials: {
         name: {},
         password: {},
@@ -32,15 +30,10 @@ export default { providers: [
           const { name, password } = parsedCredentials.data;
           const user = await getUser(name);
           if (!user) {
-            // No user found, so this is their first attempt to login
-            // Optionally, this is also the place you could do a user registration
             throw new Error("Invalid credentials.")
           }
           const passwordsMatch = await bcrypt.compare(password, user.password);
- 
           if (passwordsMatch) return user;
-          
-
         }
         return null
       },

@@ -44,12 +44,7 @@ const ProfileForm = ({onComplete, userId}: Props) => {
           const errorData = await response.json();
           throw new Error(errorData.error || "Profile update failed");
         }
-
-        const user = await response.json();
-
-        if (user.profileUpdated) {
           onComplete()
-        }
       }
     } catch (error) {
       console.error("Profile update failed:", error);

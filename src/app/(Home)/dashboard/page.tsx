@@ -34,7 +34,6 @@ const DashboardPage = async () => {
   }
 
   const spellingLists = await fetchSpellingLists(user.id);
-  
   return (
     <DashboardLayout showFooter={true}>
       {user ? (

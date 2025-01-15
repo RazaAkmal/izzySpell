@@ -27,7 +27,7 @@ export default function LoginPage() {
         <SignupForm />
         <p className="mt-4 text-center text-purple text-sm">
           Already have an account?{" "}
-          <Link href="/login" className="font-bold hover:underline">
+          <Link href="/sign-in" className="font-bold hover:underline">
             Login
           </Link>
         </p>

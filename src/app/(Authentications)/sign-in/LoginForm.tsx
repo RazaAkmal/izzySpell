@@ -5,46 +5,20 @@ import InputField from "@/components/Input";
 import Link from "next/link";
 import React from "react";
 import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
 import { loginFormValues } from "@/lib/defination";
-import { signIn } from "@/auth";
 import { useActionState } from "react";
 import { authenticate } from "@/app/actions/authenticate";
 
 const LoginForm = () => {
   const {
     register,
-    handleSubmit,
     formState: { errors },
   } = useForm<loginFormValues>();
-  const router = useRouter();
   const [errorMessage, formAction, isPending] = useActionState(
     authenticate,
     undefined
   );
-  const submitForm = async (data: loginFormValues) => {
-    const { name, password } = data;
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ name, password }),
-    });
 
-    const user = await response.json();
-
-    if (response.ok) {
-      if (!user.profileUpdated) {
-        router.push(`profile/${user.id}`);
-      } else {
-        router.push("/dashboard");
-      }
-      console.log("Login successful:", data);
-    } else {
-      console.error("Login failed:");
-    }
-  };
   return (
     <form
       action={formAction}
@@ -81,11 +55,11 @@ const LoginForm = () => {
           fullWidth
         />
       </div>
-      {errorMessage && (
+      {/* {errorMessage && (
         <>
           <p className="text-sm text-red-500">{errorMessage}</p>
         </>
-      )}
+      )} */}
     </form>
   );
 };
