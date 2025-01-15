@@ -13,6 +13,7 @@ type Props = {
   requiredValue: boolean;
   errors: any;
   className?: string;
+  rules? : any
 };
 export default function InputField({
   title,
@@ -24,6 +25,7 @@ export default function InputField({
   requiredValue,
   errors,
   className,
+  rules
 }: Props) {
   return (
     <div className="w-full max-w-md">
@@ -49,6 +51,7 @@ export default function InputField({
               ? "This Field is required"
               : "",
             shouldUnregister: true,
+            ...rules,
             ...(type &&
               type === "email" && {
                 pattern: {

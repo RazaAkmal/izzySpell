@@ -3,7 +3,7 @@ import CustomButton from "@/components/HeadlessButton";
 import InputField from "@/components/Input";
 import { SignupFormValues } from "@/lib/defination";
 import { useRouter } from "next/navigation";
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 
 const SignupForm = () => {
@@ -11,12 +11,14 @@ const SignupForm = () => {
     register,
     handleSubmit,
     formState: { errors },
+    watch,
   } = useForm<SignupFormValues>();
   const router = useRouter();
-
+  const password = watch("password"); // Watch the password field
+  const [loading, setLoading] = useState<boolean>(false);
   const submitForm = async (data: SignupFormValues) => {
+    setLoading(true)
     try {
-      // Make a POST request to the signup API endpoint
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: {
@@ -33,6 +35,7 @@ const SignupForm = () => {
         const errorData = await response.json();
         throw new Error(errorData.error || "Signup failed");
       }
+      setLoading(false)
 
       const user = await response.json();
       router.push(`/profile/${user.id}`);
@@ -71,9 +74,13 @@ const SignupForm = () => {
         type="password"
         requiredValue={true}
         placeholder="Confirm Password"
+        rules={{
+          validate: (value: any) =>
+            value === password || "Passwords do not match",
+        }}
       />
       <div className="w-full max-w-md px-4">
-        <CustomButton type="submit" label="Signup" fullWidth />
+        <CustomButton disabled={loading} type="submit" label="Signup" fullWidth />
       </div>
     </form>
   );

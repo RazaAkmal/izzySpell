@@ -55,11 +55,11 @@ const LoginForm = () => {
           fullWidth
         />
       </div>
-      {/* {errorMessage && (
+      {errorMessage && (
         <>
           <p className="text-sm text-red-500">{errorMessage}</p>
         </>
-      )} */}
+      )}
     </form>
   );
 };

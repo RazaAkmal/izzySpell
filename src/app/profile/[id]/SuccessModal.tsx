@@ -21,7 +21,10 @@ export default function SuccessModal() {
       <div className="flex w-full justify-center">
         <div className="w-full max-w-md px-4">
           <CustomButton
-            onClick={()=> router.push('/dashboard')}
+            onClick={(event)=> {
+              event.preventDefault();
+              router.push('/dashboard')}
+            }
             className="border-white"
             type="submit"
             label="Start Learning"
