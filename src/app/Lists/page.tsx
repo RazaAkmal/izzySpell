@@ -2,24 +2,24 @@ import DashboardLayout from "@/components/DashboardLayout";
 import React from "react";
 import Image from "next/image";
 
-import { auth } from "@/auth";
-import { Session } from "next-auth";
-import AllListData from "@/components/Listdata";
-import { fetchSpellingLists } from "../actions/prismaActions";
-import { redirect } from "next/navigation";
+// import { auth } from "@/auth";
+// import { Session } from "next-auth";
+// import AllListData from "@/components/Listdata";
+// import { fetchSpellingLists } from "../actions/prismaActions";
+// import { redirect } from "next/navigation";
 
 const AllListsPage = async () => {
-  const session = (await auth()) as Session | null;
-  if (!session) { 
-    redirect('/sign-in'); 
-  }
-  const user = session?.user;
+  // const session = (await auth()) as Session | null;
+  // if (!session) { 
+  //   redirect('/sign-in'); 
+  // }
+  // const user = session?.user;
 
-  if (!user) {
-    return <div>Loading...</div>;
-  }
+  // if (!user) {
+  //   return <div>Loading...</div>;
+  // }
 
-  const spellingWithColors = user?.id ? await fetchSpellingLists(user.id) : [];
+  // const spellingWithColors = user?.id ? await fetchSpellingLists(user.id) : [];
   
   return (
     <DashboardLayout showFooter={false}>
@@ -40,7 +40,7 @@ const AllListsPage = async () => {
           <div className="col-span-4 text-center">Actions</div>
         </div>
         </div>
-        {user ? <AllListData userId={user.id} spellingLists={spellingWithColors} /> : <div>Loading...</div>}
+        {/* {user ? <AllListData userId={user.id} spellingLists={spellingWithColors} /> : <div>Loading...</div>} */}
       </div>
     </DashboardLayout>
   );
