@@ -6,9 +6,13 @@ import { auth } from "@/auth";
 import { Session } from "next-auth";
 import AllListData from "@/components/Listdata";
 import { fetchSpellingLists } from "../actions/prismaActions";
+import { redirect } from "next/navigation";
 
 const AllListsPage = async () => {
   const session = (await auth()) as Session | null;
+  if (!session) { 
+    redirect('/sign-in'); 
+  }
   const user = session?.user;
 
   if (!user) {
