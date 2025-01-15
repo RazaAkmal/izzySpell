@@ -178,11 +178,6 @@ export async function fetchSpellingLists(userId: string) {
         color: getColorForProgress(item.progress),
       })) || []
 
-    // Check if the user has spelling lists
-    if (spellingLists.length === 0) {
-      throw new Error("No spelling lists found for this user.");
-    }
-
     // Return the fetched spelling lists
     return spellingLists;
   } catch (error) {
