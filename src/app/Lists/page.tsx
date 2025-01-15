@@ -4,9 +4,8 @@ import Image from "next/image";
 
 import { auth } from "@/auth";
 import { Session } from "next-auth";
-import { SpellingListItem } from "@/lib/defination";
-import { getColorForProgress } from "../utils/colors";
 import AllListData from "@/components/Listdata";
+import { fetchSpellingLists } from "../actions/prismaActions";
 
 const AllListsPage = async () => {
   const session = (await auth()) as Session | null;
@@ -15,22 +14,9 @@ const AllListsPage = async () => {
   if (!user) {
     return <div>Loading...</div>;
   }
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
-  const response = await fetch(
-    `${baseUrl}/api/spelling-list?userId=${user.id}`,
-    {
-      cache: "no-store",
-    }
-  );
-
-  const { spellingLists } = await response.json();
-
-  const spellingWithColors = spellingLists.map((item: SpellingListItem) => ({
-    ...item,
-    color: getColorForProgress(item.progress),
-  }));
-
+  const spellingWithColors = user?.id ? await fetchSpellingLists(user.id) : [];
+  
   return (
     <DashboardLayout showFooter={false}>
       <div className="bg-skyBlue rounded-2xl md:m-6 px-8 py-3 md:px-4">

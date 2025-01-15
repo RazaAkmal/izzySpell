@@ -1,6 +1,8 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { getColorForProgress } from "../utils/colors";
+import { SpellingList } from "@prisma/client";
 
 export const deleteList = async (listId: number | string, userId: string) => {
   try {
@@ -157,3 +159,34 @@ export async function markWordsAsStudied(wordIds: number[]) {
   }
 }
 
+export async function fetchSpellingLists(userId: string) {
+  try {
+    if (!userId) {
+      throw new Error("Invalid input: 'userId' is required.");
+    }
+
+    // Fetch only the spelling list details for the user without associated words or groupedWords
+    const spellingListsWithoutColor = await prisma.spellingList.findMany({
+      where: { userId },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    const spellingLists = spellingListsWithoutColor?.map((item: SpellingList) => ({
+        ...item,
+        color: getColorForProgress(item.progress),
+      })) || []
+
+    // Check if the user has spelling lists
+    if (spellingLists.length === 0) {
+      throw new Error("No spelling lists found for this user.");
+    }
+
+    // Return the fetched spelling lists
+    return spellingLists;
+  } catch (error) {
+    console.error("Error fetching spelling lists:", error);
+    throw new Error("Internal server error. Please try again later.");
+  }
+}

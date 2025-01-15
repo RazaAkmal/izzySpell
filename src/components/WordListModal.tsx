@@ -25,6 +25,7 @@ const Modal: React.FC<ModalProps> = ({
 }) => {
   const [listName, setListName] = useState<string>("");
   const [isInvalid, setIsInvalid] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [spellList, setSpellList] = useState<{ id: number; word: string }[]>(
     []
   );
@@ -62,7 +63,7 @@ const Modal: React.FC<ModalProps> = ({
       );
       return;
     }
-
+    setLoading(true)
     try {
       console.log({
         listName,
@@ -91,8 +92,10 @@ const Modal: React.FC<ModalProps> = ({
 
       setListName("");
       alert("Your list has been saved successfully!");
+      setLoading(false)
       onClose(); // Close the modal after saving
     } catch (error) {
+      setLoading(false)
       console.error("Error saving the list:", error);
       alert("An error occurred while saving the list. Please try again.");
     }
@@ -229,7 +232,7 @@ const Modal: React.FC<ModalProps> = ({
               fullWidth={false}
               onClick={handleSave}
               size="large"
-              disabled={isInvalid}
+              disabled={isInvalid || loading}
             />
           </div>
         </div>

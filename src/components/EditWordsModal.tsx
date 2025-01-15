@@ -19,6 +19,7 @@ const EditWordModal: React.FC<ModalProps> = ({
   userId,
 }) => {
   const [listName, setListName] = useState<string>(listWithWords.listName);
+  const [loading, setLoading] = useState<boolean>(false)
   const [spellList, setSpellList] = useState(listWithWords.words);
   const [modifiedWords, setModifiedWords] = useState<
     { id: number; word: string }[]
@@ -82,6 +83,7 @@ const EditWordModal: React.FC<ModalProps> = ({
   };
 
   const handleSave = async () => {
+    setLoading(true);
     if (
       modifiedWords.some((word) => !word.word.trim()) ||
       !listName.trim() ||
@@ -116,9 +118,11 @@ const EditWordModal: React.FC<ModalProps> = ({
       await revalidateRoute("/lists");
       setModifiedWords([]);
       setNewWords([]);
+      setLoading(false)
       onClose();
     } catch (error) {
       console.error("Error saving the list:", error);
+      setLoading(false)
       alert("An error occurred while saving the list. Please try again.");
     }
   };
@@ -227,6 +231,7 @@ const EditWordModal: React.FC<ModalProps> = ({
               label="Save & Start Learning"
               fullWidth={false}
               onClick={handleSave}
+              disabled={loading}
               size="large"
             />
           </div>

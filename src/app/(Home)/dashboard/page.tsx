@@ -5,25 +5,7 @@ import WordList from "@/components/WordList";
 import { auth } from "@/auth";
 import { Session } from "next-auth";
 import ClientList from "@/components/ClientList";
-import { SpellingListItem } from "@/lib/defination";
-import { getColorForProgress } from "@/app/utils/colors";
-
-async function fetchSpellingLists(userId: any) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-  const response = await fetch(
-    `${baseUrl}/api/spelling-list?userId=${userId}`,
-    {
-      cache: "no-store",
-    }
-  );
-  const { spellingLists } = await response.json();
-  return (
-    spellingLists?.map((item: SpellingListItem) => ({
-      ...item,
-      color: getColorForProgress(item.progress),
-    })) || []
-  );
-}
+import { fetchSpellingLists } from "@/app/actions/prismaActions";
 
 const DashboardPage = async () => {
   const session = (await auth()) as Session | null;
@@ -33,7 +15,9 @@ const DashboardPage = async () => {
     return <div>Loading...</div>;
   }
 
-  const spellingLists = await fetchSpellingLists(user.id);
+
+  const spellingLists = user?.id ? await fetchSpellingLists(user.id) : [];
+
   return (
     <DashboardLayout showFooter={true}>
       {user ? (

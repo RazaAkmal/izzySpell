@@ -1,4 +1,4 @@
-import { Word } from "@prisma/client";
+import { SpellingList, Word } from "@prisma/client";
 
 export type User = {
   id: string; name: string; password: string; firstName: string | null; lastName: string | null; age: string | null; grade: string | null; profileUpdated: boolean; createdAt: Date; updatedAt: Date;
@@ -31,11 +31,9 @@ export type CardDetailsFormValues = {
 };
 
 
-export type SpellingListItem = {
+export interface SpellingListItem  extends SpellingList {
   id: number;
   listName: string;
-  createdAt: string;  
-  updatedAt: string;  
   userId: string;
   progress: number;
   color?: string;  
