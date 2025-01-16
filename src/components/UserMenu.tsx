@@ -11,7 +11,7 @@ const UserMenu = ({ userId }: { userId: string | undefined }) => {
     <Menu as="div" className="relative">
       <MenuButton className="focus:outline-none">
         <Image
-          src="/images/Dropdown.svg"
+          src="/images/DropDown.svg"
           alt="Dropdown Button"
           width={30}
           height={30}
