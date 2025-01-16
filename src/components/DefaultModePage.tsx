@@ -120,9 +120,9 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
               Click on a letter to add it to the box and create the word!
             </p>
 
-            <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-2">
               <div
-                className={`flex flex-wrap border-[3px] rounded-2xl md:ml-10 p-4 bg-white justify-center gap-3 mb-6 ${
+                className={`flex flex-wrap border-[3px] rounded-2xl md:ml-4 p-4 bg-white justify-center gap-3 ${
                   isCorrect ? "border-darkGreen" : "border-red-500"
                 }`}
               >
@@ -139,18 +139,17 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
                   </div>
                 ))}
               </div>
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex items-center justify-center">
                 {!isCorrect && (
                   <button
                     onClick={handleReset}
-                    className=" flex items-center justify-center w-14 h-14 bg-red-500 rounded-2xl"
+                    className=" flex items-center justify-center rounded-2xl"
                   >
                     <Image
                       src="/images/resetIcon.svg"
                       alt="Reset"
-                      width={30}
-                      height={30}
-                      className="w-8 h-8"
+                      width={60}
+                      height={60}
                     />
                   </button>
                 )}
@@ -158,13 +157,12 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
 
               {isCorrect && selectedLetter.length === currentWord.length && (
                 <div className="flex items-center justify-center ">
-                  <button className="flex items-center justify-center md:w-14 md:h-14 text-white font-bold text-lg rounded-full ">
+                  <button className="flex items-center justify-center text-white font-bold text-lg rounded-full ">
                     <Image
                       src="/images/completeIcon.svg"
                       alt="OK"
-                      width={30}
-                      height={30}
-                      className="w-10 h-10"
+                      width={60}
+                      height={60}
                     />
                   </button>
                 </div>

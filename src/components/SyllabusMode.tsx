@@ -126,9 +126,9 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
           </p>
 
           {/* Syllable Boxes */}
-          <div className="flex flex-wrap gap-2 justify-center  md:ml-20">
+          <div className="flex flex-wrap gap-4 justify-center items-center md:ml-20">
             <div
-              className={`flex flex-wrap gap-1 md:p-4 p-2 rounded-2xl bg-white mb-4 ${
+              className={`flex flex-wrap gap-1 md:p-4 p-2 rounded-2xl bg-white ${
                 isCorrectAnswer === null
                   ? "border-darkGreen"
                   : isCorrectAnswer
@@ -155,9 +155,7 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
                 </div>
               ))}
             </div>
-            <div className="mt-2">
-              <TextToSpeech heightWidth={80} spell={orignalWord}  />
-            </div>
+            <TextToSpeech heightWidth={60} spell={orignalWord}  />
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-6">

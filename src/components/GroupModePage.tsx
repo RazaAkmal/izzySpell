@@ -202,32 +202,25 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
                   className="w-12 h-12 cursor-pointer"
                 />
               </Button>
-              <div
-                className="mt-1 mb-12 m-4
-            "
-              >
                 {validationStates[rowIndex].every(
                   (state) => state === "valid"
                 ) ? (
                   <Image
                     src="/images/completeIcon.svg"
                     alt="Correct"
-                    width={44}
-                    height={44}
-                    className="absolute "
+                    width={55}
+                    height={55}
                   />
                 ) : validationStates[rowIndex].includes("invalid") ? (
                   <Button onClick={() => handleReset(rowIndex)}>
                     <Image
                       src="/images/resetIcon.svg"
                       alt="Reset"
-                      width={35}
-                      height={35}
-                      className="absolute "
+                      width={55}
+                      height={55}
                     />
                   </Button>
                 ) : null}
-              </div>
             </div>
         
         ))}
