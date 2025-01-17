@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma"; // Import your Prisma client instance
-import { revalidatePath } from 'next/cache'
+import { revalidatePath } from "next/cache";
 
 export async function PATCH(req: Request) {
   try {
     // Parse the request body
-    const { userId, listId, listName, words } = await req.json();
+    const { userId, listId, listName, words, extractedWords } = await req.json();
 
     // Validate the input
     if (!userId || !listId || !listName || !Array.isArray(words)) {
@@ -23,11 +23,8 @@ export async function PATCH(req: Request) {
 
     // Verify the spelling list exists for the user
     const spellingList = await prisma.spellingList.findUnique({
-      where: {
-        id: listId,
-        userId: userId,
-      },
-      include: { words: true },
+      where: { id: listId, userId },
+      include: { words: true, syllableWords: true, groupedWords: true },
     });
 
     if (!spellingList) {
@@ -37,16 +34,18 @@ export async function PATCH(req: Request) {
     // Update the spelling list name
     await prisma.spellingList.update({
       where: { id: listId },
-      data: { listName: listName },
+      data: { listName },
     });
 
-    // Track updated words
-    const updatedWords = [];
+    // Delete existing related data (syllableWords, groupedWords)
+    await prisma.syllableWord.deleteMany({ where: { listId } });
+    await prisma.groupedWord.deleteMany({ where: { listId } });
 
-    // Iterate through the provided words to update them
+    // Update or create words
+    const updatedWords = [];
     for (const word of words) {
       if (word.id) {
-        // Existing word - update logic
+        // Update existing word if changed
         const existingWord = spellingList.words.find((w) => w.id === word.id);
         if (existingWord && existingWord.word !== word.word) {
           const updatedWord = await prisma.word.update({
@@ -56,39 +55,50 @@ export async function PATCH(req: Request) {
           updatedWords.push(updatedWord);
         }
       } else if (word.word) {
-        // New word - create logic
+        // Create new word
         const newWord = await prisma.word.create({
           data: {
             word: word.word,
-            listId: listId,
+            listId,
+            type: "original",
           },
-        });
-        const totalWords = await prisma.word.count({
-          where: { listId: listId },
-        });
-        
-        const studiedWords = await prisma.word.count({
-          where: { listId: listId, studied: true },
-        });
-        
-        const progress = Math.round((studiedWords / totalWords) * 100);
-        
-        // Update the progress in the spelling list
-        await prisma.spellingList.update({
-          where: { id: listId },
-          data: { progress },
         });
         updatedWords.push(newWord);
       }
     }
-    
+
+    // Generate and save new syllable words
+    const newSyllableWords = await prisma.syllableWord.createMany({
+      data: extractedWords.SyllabusWords.map((syllableWord: string, index: number) => ({
+        syllables: syllableWord,
+        word: extractedWords.OriginalWords[index],
+        listId,
+      })),
+    });
+
+    // Generate and save new grouped words
+    const newGroupedWords = await prisma.groupedWord.createMany({
+      data: Object.entries(extractedWords.GroupedWords as Record<string, string[]>).flatMap(
+        ([groupName, groupWords]) =>
+          groupWords.map((word: string) => ({
+            groupName,
+            word,
+            listId,
+          }))
+      ),
+    });
 
     // Revalidate the path after the update
-    revalidatePath('/lists')
+    revalidatePath("/lists");
 
     // Return the response with updated list and words
     return NextResponse.json(
-      { message: "Spelling list and words updated successfully!" },
+      {
+        message: "Spelling list, grouped words, and syllable words updated successfully!",
+        updatedWords,
+        newSyllableWords,
+        newGroupedWords,
+      },
       { status: 200 }
     );
   } catch (error) {

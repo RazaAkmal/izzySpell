@@ -5,6 +5,7 @@ import CustomButton from "./HeadlessButton";
 import { revalidateRoute } from "@/app/actions/revalidate";
 import { SpellingListItem } from "@/lib/defination";
 import { debounce } from "lodash";
+import { processFileWithAI } from "@/app/actions/AiService";
 
 interface ModalProps {
   isOpen: boolean;
@@ -31,8 +32,7 @@ const Modal: React.FC<ModalProps> = ({
   );
   const [editingSpellId, setEditingSpellId] = useState<number | null>(null);
   const [editedWord, setEditedWord] = useState<string>("");
-  console.log(aiResponse);
-  // Initialize spell list when the modal opens with AI response data
+
   useEffect(() => {
     if (aiResponse?.OriginalWords) {
       setSpellList(
@@ -56,6 +56,37 @@ const Modal: React.FC<ModalProps> = ({
     setEditedWord("");
   };
 
+  const saveWordsList = async (finalAiResponse: any) => {
+    try {
+    const response = await fetch("/api/save-words", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        listName,
+        words: spellList.map((spell) => spell.word),
+        extractedWords: finalAiResponse,
+        userId: userId,
+      }),
+    });
+    await revalidateRoute("/dashboard");
+
+    if (!response.ok) {
+      throw new Error("Failed to save the list");
+    }
+
+    setListName("");
+    alert("Your list has been saved successfully!");
+    setLoading(false)
+    onClose(); // Close the modal after saving
+  } catch (error) {
+    setLoading(false)
+    console.error("Error saving the list:", error);
+    alert("An error occurred while saving the list. Please try again.");
+  }
+  }
+
   const handleSave = async () => {
     if (spellList.some((spell) => !spell.word.trim()) || !listName.trim()) {
       alert(
@@ -63,41 +94,35 @@ const Modal: React.FC<ModalProps> = ({
       );
       return;
     }
+    const normalizedOriginalWords = [...(aiResponse?.OriginalWords || [])]
+    .map((word) => word.trim().toLowerCase())
+    .sort();
+  const normalizedSpellList = [...spellList]
+    .map((spell) => spell.word.trim().toLowerCase())
+    .sort();
+
+  const isEdited = !normalizedOriginalWords.every(
+    (word, index) => word === normalizedSpellList[index]
+  );
+    const spellContent = spellList.map((spell) => spell.word)
+    const content = spellContent.join(", "); // Join elements with a comma and a space
     setLoading(true)
     try {
-      console.log({
-        listName,
-        words: spellList.map((spell) => spell.word),
-        extractedWords: aiResponse,
-        userId: userId,
-      });
-      // Example API call to save the list
-      const response = await fetch("/api/save-words", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          listName,
-          words: spellList.map((spell) => spell.word),
-          extractedWords: aiResponse,
-          userId: userId,
-        }),
-      });
-      await revalidateRoute("/dashboard");
-
-      if (!response.ok) {
-        throw new Error("Failed to save the list");
+      if (isEdited) {
+        const response = await processFileWithAI(content);
+        if (!response.success) {
+          alert(`${response.error}`);
+          return
+        }
+        saveWordsList(response.data);
+        return;
+      } else {
+        saveWordsList(aiResponse)
       }
-
-      setListName("");
-      alert("Your list has been saved successfully!");
-      setLoading(false)
-      onClose(); // Close the modal after saving
     } catch (error) {
       setLoading(false)
       console.error("Error saving the list:", error);
-      alert("An error occurred while saving the list. Please try again.");
+      alert("An unexpected error occurred while processing the file. Please try again.");
     }
   };
 
@@ -192,7 +217,7 @@ const Modal: React.FC<ModalProps> = ({
                     <input
                       value={editedWord}
                       onChange={(e) => setEditedWord(e.target.value)}
-                      className="text-gray-700 font-semibold border-b-2 bg-transparent border-gray-200 p-1 focus:outline-none focus:border-blue-500"
+                      className="text-gray-700 font-semibold w-[80%] border-b-2 bg-transparent border-gray-200 p-1 focus:outline-none focus:border-blue-500"
                     />
                   ) : (
                     <span className="text-gray-700 font-semibold">

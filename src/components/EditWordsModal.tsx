@@ -4,6 +4,7 @@ import { Button } from "@headlessui/react";
 import CustomButton from "./HeadlessButton";
 import { SpellingListWithWords } from "@/lib/defination";
 import { revalidateRoute } from "@/app/actions/revalidate";
+import { processFileWithAI } from "@/app/actions/AiService";
 
 interface ModalProps {
   isOpen: boolean;
@@ -19,7 +20,7 @@ const EditWordModal: React.FC<ModalProps> = ({
   userId,
 }) => {
   const [listName, setListName] = useState<string>(listWithWords.listName);
-  const [loading, setLoading] = useState<boolean>(false)
+  const [loading, setLoading] = useState<boolean>(false);
   const [spellList, setSpellList] = useState(listWithWords.words);
   const [modifiedWords, setModifiedWords] = useState<
     { id: number; word: string }[]
@@ -63,22 +64,27 @@ const EditWordModal: React.FC<ModalProps> = ({
   }, [listWithWords]);
 
   const handleDelete = async (wordId: number) => {
-    const confirmed = confirm('Are you sure you want to delete this word?');
+    const confirmed = confirm("Are you sure you want to delete this word?");
     if (!confirmed) return;
-
+    setLoading(true)
     try {
       // Call the delete API route
-      await fetch(`/api/delete-word?wordId=${wordId}&&listId=${listWithWords.id}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      await fetch(
+        `/api/delete-word?wordId=${wordId}&&listId=${listWithWords.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
       setSpellList(spellList.filter((word) => word.id !== wordId));
+      setLoading(false)
       await revalidateRoute("/lists");
     } catch (error) {
-      console.error('Error deleting word:', error);
-      alert('Failed to delete the word. Please try again.');
+      setLoading(false)
+      console.error("Error deleting word:", error);
+      alert("Failed to delete the word. Please try again.");
     }
   };
 
@@ -92,38 +98,73 @@ const EditWordModal: React.FC<ModalProps> = ({
       alert("Please ensure all words are valid and the list name is provided.");
       return;
     }
+    // Check if the spelling list has changed
+    const originalWordsString = JSON.stringify(
+      listWithWords.words.map((word) => word.word)
+    );
+    const currentWordsString = JSON.stringify(
+      spellList.map((word) => word.word)
+    );
+
+    const hasWordsChanged =
+      originalWordsString !== currentWordsString || newWords.length > 0;
 
     try {
-      const response = await fetch("/api/update-words", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          listId: listWithWords.id,
-          listName,
-          words: [
-            ...modifiedWords,
-            ...newWords.map((word) => ({ id: null, word })),
-          ],
-          userId,
-        }),
-      });
+      if (hasWordsChanged) {
+        const mergedWordsString = `${currentWordsString} ${newWords.join(" ")}`;
 
-      if (!response.ok) {
-        throw new Error("Failed to save the list");
+        const response = await processFileWithAI(mergedWordsString);
+        const AIResponse = await response.data;
+        if (!response.success) {
+          alert(`${response.error}`);
+          return;
+        }
+        try {
+          const requestData = {
+            userId,
+            listId: listWithWords.id,
+            listName,
+            words: [
+              ...modifiedWords,
+              ...newWords.map((word) => ({ id: null, word })),
+            ],
+            extractedWords: AIResponse, // Object containing syllable and grouped words
+          };
+          const response = await fetch("/api/update-words", {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(requestData),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to save the list");
+          }
+
+          alert("Your changes have been saved successfully!");
+          await revalidateRoute("/lists");
+          setModifiedWords([]);
+          setNewWords([]);
+          setLoading(false);
+          onClose();
+        } catch (error) {
+          console.error("Error saving the list:", error);
+          setLoading(false);
+          alert("An error occurred while saving the list. Please try again.");
+        }
+        return;
+      } else {
+        alert("There is no change to save");
+        setLoading(false);
+        return;
       }
-
-      alert("Your changes have been saved successfully!");
-      await revalidateRoute("/lists");
-      setModifiedWords([]);
-      setNewWords([]);
-      setLoading(false)
-      onClose();
     } catch (error) {
+      setLoading(false);
       console.error("Error saving the list:", error);
-      setLoading(false)
-      alert("An error occurred while saving the list. Please try again.");
+      alert(
+        "An unexpected error occurred while processing the file. Please try again."
+      );
     }
   };
 
@@ -195,7 +236,7 @@ const EditWordModal: React.FC<ModalProps> = ({
                     width={30}
                     height={30}
                     className="cursor-pointer"
-                    onClick={()=> handleDelete(spell.id)}
+                    onClick={() => handleDelete(spell.id)}
                   />
                 </div>
               ))}
