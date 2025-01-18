@@ -8,12 +8,17 @@ import { useForm } from "react-hook-form";
 import { loginFormValues } from "@/lib/defination";
 import { useActionState } from "react";
 import { authenticate } from "@/app/actions/authenticate";
+import { useSearchParams } from "next/navigation";
 
 const LoginForm = () => {
+  const searchParams = useSearchParams();
+  const userName = searchParams.get("userName") || ""; 
   const {
     register,
     formState: { errors },
-  } = useForm<loginFormValues>();
+  } = useForm<loginFormValues>({
+    defaultValues: { name: userName || '' },
+  });
   const [errorMessage, formAction, isPending] = useActionState(
     authenticate,
     undefined

@@ -1,5 +1,5 @@
 import React from "react";
-import Image from "next/image"; // Import Image from next/image
+import Image from "next/image";
 import LoginForm from "./LoginForm";
 import Link from "next/link";
 
@@ -13,6 +13,7 @@ export default function LoginPage() {
             alt="Logo"
             width={300}
             height={40}
+            priority={true}
             className="mx-auto"
           />
         </div>
@@ -22,6 +23,7 @@ export default function LoginPage() {
             alt="User avatar"
             width={250}
             height={40}
+            priority={true}
             className="mx-auto"
           />
         </div>
