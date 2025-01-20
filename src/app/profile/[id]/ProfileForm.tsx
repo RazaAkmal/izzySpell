@@ -1,12 +1,14 @@
 "use client";
 import InputField from "@/components/Input";
-import React from "react";
+import React, { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import Image from "next/image";
 import { Radio, RadioGroup } from "@headlessui/react";
 import { ProfileFormValues } from "@/lib/defination";
 import AgeGradeSelectionButton from "@/components/AgeGradeSelectionButton";
 import CustomButton from "@/components/HeadlessButton";
+import { useSession } from "next-auth/react";
+import { User } from "@prisma/client";
 
 const ageOptions = ["6-7", "7-8", "8-9", "9-10", "10-11", "11-12"];
 const gradeOptions = [
@@ -22,12 +24,24 @@ type Props = {
   userId: string | string[] | undefined; 
 }
 const ProfileForm = ({onComplete, userId}: Props) => {
+  const { data: session, } = useSession();
+  const user = session?.user as User;
   const {
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors },
   } = useForm<ProfileFormValues>();
+
+  useEffect(() => {
+    if (user) {
+      setValue("firstName", user.firstName ?? "");
+      setValue("lastName", user.lastName ?? "");
+      setValue("age", user.age ?? "");
+      setValue("grade", user.grade ?? "");
+    }
+  }, [user, setValue]);
 
   const submitForm = async (data: ProfileFormValues) => {
     try {

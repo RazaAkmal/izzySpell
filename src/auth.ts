@@ -2,7 +2,10 @@
 import NextAuth from "next-auth"
 import authConfig from "./auth.config"
 
-
+function filterSensitiveInfo(user: any) {
+  const { cardNumber, cardName, expireMonth, expireYear, cardCVC, ...filteredUser } = user;
+  return filteredUser;
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   pages: {
@@ -14,10 +17,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        const { password, ...safeUser } = user as any;
-        token.id = user.id?.toString();
-        token.name = user.name;
-        return { ...token, ...safeUser };
+        const filteredUser = filterSensitiveInfo(user);
+        token = { ...token, ...filteredUser };
       }
       return token;
     },

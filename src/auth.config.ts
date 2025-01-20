@@ -2,8 +2,8 @@ import type { NextAuthConfig } from "next-auth"
 import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
 import prisma from "./lib/prisma";
-import { User } from "./lib/defination";
 import bcrypt from 'bcryptjs';
+import { User } from "@prisma/client";
 
  async function getUser(name: string): Promise<User | null> {
    try {
