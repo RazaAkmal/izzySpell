@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import Image from "next/image";
 import LoginForm from "./LoginForm";
 import Link from "next/link";
@@ -27,7 +27,9 @@ export default function LoginPage() {
             className="mx-auto"
           />
         </div>
-        <LoginForm />
+        <Suspense fallback={<div>Loading...</div>}>
+          <LoginForm />
+        </Suspense>
         <p className="mt-4 text-center text-purple text-md">
           Don’t have an account yet?{" "}
           <Link href="/signup" className="font-bold hover:underline">
