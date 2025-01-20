@@ -36,9 +36,9 @@ const SignupForm = () => {
         throw new Error(errorData.error || "Signup failed");
       }
       setLoading(false)
-
+      alert("Signup successful! Welcome aboard. You can now log in and start exploring.");
       const user = await response.json();
-      router.push(`/profile/${user.id}`);
+      router.push(`/sign-in?userName=${user.name}`);
     } catch (error) {
       alert(error);
     }

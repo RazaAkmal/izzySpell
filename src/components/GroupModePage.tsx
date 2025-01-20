@@ -5,6 +5,7 @@ import { Button } from "@headlessui/react";
 import { GroupedWord } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import CustomPagination from "./CustomPagination";
+import TextToSpeech from "./TextToSpeach";
 
 interface GroupModePageProps {
   listId: string;
@@ -75,13 +76,6 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
       updatedValidation[rowIndex][boxIndex + 2] = "default";
     }
     setValidationStates(updatedValidation);
-  };
-
-  const handleSpeak = (word: string) => {
-    if (word) {
-      const utterance = new SpeechSynthesisUtterance(word);
-      speechSynthesis.speak(utterance);
-    }
   };
 
   const handlePageChange = (page: number) => {
@@ -189,19 +183,8 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
             ))}
 
             {/* Speaker Button */}
-            
-              <Button
-                className="focus:outline-none"
-                onClick={() => handleSpeak(word.word)}
-              >
-                <Image
-                  src="/images/speakerIcon.svg"
-                  alt="Speaker"
-                  width={32}
-                  height={32}
-                  className="w-12 h-12 cursor-pointer"
-                />
-              </Button>
+            <TextToSpeech spell={word.word} heightWidth={48} />
+             
                 {validationStates[rowIndex].every(
                   (state) => state === "valid"
                 ) ? (
