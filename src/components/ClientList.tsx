@@ -39,8 +39,8 @@ const ClientList = ({
 
   return (
     <>
-      <div className="flex items-center justify-between relative ">
-        <div className="absolute inset-0 flex md:justify-center">
+      <div className="flex items-center justify-between md:flex-row flex-col">
+        <div className="w-52 md:block hidden"></div>
           <Image
             src="/images/titles/MyListTitle.svg"
             alt="User avatar"
@@ -48,18 +48,17 @@ const ClientList = ({
             height={40}
             className="w-52"
           />
-        </div>
         <CustomButton
           label="Manage Lists"
           fullWidth={false}
           size="small"
           arrow="/images/arrow.svg"
-          className="ml-auto relative mb-3"
+          className="mb-3"
           onClick={() => router.push('/lists')}
         />
       </div>
       {displayedLists.length > 0 ? (
-        <div className="flex justify-between gap-5 ">
+        <div className="flex justify-between gap-5 md:flex-row flex-col">
           {displayedLists.map((item) => (
             <div
               key={item.id}

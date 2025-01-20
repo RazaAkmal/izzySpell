@@ -20,7 +20,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = async ({
       {/* TopBar */}
       <div className="mx-4 md:mx-8 lg:mx-16">
         <header className="bg-skyBlue m-2 md:m-6 px-8 md:px-4 rounded-2xl shadow-md">
-          <div className="container flex flex-row md:flex-row justify-between items-center">
+          <div className="flex flex-row md:flex-row justify-between items-center">
             <div className="relative flex items-center h-20 w-52">
             <Link href="/dashboard">
               <Image

@@ -11,6 +11,7 @@ type UpdateProfile = {
   cardNumber: number;
   expireMonth: string;
   expireYear: number;
+  profileImage: string;
 };
 
 export async function PUT(req: Request) {
@@ -31,6 +32,7 @@ export async function PUT(req: Request) {
         age: data.age,
         grade: data.grade,
         profileUpdated: allCardDetailsProvided ? true : false,
+        profileImage: data.profileImage,
         cardCVC: String(data.cardCVC),
         cardName: data.cardName,
         expireMonth: data.expireMonth,

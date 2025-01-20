@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { SessionProvider } from "next-auth/react";
-
 
 export const metadata: Metadata = {
   title: "IzzySpell",
@@ -15,13 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`antialiased`}
-      >
-        <SessionProvider>
-          {children}
-        </SessionProvider>
-      </body>
+      <body className={`antialiased`}>{children}</body>
     </html>
   );
 }

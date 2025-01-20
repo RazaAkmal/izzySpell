@@ -21,6 +21,7 @@ export type ProfileFormValues = {
   lastName: string;
   age: string;
   grade: string;
+  profileImage: string;
 };
 export type CardDetailsFormValues = {
   card_number: number;

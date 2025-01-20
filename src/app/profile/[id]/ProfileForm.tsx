@@ -1,14 +1,14 @@
 "use client";
 import InputField from "@/components/Input";
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import Image from "next/image";
 import { Radio, RadioGroup } from "@headlessui/react";
 import { ProfileFormValues } from "@/lib/defination";
 import AgeGradeSelectionButton from "@/components/AgeGradeSelectionButton";
 import CustomButton from "@/components/HeadlessButton";
-import { useSession } from "next-auth/react";
-import { User } from "@prisma/client";
+import { supabase } from "@/app/utils/supabaseClient";
+import { v4 as uuidv4 } from 'uuid';
 
 const ageOptions = ["6-7", "7-8", "8-9", "9-10", "10-11", "11-12"];
 const gradeOptions = [
@@ -22,27 +22,30 @@ const gradeOptions = [
 type Props = {
   onComplete: () => void,
   userId: string | string[] | undefined; 
+  userData: any
 }
-const ProfileForm = ({onComplete, userId}: Props) => {
-  const { data: session, } = useSession();
-  const user = session?.user as User;
+const ProfileForm = ({onComplete, userId, userData}: Props) => {
+  const [localImage, setLocalImage] = useState<string | null>(null); // Local preview image
+  const [isPending, startTransition] = useTransition();
   const {
     register,
     handleSubmit,
     control,
     setValue,
     formState: { errors },
+    watch,
   } = useForm<ProfileFormValues>();
-
+  console.log(userData)
   useEffect(() => {
-    if (user) {
-      setValue("firstName", user.firstName ?? "");
-      setValue("lastName", user.lastName ?? "");
-      setValue("age", user.age ?? "");
-      setValue("grade", user.grade ?? "");
+    if (userData) {
+      setValue("firstName", userData.firstName ?? "");
+      setValue("lastName", userData.lastName ?? "");
+      setValue("age", userData.age ?? "");
+      setValue("grade", userData.grade ?? "");
+      setValue("profileImage", userData.profileImage ?? "");
     }
-  }, [user, setValue]);
-
+  }, [userData, setValue]);
+  const profileImage = watch("profileImage");
   const submitForm = async (data: ProfileFormValues) => {
     try {
       if (typeof userId === "string") {
@@ -64,10 +67,37 @@ const ProfileForm = ({onComplete, userId}: Props) => {
       console.error("Profile update failed:", error);
     }
   };
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const localPreview = URL.createObjectURL(file);
+    setLocalImage(localPreview);
+
+    startTransition(async () => {
+      const uniqueFileName = `profile/${userId}_${uuidv4()}_${file.name}`;
+      const { data, error } = await supabase.storage
+        .from("izzyspell-bucket")
+        .upload(uniqueFileName, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (error) {
+        console.error("File upload failed:", error);
+        return;
+      }
+
+      const uploadedImageUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/${data.fullPath}`;
+      setValue("profileImage", uploadedImageUrl);
+      setLocalImage(null);
+    });
+  };
+
   return (
     <form onSubmit={handleSubmit(submitForm)}>
       <div className="flex justify-center">
-      <div className="relative flex items-center h-20 w-72">
+        <div className="relative flex items-center h-20 w-72">
           <Image
             src="/images/izzyLogo.svg"
             alt="Logo"
@@ -76,30 +106,41 @@ const ProfileForm = ({onComplete, userId}: Props) => {
             className="mx-auto"
           />
         </div>
-        </div>
+      </div>
       <div className="flex justify-center mb-6">
         <Image
-            src="/images/titles/profileTitle.svg"
-            alt="User avatar"
-            width={40}
-            height={20}
-            className="w-80"
-          />
-        </div>
+          src="/images/titles/profileTitle.svg"
+          alt="Profile Title"
+          width={40}
+          height={20}
+          className="w-80"
+          priority={true}
+        />
+      </div>
       <div className="flex gap-3 mb-6">
         <div className="w-20 h-20 rounded-xl overflow-hidden mb-3">
           <Image
-            src="/images/avatar.png" // Placeholder for user avatar
+            src={localImage || profileImage || "/images/avatar.png"}
             alt="User avatar"
             width={80}
             height={80}
+            priority={true}
             className="object-cover w-full h-full"
           />
         </div>
         <div className="flex flex-col">
-          <button className="bg-green text-white text-sm px-4 py-1.5 rounded-lg mb-2">
-            Upload Image
-          </button>
+          <label
+            htmlFor="file-upload"
+            className="bg-green text-white text-sm px-4 py-1.5 rounded-lg mb-2 cursor-pointer"
+          >
+            {isPending ? "Uploading..." : "Upload Image"}
+          </label>
+          <input
+            id="file-upload"
+            type="file"
+            className="hidden"
+            onChange={handleFileUpload}
+          />
           <p className="text-xs text-gray-500">.png, .jpeg files up to 8 MB</p>
         </div>
       </div>
@@ -204,6 +245,7 @@ const ProfileForm = ({onComplete, userId}: Props) => {
       <div className="flex w-full justify-center">
         <div className="w-full max-w-md px-4">
           <CustomButton
+            disabled={isPending}
             className="border-white"
             type="submit"
             label="Next"
@@ -216,3 +258,5 @@ const ProfileForm = ({onComplete, userId}: Props) => {
 };
 
 export default ProfileForm;
+
+

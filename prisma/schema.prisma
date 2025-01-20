@@ -22,6 +22,7 @@ model User {
   lastName       String?        @map(name: "last_name")
   age            String?
   grade          String?
+  profileImage   String?
   profileUpdated Boolean        @default(false)
   createdAt      DateTime       @default(now()) @map(name: "created_at")
   updatedAt      DateTime       @updatedAt @map(name: "updated_at")
