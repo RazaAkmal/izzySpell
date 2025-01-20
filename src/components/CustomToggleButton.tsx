@@ -13,7 +13,7 @@ function ToggleButton({ isOn, toggleSwitch }: ToggleButtonProps) {
     <Switch
       checked={isOn}
       onChange={toggleSwitch}
-      className={`group inline-flex h-6 w-11 items-center rounded-full ${
+      className={`group inline-flex min-w-11 min-h-6 items-center rounded-full ${
         isOn ? "bg-green" : "bg-gray-300"
       } transition duration-300 ease-in-out`}
     >

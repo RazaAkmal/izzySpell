@@ -113,7 +113,7 @@ const WordList = ({ spellingLists, user }: { spellingLists: SpellingListItem[], 
         </div>
 
         {/* Conditional Rendering Section */}
-        <div className="w-full mt-6 space-y-4 text-center">
+        <div className="w-full flex flex-col items-center mt-6 space-y-4 text-center">
           {isTextAreaMode ? (
             <Textarea
               rows={8}
@@ -137,7 +137,7 @@ const WordList = ({ spellingLists, user }: { spellingLists: SpellingListItem[], 
                 ))}
               </div>
               <div
-                className="relative left-[25%] flex items-center justify-center border-[4px] bg-white border-green rounded-2xl py-1 mt-6 hover:shadow-lg cursor-pointer w-48 md:w-40 lg:w-64"
+                className="relative flex items-center justify-center border-[4px] bg-white border-green rounded-2xl py-1 hover:shadow-lg cursor-pointer w-44 lg:w-64"
                 onClick={handleInputField}
               >
                 <button className="flex items-center justify-center bg-green w-7 h-7 bg-green-400 text-white rounded-full text-3xl font-bold hover:bg-green-500">

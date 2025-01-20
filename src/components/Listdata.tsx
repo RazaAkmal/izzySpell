@@ -59,28 +59,26 @@ function AllListData({
     }
   };
   return (
-    <div className="mt-5 rounded-lg px-4">
+    <div className="mt-5 rounded-lg md:px-4">
       {spellingLists.map((item) => (
         <div
           key={item.id}
           className="grid px-2 py-2 grid-cols-1 md:grid-cols-12 text-left gap-4 items-center md:gap-0 bg-[#ECF7FF] border-2 border-sky-300 rounded-2xl mb-3 shadow-md"
         >
-          <div className="md:col-span-3 flex items-center gap-2">
+          <div className="md:col-span-3 flex items-center gap-2 me-3">
             <div
-              className={`h-10 w-10 rounded-full ${item.color}`}
+              className={`min-h-10 min-w-10 rounded-full ${item.color}`}
               title={item.listName}
             ></div>
             <p className="font-bold text-sky-600 text-base md:text-xl">
               {item.listName}
             </p>
           </div>
-          <div className="md:col-span-2">
-            <p className="text-black font-bold text-sm md:text-xl">
+            <p className="md:col-span-2 text-black font-bold text-sm me-3 md:text-xl">
               {moment(item.createdAt).format("MMM, DD YYYY")}
             </p>
-          </div>
-          <div className="md:col-span-3 flex  gap-2 w-full md:w-auto">
-            <div className="w-full sm:w-48 bg-gray-200 h-6 border-2 border-sky-300 rounded-full overflow-hidden">
+          <div className="md:col-span-3 flex me-5 gap-2 w-full md:w-auto">
+            <div className="w-full bg-gray-200 h-6 border-2 border-sky-300 rounded-full overflow-hidden">
               <div
                 className={`h-full p-2 rounded-full ${item.color}`}
                 style={{ width: `${item.progress}%` }}
@@ -94,14 +92,14 @@ function AllListData({
           <div className="md:col-span-4 flex justify-between md:justify-center gap-2 sm:flex-row items-center text-left">
             <button
               onClick={() => handleContinueLearning(item.id)}
-              className={`px-5 py-2 ${
+              className={`px-3 py-1 lg:px-5 lg:py-2 ${
                 item.progress === 0 ? item.color : "bg-blue"
               } border-[3px] border-b-white rounded-lg text-white font-bold text-sm sm:text-lg`}
             >
               {item.progress === 0 ? "Start Learning Now" : "Continue Learning"}
             </button>
             <button
-              className="px-5 py-2 bg-blue border-[3px] border-gray-300 text-white font-bold rounded-lg text-sm sm:text-lg"
+              className="px-3 py-1 lg:px-5 lg:py-2 bg-blue border-[3px] border-gray-300 text-white font-bold rounded-lg text-sm md:text-lg"
               onClick={() => handleViewList(item.id)}
             >
               View All
@@ -111,7 +109,7 @@ function AllListData({
               alt="editIcon"
               width={40}
               height={40}
-              className="w-10 h-10 cursor-pointer"
+              className="lg:w-10 lg:h-10 w-8 h-8 cursor-pointer"
               onClick={() => {
                 fetchWordsFromList(item.id);
               }}
@@ -121,7 +119,7 @@ function AllListData({
               alt="deleteIcon"
               width={40}
               height={40}
-              className="w-10 h-10 cursor-pointer"
+              className="lg:w-10 lg:h-10 w-8 h-8 cursor-pointer"
               onClick={() => {
                 handleDelete(item.id);
               }}
