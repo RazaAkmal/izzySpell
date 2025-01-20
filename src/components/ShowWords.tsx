@@ -34,7 +34,7 @@ const UserList = ({ spellingListWithWords }: Props) => {
 
   return (
     <>
-      <div className="flex">
+      <div className="flex md:flex-row flex-col ">
         {/* Back Arrow */}
         <div className="flex items-center m-4">
           <Image
@@ -52,7 +52,7 @@ const UserList = ({ spellingListWithWords }: Props) => {
             Back
           </button>
         </div>
-        <div className="flex gap-5 mx-auto justify-center items-center">
+        <div className="flex gap-5 mx-auto md:flex-row flex-col justify-center items-center">
           <CustomButton
             fullWidth={false}
             radius="rounded"
@@ -84,7 +84,7 @@ const UserList = ({ spellingListWithWords }: Props) => {
         <h2 className="text-center text-xl font-bold text-purple mb-4">
           {spellingListWithWords?.listName}
         </h2>
-        <div className="grid grid-cols-3 gap-3 overflow-auto h-auto max-h-screen p-5 ">
+        <div className="grid md:grid-cols-3 grid-cols-2 gap-3 overflow-auto h-auto max-h-screen p-5 ">
           {filteredWords?.map((spell) => (
             <div
               key={spell.id}
