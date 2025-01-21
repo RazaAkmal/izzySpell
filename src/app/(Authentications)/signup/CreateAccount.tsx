@@ -5,6 +5,7 @@ import { SignupFormValues } from "@/lib/defination";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
+import SuccessSignUpModal from "./SuccessSignUpModal";
 
 const SignupForm = () => {
   const {
@@ -16,8 +17,13 @@ const SignupForm = () => {
   const router = useRouter();
   const password = watch("password"); // Watch the password field
   const [loading, setLoading] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successModal, setSuccessModal] = useState<boolean>(false);
+  const [data, setData] = useState<{ name: string } | null>(null);
+
   const submitForm = async (data: SignupFormValues) => {
-    setLoading(true)
+    setLoading(true);
+    setErrorMessage(null);
     try {
       const response = await fetch("/api/auth/signup", {
         method: "POST",
@@ -35,12 +41,19 @@ const SignupForm = () => {
         const errorData = await response.json();
         throw new Error(errorData.error || "Signup failed");
       }
-      setLoading(false)
-      alert("Signup successful! Welcome aboard. You can now log in and start exploring.");
+      setLoading(false);
+      setSuccessModal(true);
       const user = await response.json();
-      router.push(`/sign-in?userName=${user.name}`);
-    } catch (error) {
-      alert(error);
+      setData(user);
+    } catch (error: any) {
+      setLoading(false);
+      setErrorMessage(error.message);
+    }
+  };
+  const handleNavigate = () => {
+    if (data?.name) {
+      router.push(`/sign-in?userName=${data.name}`);
+      setSuccessModal(false);
     }
   };
   return (
@@ -56,6 +69,20 @@ const SignupForm = () => {
         type="text"
         requiredValue={true}
         placeholder="User Name"
+        rules={{
+          minLength: {
+            value: 4,
+            message: "Username must be at least 4 characters",
+          },
+          pattern: {
+            value: /^[A-Za-z0-9]+$/,
+            message: "Username must contain only letters and numbers",
+          },
+          validate: {
+            notOnlyNumbers: (value: string) =>
+              /[a-zA-Z]/.test(value) || "Username cannot be all numbers",
+          },
+        }}
       />
       <InputField
         id="password"
@@ -65,6 +92,12 @@ const SignupForm = () => {
         type="password"
         requiredValue={true}
         placeholder="Password"
+        rules={{
+          minLength: {
+            value: 6,
+            message: "Password must be at least 6 characters",
+          },
+        }}
       />
       <InputField
         id="confirmPassword"
@@ -79,9 +112,19 @@ const SignupForm = () => {
             value === password || "Passwords do not match",
         }}
       />
+      {errorMessage && <p className="text-red-500 mt-2">{errorMessage}</p>}
       <div className="w-full max-w-md px-4">
-        <CustomButton disabled={loading} type="submit" label="Signup" fullWidth />
+        <CustomButton
+          disabled={loading}
+          type="submit"
+          label="Signup"
+          fullWidth
+        />
       </div>
+      <SuccessSignUpModal
+        isOpen={successModal}
+        handleNavigate={handleNavigate}
+      />
     </form>
   );
 };
