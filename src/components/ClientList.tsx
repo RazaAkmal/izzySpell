@@ -54,6 +54,24 @@ const ClientList = ({
       localStorage.removeItem("isNavigate");
     }
   };
+  const handleNavigateToSpellParactice = (id: number) => {
+    const isNavigate = localStorage.getItem("isNavigate");
+    if (isNavigate === "true") {
+      router.push(`/spellPractice/${id}`);
+      localStorage.removeItem("isNavigate");
+    } else if (isNavigate === "false") {
+      const userConfirmed = confirm(
+        "Changes you made may not be saved. Are you sure you want to continue?"
+      );
+      if (userConfirmed) {
+        router.push(`/spellPractice/${id}`);
+        localStorage.removeItem("isNavigate");
+      } 
+    } else {
+      router.push(`/spellPractice/${id}`);
+      localStorage.removeItem("isNavigate");
+    }
+  };
 
   return (
     <>
@@ -80,6 +98,7 @@ const ClientList = ({
           {displayedLists.map((item) => (
             <div
               key={item.id}
+              onClick={() => handleNavigateToSpellParactice(item.id)}
               className="flex w-full items-center p-2 bg-white border-[1px] border-gray-600 rounded-lg shadow-md space-x-3"
             >
               <div
