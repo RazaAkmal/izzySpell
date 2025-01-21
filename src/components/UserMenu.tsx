@@ -7,6 +7,23 @@ import { SignOut } from "./signOut";
 const UserMenu = ({ userId }: { userId: string | undefined }) => {
   const router = useRouter();
 
+  const handleNavigateToProfile = () => {
+    const isNavigate = localStorage.getItem("isNavigate");
+    if (isNavigate === "false") {
+      router.push(`/profile/${userId}`);
+      localStorage.removeItem("isNavigate");
+    } else if (isNavigate === "false") {
+      const userConfirmed = confirm("Changes you made may not be saved. Are you sure you want to continue?");
+      if (userConfirmed) {
+        router.push(`/profile/${userId}`);
+        localStorage.removeItem("isNavigate");
+      }
+    } else {
+      router.push(`/profile/${userId}`);
+      localStorage.removeItem("isNavigate");
+    }
+  };
+  
   return (
     <Menu as="div" className="relative">
       <MenuButton className="focus:outline-none">
@@ -21,9 +38,7 @@ const UserMenu = ({ userId }: { userId: string | undefined }) => {
       <MenuItems className="absolute right-0 w-28 min-w-fit mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
         <MenuItem>
           <button
-            onClick={() => {
-              router.push(`/profile/${userId}`);
-            }}
+            onClick={handleNavigateToProfile}
             className="block px-4 py-1 w-full text-left text-gray-700 hover:bg-gray-100 hover:text-black"
           >
             My Profile

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import CustomButton from "./HeadlessButton";
 import Image from "next/image";
 import ToggleButton from "./CustomToggleButton";
@@ -32,6 +32,7 @@ const WordList = ({ spellingLists, user }: { spellingLists: SpellingListItem[], 
 
   // Save data to API and handle modal
   const handleSave = async () => {
+    localStorage.removeItem("isNavigate");
     const wordList = isTextAreaMode
       ? textAreaContent
           .split("\n")
@@ -85,6 +86,43 @@ const WordList = ({ spellingLists, user }: { spellingLists: SpellingListItem[], 
     }
   };
 
+  const handelSwitchBulkMode = (mode: boolean) => {
+    if (mode) {
+      const userConfirmed = confirm(
+        "Switching to Bulk Entry! You can add lots of words at once, but you won’t be able to go back to one-at-a-time. Continue?"
+      );
+      if (userConfirmed) {
+        setTextAreaContent(inputField.join("\n").trim());
+        setIsTextAreaMode(mode);
+      } else {
+        return;
+      }
+    } else {
+      setIsTextAreaMode(mode);
+    }
+  };
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (textAreaContent.trim() !== "" || inputField.some((word) => word.trim() !== "")) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [inputField, textAreaContent]);
+
+  useEffect(() => {
+    if (textAreaContent.trim() !== "" || inputField.some((word) => word.trim() !== "")) {
+      localStorage.setItem("isNavigate", 'false');
+    } else {
+      localStorage.setItem("isNavigate", 'true');
+    }
+  }, [inputField, textAreaContent, isTextAreaMode]);
+
   return (
     <div className="flex flex-wrap bg-skyBlue rounded-2xl w-full md:m-4 p-4 md:p-2">
       <div className="text-center mx-auto max-w-full md:max-w-lg">
@@ -103,13 +141,13 @@ const WordList = ({ spellingLists, user }: { spellingLists: SpellingListItem[], 
         <div className="flex items-center justify-center space-x-4">
           <span className="text-darkBlue font-semibold text-md">
             {isTextAreaMode
-              ? "To type multiple words at once, tap the toggle button:"
-              : "To type Bulk of words at once, tap the toggle button:"}
+              ? "Enter Your Words (Separate by Comma or One Per Line)"
+              : "Bulk Entry: Tap the Toggle to Add Multiple Words at Once:"}
           </span>
-          <ToggleButton
+          {!isTextAreaMode && <ToggleButton
             isOn={isTextAreaMode}
-            toggleSwitch={() => setIsTextAreaMode(!isTextAreaMode)}
-          />
+            toggleSwitch={() => handelSwitchBulkMode(!isTextAreaMode)}
+          />}
         </div>
 
         {/* Conditional Rendering Section */}
@@ -119,7 +157,7 @@ const WordList = ({ spellingLists, user }: { spellingLists: SpellingListItem[], 
               rows={8}
               value={textAreaContent}
               onChange={(e) => setTextAreaContent(e.target.value)}
-              className="w-5/6 p-4 md:w-3/4 lg:w-full border-[2px] border-[#98C3FF] mx-auto text-base md:text-base text-center bg-skyBlue text-textColor rounded-2xl focus:outline-none resize-none placeholder-textColor"
+              className="w-5/6 p-4 md:w-3/4 lg:w-full border-[2px] border-[#98C3FF] mx-auto text-base md:text-base bg-skyBlue text-textColor rounded-2xl focus:outline-none resize-none placeholder-textColor"
             />
           ) : (
             <>

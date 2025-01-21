@@ -36,6 +36,24 @@ const ClientList = ({
     }
     setAllLists(allLists.filter((item) => item.id !== itemId));
   };
+  const handleNavigateToList = () => {
+    const isNavigate = localStorage.getItem("isNavigate");
+    if (isNavigate === "true") {
+      router.push("/lists");
+      localStorage.removeItem("isNavigate");
+    } else if (isNavigate === "false") {
+      const userConfirmed = confirm(
+        "Changes you made may not be saved. Are you sure you want to continue?"
+      );
+      if (userConfirmed) {
+        router.push("/lists");
+        localStorage.removeItem("isNavigate");
+      } 
+    } else {
+      router.push("/lists");
+      localStorage.removeItem("isNavigate");
+    }
+  };
 
   return (
     <>
@@ -54,7 +72,7 @@ const ClientList = ({
           size="small"
           arrow="/images/arrow.svg"
           className="mb-3"
-          onClick={() => router.push('/lists')}
+          onClick={handleNavigateToList}
         />
       </div>
       {displayedLists.length > 0 ? (
