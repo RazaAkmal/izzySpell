@@ -76,7 +76,7 @@ const ClientList = ({
         />
       </div>
       {displayedLists.length > 0 ? (
-        <div className="flex justify-between gap-5 md:flex-row flex-col">
+        <div className="flex justify-between gap-5 md:flex-row flex-col cursor-pointer">
           {displayedLists.map((item) => (
             <div
               key={item.id}
