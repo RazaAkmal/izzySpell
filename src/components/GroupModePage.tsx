@@ -58,6 +58,14 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
     updatedInputs[rowIndex][boxIndex + 2] = value.slice(-1); // Offset by 2 due to pre-filled letters
     setUserInputs(updatedInputs);
 
+    // Move focus to the next input box if it exists
+    const nextInput = document.getElementById(
+      `input-${rowIndex}-${boxIndex + 1}`
+    );
+    if (nextInput) {
+      (nextInput as HTMLInputElement).focus();
+    }
+
     //  word is fully type or not
     const word = currentGroup[rowIndex].word;
     const userWord = [
@@ -78,9 +86,34 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
     setValidationStates(updatedValidation);
   };
 
+  const handleKeyDown = (rowIndex: number, boxIndex: number, key: string) => {
+    if (
+      key === "Backspace" &&
+      boxIndex > 0 &&
+      !userInputs[rowIndex][boxIndex + 2]
+    ) {
+      const prevInput = document.getElementById(
+        `input-${rowIndex}-${boxIndex - 1}`
+      );
+      if (prevInput) {
+        (prevInput as HTMLInputElement).focus();
+      }
+    }
+  };
+
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= validGroups.length) {
-      setCurrentGroupIndex(page - 1);
+      const newGroupIndex = page - 1;
+      const newGroupName = validGroups[newGroupIndex];
+      const newGroup = groups[newGroupName] || [];
+
+      // Reset userInputs and validationStates for the new group
+      setUserInputs(newGroup.map((word) => Array(word.word.length).fill("")));
+      setValidationStates(
+        newGroup.map((word) => Array(word.word.length).fill("default"))
+      );
+
+      setCurrentGroupIndex(newGroupIndex);
       setCurrentPage(page);
     }
   };
@@ -165,6 +198,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
             {/* Input Boxes */}
             {Array.from({ length: word.word.length - 2 }).map((_, boxIndex) => (
               <input
+                id={`input-${rowIndex}-${boxIndex}`}
                 type="text"
                 key={boxIndex}
                 maxLength={1}
@@ -172,6 +206,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
                 onChange={(e) =>
                   handleInputChange(rowIndex, boxIndex, e.target.value)
                 }
+                onKeyDown={(e) => handleKeyDown(rowIndex, boxIndex, e.key)}
                 className={`w-12 h-12 text-center border-[3px] rounded-lg text-2xl border-darkGreen font-bold focus:outline-none focus:ring-2 focus:ring-sky-500 ${
                   validationStates[rowIndex][boxIndex + 2] === "valid"
                     ? "border-green-500"
@@ -184,28 +219,25 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
 
             {/* Speaker Button */}
             <TextToSpeech spell={word.word} heightWidth={48} />
-             
-                {validationStates[rowIndex].every(
-                  (state) => state === "valid"
-                ) ? (
-                  <Image
-                    src="/images/completeIcon.svg"
-                    alt="Correct"
-                    width={55}
-                    height={55}
-                  />
-                ) : validationStates[rowIndex].includes("invalid") ? (
-                  <Button onClick={() => handleReset(rowIndex)}>
-                    <Image
-                      src="/images/resetIcon.svg"
-                      alt="Reset"
-                      width={55}
-                      height={55}
-                    />
-                  </Button>
-                ) : null}
-            </div>
-        
+
+            {validationStates[rowIndex].every((state) => state === "valid") ? (
+              <Image
+                src="/images/completeIcon.svg"
+                alt="Correct"
+                width={55}
+                height={55}
+              />
+            ) : validationStates[rowIndex].includes("invalid") ? (
+              <Button onClick={() => handleReset(rowIndex)}>
+                <Image
+                  src="/images/resetIcon.svg"
+                  alt="Reset"
+                  width={55}
+                  height={55}
+                />
+              </Button>
+            ) : null}
+          </div>
         ))}
       </div>
     </div>
