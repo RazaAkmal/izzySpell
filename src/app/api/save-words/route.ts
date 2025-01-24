@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma"; // Import your Prisma client instance
-import { revalidatePath } from 'next/cache'
+import { revalidatePath } from "next/cache";
 
 export async function POST(req: Request) {
   try {
@@ -24,23 +24,25 @@ export async function POST(req: Request) {
           })),
         },
         syllableWords: {
-          create: extractedWords.SyllabusWords.map((syllableWord: string, index: number) => ({
-            syllables: syllableWord,
-            word: extractedWords.OriginalWords[index],
+          create: extractedWords.SyllabusWords.map((syllableWord: any) => ({
+            word: syllableWord.Word,
+            answer: syllableWord.Answer,
+            options: syllableWord.Options,
           })),
         },
         groupedWords: {
-          create: Object.entries(extractedWords.GroupedWords as Record<string, string[]>).flatMap(
-            ([groupName, groupWords]) =>
-              groupWords.map((word: string) => ({
-                groupName,
-                word,
-              }))
+          create: Object.entries(
+            extractedWords.GroupedWords as Record<string, string[]>
+          ).flatMap(([groupName, groupWords]) =>
+            groupWords.map((word: string) => ({
+              groupName,
+              word,
+            }))
           ),
         },
       },
     });
-    revalidatePath('/dashboard')
+    revalidatePath("/dashboard");
     return NextResponse.json(
       { message: "Spelling list created successfully!", spellingList },
       { status: 201 }

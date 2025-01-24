@@ -76,8 +76,9 @@ model GroupedWord {
 model SyllableWord {
   id           Int          @id @default(autoincrement())
   listId       Int
-  syllables    String        // Field to store syllable-specific data
   word         String
+  options      Json         
+  answer       String     
   spellingList SpellingList @relation(fields: [listId], references: [id])
 
   @@map(name: "syllable_words")
