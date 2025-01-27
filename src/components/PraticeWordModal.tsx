@@ -106,15 +106,6 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({ page }) => {
                 onClick={() => navigateTo("GroupModePractice")}
               />
             </div>
-
-            {/* Footer Button */}
-            <div className="flex justify-center mt-4">
-              <CustomButton
-                label="Start Learning"
-                fullWidth={false}
-                size="large"
-              />
-            </div>
           </div>
         </div>
       )}
