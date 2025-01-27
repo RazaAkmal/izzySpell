@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import CustomPagination from "./CustomPagination";
@@ -17,54 +16,37 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
   syllableWords,
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [syllableBoxes, setSyllableBoxes] = useState<string[]>([
-    "",
-    "",
-    "",
-    "",
-    "",
-  ]);
-  const [isCorrectAnswer, setIsCorrectAnswer] = useState<boolean | null>(null);
-  const [options, setOptions] = useState<string[]>([]); // State to hold the syllable options
-
-  const router = useRouter();
+  const correctSyllable = syllableWords[currentPage - 1].answer;
   const orignalWord = syllableWords[currentPage - 1].word;
-  const currentWord = syllableWords[currentPage - 1].syllables;
-  const correctSyllable = currentWord;
+  const router = useRouter();
 
-  // Generate wrong syllables based on the correct syllable
-  const generateWrongSyllables = (correctSyllable: string) => {
-    const word = correctSyllable.replace(/-/g, ""); // Remove the dash to get the raw word
-    const wrongSyllables = new Set<string>();
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [syllableBoxes, setSyllableBoxes] = useState<string[]>(
+    new Array(correctSyllable.length).fill("")
+  );
+  const [isCorrectAnswer, setIsCorrectAnswer] = useState<boolean | null>(null);
+  const [options, setOptions] = useState<string[]>([]);
 
-    while (wrongSyllables.size < 3) {
-      const splitPoint = Math.floor(Math.random() * (word.length - 1)) + 1; // Random split point
-      const newSyllable =
-        word.substring(0, splitPoint) + "-" + word.substring(splitPoint);
-
-      // Ensure the new syllable is unique and not the same as the correct one
-      if (newSyllable !== correctSyllable && !wrongSyllables.has(newSyllable)) {
-        wrongSyllables.add(newSyllable);
-      }
+  const shuffleAnswers = (array: string[]) => {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
     }
-
-    return Array.from(wrongSyllables);
+    return array;
   };
 
-  // Create the options array (1 correct syllable + 3 wrong syllables)
-  const createOptions = () => {
-    const wrongSyllables = generateWrongSyllables(correctSyllable);
-    console.log(wrongSyllables);
-    const allOptions = [correctSyllable, ...wrongSyllables];
-    return allOptions;
-  };
-
-  // Set the options only when the page is loaded or when the current word changes
   useEffect(() => {
-    const generatedOptions = createOptions();
-    setOptions(generatedOptions);
-  }, [currentPage, syllableWords]);
+    const generatedOptions = syllableWords.filter(
+      (syllableWord) => syllableWord.answer === correctSyllable
+    );
+    const allOptions: string[] = generatedOptions
+      .map((syllableWord) => syllableWord.options)
+      .flat() as string[];
+    const shuffledOptions = shuffleAnswers(allOptions);
+
+    setSyllableBoxes(new Array(correctSyllable.length).fill(""));
+    setOptions(shuffledOptions);
+  }, [syllableWords, correctSyllable]);
 
   const handleOptionClick = (optionId: number, option: string) => {
     setSelectedOption(optionId);
@@ -74,21 +56,16 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
 
   const checkAnswer = (selectedOption: string) => {
     if (selectedOption === correctSyllable) {
-      setIsCorrectAnswer(true); // Correct answer
+      setIsCorrectAnswer(true);
     } else {
-      setIsCorrectAnswer(false); // Wrong answer
+      setIsCorrectAnswer(false);
     }
   };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    resetState();
-  };
-
-  const resetState = () => {
     setSelectedOption(null);
-    setIsCorrectAnswer(null); // Reset the answer status
-    setSyllableBoxes(["", "", "", "", ""]);
+    setIsCorrectAnswer(null);
   };
 
   return (
@@ -155,7 +132,7 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
                 </div>
               ))}
             </div>
-            <TextToSpeech heightWidth={60} spell={orignalWord}  />
+            <TextToSpeech heightWidth={60} spell={orignalWord} />
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-6">

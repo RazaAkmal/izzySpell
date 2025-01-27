@@ -17,18 +17,35 @@ export const processFileWithAI = async (content: string) => {
         {
           role: "user",
           content: `I have the below spelling list that I need structured into a JSON format.
-          Extract all the words from the list and exclude any subtitles, phrases, or non-word elements.
-          SpellingList: ${content}
 
-          Please perform the following tasks:
+    Extract all the words from the list and exclude any subtitles, phrases, or non-word elements.
 
-        1. Organize the output into the following JSON structure:
+    SpellingList: ${content}
+
+    Please perform the following tasks:
+
+    1. Organize the output into the following JSON structure:
+ListName: The name of the spelling list.
           - OriginalWords: A flat list of all valid words extracted from the list.
-          - SyllabusWords: The same words as in the provided "Spelling List" but with syllables separated by hyphens (e.g., "syllabus" → "syl-la-bus"). If dictionary-based syllable splitting is unavailable, use heuristic methods to approximate the syllables.
+SyllabusWords:
+A list of objects, where each object represents a single word.
+Each object has three properties:
+Word: The original word.
+Options: A list of four possible syllable divisions for the word, including one correct division and three incorrect options.
+Answer: The correct syllable division for the word.
           - GroupedWords: Group the words logically based on spelling patterns (e.g., words with common suffixes like "-ing," "-ed," or blends like "ch," "sh," or vowel sounds). Create groups as "Group 1," "Group 2," etc.
-          - SightWords: Include only explicitly labeled sight words from the list. If no sight words are found, this field should be empty.
 
-        2. Provide only the JSON output as the response. Exclude any explanation or additional details. Ensure that the final JSON is well-structured, with meaningful grouping and accurate syllable separation.`,
+SightWords:
+A list of words that are considered "sight words" (words that should be recognized immediately by sight).
+If no sight words are found in the list, this will be an empty list.
+
+    2. Provide only the JSON output as the response. Exclude any explanation or additional details. Ensure that the final JSON is well-structured, with meaningful grouping and accurate syllable separation.
+
+    **Important Notes:**
+
+    - For "SyllabusWords", generate three plausible incorrect syllable divisions along with the correct one.
+    - Group "GroupedWords" logically based on spelling patterns (e.g., suffixes, blends, vowel sounds).
+    - If no sight words are found, the "SightWords" field should be an empty array (e.g., "SightWords": []).`,
         },
       ],
       max_tokens: 2000,
