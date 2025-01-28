@@ -78,7 +78,7 @@ const WordList = ({ spellingLists, user }: { spellingLists: SpellingListItem[], 
       }
     } catch (error) {
       console.error("Error saving words:", error);
-      alert("Error saving words.");
+      alert("Error processing file with AI, Please Try again");
     } finally {
       clearInterval(uploadInterval);
       setProgress(100);
