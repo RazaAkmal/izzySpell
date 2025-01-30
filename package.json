@@ -23,6 +23,8 @@
     "openai": "^4.77.3",
     "rc-pagination": "^4.3.0",
     "react": "^18.3.1",
+    "react-dnd": "^16.0.1",
+    "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^18.3.1",
     "react-dropzone": "^14.3.5",
     "react-hook-form": "^7.53.1",
