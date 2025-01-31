@@ -19,7 +19,7 @@ interface PracticeWordModalProps {
 }
 const ModeCard = ({ imageSrc, altText, label, onClick }: ModeCardType) => (
   <div
-    className="bg-white flex flex-col items-center justify-center gap-2 p-4 rounded-lg shadow-md w-60 h-60 sm:w-40 md:w-60 cursor-pointer hover:bg-blue-100"
+    className="bg-white flex md:flex-col items-center justify-center gap-2 p-4 rounded-lg shadow-md w-60 h-36 md:h-60 cursor-pointer hover:bg-blue-100"
     onClick={onClick}
   >
     <Image

@@ -71,6 +71,8 @@ const WordList = ({ spellingLists, user }: { spellingLists: SpellingListItem[], 
           setAiResponse(response.data);
           setIsModalOpen(true);
         }, 1000);
+        setTextAreaContent("")
+        setInputField(["", "", ""])
       } else {
         alert(`${response.error}`);
         clearInterval(uploadInterval);

@@ -67,11 +67,11 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
     }
 
     //  word is fully type or not
-    const word = currentGroup[rowIndex].word;
+    const word = currentGroup[rowIndex].word.toLowerCase();;
     const userWord = [
       ...word.slice(0, 2),
       ...updatedInputs[rowIndex].slice(2),
-    ].join("");
+    ].join("").toLowerCase();;
 
     const updatedValidation = [...validationStates];
     if (userWord.length === word.length) {
