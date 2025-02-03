@@ -26,14 +26,25 @@ const ItemTypes = {
   LETTER: "letter",
 };
 
-const LetterComponent = ({ letter, index, onClick }: { letter: string; index: number; onClick: (letter: string, index: number) => void }) => {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: ItemTypes.LETTER,
-    item: { letter, index, fromScrambled: true } as Letter,
-    collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),
+const LetterComponent = ({
+  letter,
+  index,
+  onClick,
+}: {
+  letter: string;
+  index: number;
+  onClick: (letter: string, index: number) => void;
+}) => {
+  const [{ isDragging }, drag] = useDrag(
+    () => ({
+      type: ItemTypes.LETTER,
+      item: { letter, index, fromScrambled: true } as Letter,
+      collect: (monitor) => ({
+        isDragging: !!monitor.isDragging(),
+      }),
     }),
-  }), [letter, index]);
+    [letter, index]
+  );
 
   const ref = React.useRef<HTMLDivElement>(null);
 
@@ -53,22 +64,36 @@ const LetterComponent = ({ letter, index, onClick }: { letter: string; index: nu
   );
 };
 
-const SlotComponent = ({ letter, index, onDrop }: { letter: string | undefined; index: number; onDrop: (item: Letter, index: number) => void }) => {
-  const [{ isOver }, drop] = useDrop(() => ({
-    accept: ItemTypes.LETTER,
-    collect: (monitor) => ({
-      isOver: !!monitor.isOver(),
+const SlotComponent = ({
+  letter,
+  index,
+  onDrop,
+}: {
+  letter: string | undefined;
+  index: number;
+  onDrop: (item: Letter, index: number) => void;
+}) => {
+  const [{ isOver }, drop] = useDrop(
+    () => ({
+      accept: ItemTypes.LETTER,
+      collect: (monitor) => ({
+        isOver: !!monitor.isOver(),
+      }),
+      drop: (item: Letter) => onDrop(item, index),
     }),
-    drop: (item: Letter) => onDrop(item, index),
-  }), [index, onDrop]);
+    [index, onDrop]
+  );
 
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: ItemTypes.LETTER,
-    item: { letter, index, fromScrambled: false } as Letter,
-    collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),
+  const [{ isDragging }, drag] = useDrag(
+    () => ({
+      type: ItemTypes.LETTER,
+      item: { letter, index, fromScrambled: false } as Letter,
+      collect: (monitor) => ({
+        isDragging: !!monitor.isDragging(),
+      }),
     }),
-  }), [letter, index]);
+    [letter, index]
+  );
 
   const ref = React.useRef<HTMLDivElement>(null);
 
@@ -82,22 +107,21 @@ const SlotComponent = ({ letter, index, onDrop }: { letter: string | undefined; 
       ref={ref}
       className={`flex flex-wrap w-14 h-14 border-2 border-darkGreen rounded-xl items-center justify-center shadow-md ${
         letter ? "bg-darkGreen" : "bg-greenLite"
-      } ${isOver ? 'bg-yellow-200' : ''}`}
+      } ${isOver ? "bg-yellow-200" : ""}`}
       style={{ opacity: isDragging ? 0.5 : 1 }}
     >
-      <span className="text-2xl font-bold text-white">
-        {letter || ""}
-      </span>
+      <span className="text-2xl font-bold text-white">{letter || ""}</span>
     </div>
   );
 };
-
 const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
   const wordsSpell = words.map((word) => word.word);
   const router = useRouter();
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedLetters, setSelectedLetters] = useState<string[][]>(Array(wordsSpell[0]?.length || 0).fill([]));
+  const [selectedLetters, setSelectedLetters] = useState<string[]>(
+    Array(wordsSpell[0]?.length || 0).fill("")
+  );
   const [isCorrect, setIsCorrect] = useState(true);
   const [scrambledLetters, setScrambledLetters] = useState<string[]>([]);
 
@@ -114,7 +138,7 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    setSelectedLetters(Array(wordsSpell[page - 1]?.length || 0).fill([]));
+    setSelectedLetters(Array(wordsSpell[page - 1]?.length || 0).fill(""));
     setIsCorrect(true);
   };
 
@@ -127,7 +151,9 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
         setIsCorrect(true);
         setTimeout(() => {
           setCurrentPage((prevPage) => prevPage + 1);
-          setSelectedLetters(Array(wordsSpell[currentPage]?.length || 0).fill([]));
+          setSelectedLetters(
+            Array(wordsSpell[currentPage]?.length || 0).fill("")
+          );
         }, 2000);
       } else {
         setIsCorrect(false);
@@ -136,35 +162,54 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
   };
 
   const handleDrop = (item: Letter, slotIndex: number) => {
-    const selected = Array.from(selectedLetters);
-    const scrambled = Array.from(scrambledLetters);
+    const selected = [...selectedLetters];
+    const scrambled = [...scrambledLetters];
 
     if (item.fromScrambled) {
-      const nextEmptyIndex = selected.findIndex((slot) => slot.length === 0);
+      // If the letter is from the scrambled area, add it to the first empty slot in selectedLetters
+      const nextEmptyIndex = selected.findIndex((slot) => slot === "");
       if (nextEmptyIndex !== -1) {
-        selected[slotIndex] = [item.letter];
+        selected[nextEmptyIndex] = item.letter;
         const scrambledIndex = scrambled.indexOf(item.letter);
         if (scrambledIndex > -1) {
           scrambled.splice(scrambledIndex, 1);
         }
       }
     } else {
+      // If the letter is being dragged within the selectedLetters, swap it with the target slot
       const draggedItem = selected[item.index];
-      selected.splice(item.index, 1);
-      selected.splice(slotIndex, 0, draggedItem);
+      const targetItem = selected[slotIndex];
+
+      // Swap the letters
+      selected[item.index] = targetItem;
+      selected[slotIndex] = draggedItem;
     }
 
     setSelectedLetters(selected);
     setScrambledLetters(scrambled);
-    validateWord(selected.flat());
+    validateWord(selected);
+  };
+
+  const handleDropToScrambled = (item: Letter) => {
+    if (!item.fromScrambled) {
+      const selected = [...selectedLetters];
+      const scrambled = [...scrambledLetters];
+
+      selected[item.index] = "";
+      scrambled.push(item.letter);
+
+      setSelectedLetters(selected);
+      setScrambledLetters(scrambled);
+      validateWord(selected);
+    }
   };
 
   const handleLetterClick = (letter: string, index: number) => {
-    const nextEmptyIndex = selectedLetters.findIndex((slot) => slot.length === 0);
+    const nextEmptyIndex = selectedLetters.findIndex((slot) => slot === "");
 
     if (nextEmptyIndex !== -1) {
       const updatedLetters = [...selectedLetters];
-      updatedLetters[nextEmptyIndex] = [letter];
+      updatedLetters[nextEmptyIndex] = letter;
       setSelectedLetters(updatedLetters);
 
       setScrambledLetters((prevScrambled) => {
@@ -173,12 +218,12 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
         return newScrambled;
       });
 
-      validateWord(updatedLetters.flat());
+      validateWord(updatedLetters);
     }
   };
 
   const handleReset = () => {
-    setSelectedLetters(Array(currentWord?.length || 0).fill([]));
+    setSelectedLetters(Array(currentWord?.length || 0).fill(""));
     setIsCorrect(true);
     if (currentWord) {
       setScrambledLetters(scrambleWord(currentWord));
@@ -188,9 +233,49 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
   useEffect(() => {
     if (currentWord) {
       setScrambledLetters(scrambleWord(currentWord));
-      setSelectedLetters(Array(currentWord.length).fill([]));
+      setSelectedLetters(Array(currentWord.length).fill(""));
     }
   }, [currentWord, scrambleWord]);
+
+  const ScrambledDropZone = () => {
+    const [{ isOver }, drop] = useDrop(() => ({
+      accept: ItemTypes.LETTER,
+      drop: (item: Letter) => handleDropToScrambled(item),
+      collect: (monitor) => ({
+        isOver: !!monitor.isOver(),
+      }),
+    }));
+
+    const ref = React.useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      drop(ref);
+    }, [drop]);
+
+    return (
+      <div
+        ref={ref}
+        className={`flex flex-wrap justify-center gap-3 p-4 rounded-lg ${
+          isOver ? "bg-yellow-200" : "bg-transparent"
+        }`}
+      >
+        {scrambledLetters.length > 0 ? (
+          scrambledLetters.map((letter, index) => (
+            <LetterComponent
+              letter={letter}
+              index={index}
+              key={index}
+              onClick={handleLetterClick}
+            />
+          ))
+        ) : (
+          <div className="w-16 h-16 border-2 border-dashed border-darkGreen rounded-xl flex items-center justify-center">
+            <span className="text-2xl font-bold text-darkGreen">+</span>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -235,15 +320,20 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
               <div className="flex flex-col md:flex-row items-center justify-center gap-2">
                 <div
                   className={`flex flex-wrap border-[3px] rounded-2xl md:ml-4 p-4 bg-white justify-center gap-3 ${
-                    isCorrect ? "border-darkGreen" : "border-red-500"
+                    selectedLetters.every((item) => item !== "") ? isCorrect  ? "border-darkGreen" : "border-red-500" : 'border-darkGreen'
                   }`}
                 >
                   {selectedLetters.map((letter, index) => (
-                    <SlotComponent letter={letter[0]} index={index} onDrop={handleDrop} key={index} />
+                    <SlotComponent
+                      letter={letter}
+                      index={index}
+                      onDrop={handleDrop}
+                      key={index}
+                    />
                   ))}
                 </div>
                 <div className="flex items-center justify-center">
-                  {!isCorrect && (
+                  {!isCorrect && selectedLetters.every((item) => item !== "") && (
                     <button onClick={handleReset} className="rounded-2xl">
                       <Image
                         src="/images/resetIcon.svg"
@@ -255,7 +345,7 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
                   )}
                 </div>
 
-                {isCorrect && selectedLetters.flat().length === currentWord.length && (
+                {isCorrect && selectedLetters.every((item) => item !== "") && (
                   <div className="flex items-center justify-center">
                     <button className="text-white font-bold text-lg rounded-full">
                       <Image
@@ -270,9 +360,7 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
               </div>
 
               <div className="flex flex-wrap justify-center gap-3">
-                {scrambledLetters.map((letter, index) => (
-                  <LetterComponent letter={letter} index={index} key={index} onClick={handleLetterClick} />
-                ))}
+                <ScrambledDropZone />
               </div>
 
               <div>
