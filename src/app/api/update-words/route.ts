@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 
 export async function PATCH(req: Request) {
   try {
-    // Parse the request body
     const { userId, listId, listName, words, extractedWords } = await req.json();
 
     // Validate the input
@@ -21,84 +20,133 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
-    // Verify the spelling list exists for the user
     const spellingList = await prisma.spellingList.findUnique({
       where: { id: listId, userId },
-      include: { words: true, syllableWords: true, groupedWords: true },
+      include: { words: true },
     });
 
     if (!spellingList) {
       return NextResponse.json({ error: "Spelling list not found." }, { status: 404 });
     }
 
-    // Update the spelling list name
-    await prisma.spellingList.update({
-      where: { id: listId },
-      data: { listName },
-    });
+    // Check if the list name has changed
+    const hasListNameChanged = spellingList.listName !== listName;
 
-    // Delete existing related data (syllableWords, groupedWords)
-    await prisma.syllableWord.deleteMany({ where: { listId } });
-    await prisma.groupedWord.deleteMany({ where: { listId } });
+    // Check if the words have changed
 
-    // Update or create words
-    const updatedWords = [];
-    for (const word of words) {
-      if (word.id) {
-        // Update existing word if changed
-        const existingWord = spellingList.words.find((w) => w.id === word.id);
-        if (existingWord && existingWord.word !== word.word) {
-          const updatedWord = await prisma.word.update({
-            where: { id: word.id },
-            data: { word: word.word },
-          });
-          updatedWords.push(updatedWord);
-        }
-      } else if (word.word) {
-        // Create new word
-        const newWord = await prisma.word.create({
-          data: {
-            word: word.word,
-            listId,
-            type: "original",
-          },
+    const hasWordsChanged = words === null || words.length === 0
+      ? false : true;
+
+    // If only the list name has changed, update it and skip other operations
+    if (hasListNameChanged && !hasWordsChanged) {
+      await prisma.spellingList.update({
+        where: { id: listId },
+        data: { listName },
+      });
+
+      // Revalidate the path after the update
+      revalidatePath("/lists");
+
+      return NextResponse.json(
+        { message: "List name updated successfully!" },
+        { status: 200 }
+      );
+    }
+    // If words have changed, perform word-related operations
+    if (hasWordsChanged) {
+      // Update the spelling list name if it has changed
+      if (hasListNameChanged) {
+        await prisma.spellingList.update({
+          where: { id: listId },
+          data: { listName },
         });
-        updatedWords.push(newWord);
+      }
+
+      // Delete existing related data (syllableWords, groupedWords)
+      await prisma.syllableWord.deleteMany({ where: { listId } });
+      await prisma.groupedWord.deleteMany({ where: { listId } });
+
+      // Update or create words
+      const updatedWords = [];
+      for (const word of words) {
+        if (word.id) {
+          // Update existing word if changed
+          const existingWord = spellingList.words.find((w) => w.id === word.id);
+          if (existingWord && existingWord.word !== word.word) {
+            const updatedWord = await prisma.word.update({
+              where: { id: word.id },
+              data: { word: word.word },
+            });
+            updatedWords.push(updatedWord);
+          }
+        } else if (word.word) {
+          // Create new word
+          const newWord = await prisma.word.create({
+            data: {
+              word: word.word,
+              listId,
+              type: "original",
+            },
+          });
+          updatedWords.push(newWord);
+        }
+      }
+      // Validate extractedWords before using it
+      if (
+        extractedWords &&
+        Array.isArray(extractedWords.SyllabusWords) &&
+        Array.isArray(extractedWords.OriginalWords) &&
+        extractedWords.GroupedWords &&
+        typeof extractedWords.GroupedWords === "object"
+      ) {
+        // Explicitly type extractedWords.GroupedWords as a Record<string, string[]>
+        const groupedWords = extractedWords.GroupedWords as Record<string, string[]>;
+
+        // Generate and save new syllable words
+        const newSyllableWords = await prisma.syllableWord.createMany({
+          data: extractedWords.SyllabusWords.map((syllableWord: any) => ({
+            word: syllableWord.Word, // Map "Word" to "word"
+            options: syllableWord.Options, // Map "Options" to "options"
+            answer: syllableWord.Answer, // Map "Answer" to "answer"
+            listId,
+          })),
+          skipDuplicates: true, // Avoid duplicate entries
+        });
+
+        // Generate and save new grouped words
+        const newGroupedWords = await prisma.groupedWord.createMany({
+          data: Object.entries(groupedWords).flatMap(
+            ([groupName, groupWords]) =>
+              groupWords.map((word: string) => ({
+                groupName,
+                word,
+                listId,
+              }))
+          ),
+          skipDuplicates: true, // Avoid duplicate entries
+        });
+
+        // Revalidate the path after the update
+        revalidatePath("/lists");
+
+        // Return the response with updated list and words
+        return NextResponse.json(
+          {
+            message: "Spelling list, grouped words, and syllable words updated successfully!",
+            updatedWords,
+            newSyllableWords,
+            newGroupedWords,
+          },
+          { status: 200 }
+        );
+      } else {
+        console.warn("Invalid or missing extractedWords:", extractedWords);
       }
     }
 
-    // Generate and save new syllable words
-    const newSyllableWords = await prisma.syllableWord.createMany({
-      data: extractedWords.SyllabusWords.map((syllableWord: string, index: number) => ({
-        syllables: syllableWord,
-        word: extractedWords.OriginalWords[index],
-        listId,
-      })),
-    });
-
-    // Generate and save new grouped words
-    const newGroupedWords = await prisma.groupedWord.createMany({
-      data: Object.entries(extractedWords.GroupedWords as Record<string, string[]>).flatMap(
-        ([groupName, groupWords]) =>
-          groupWords.map((word: string) => ({
-            groupName,
-            word,
-            listId,
-          }))
-      ),
-    });
-
-    // Revalidate the path after the update
-    revalidatePath("/lists");
-
-    // Return the response with updated list and words
+    // If no changes were detected, return a message
     return NextResponse.json(
-      {
-        message: "Spelling list, grouped words, and syllable words updated successfully!",
-        updatedWords,
-        newSyllableWords,
-        newGroupedWords,
-      },
+      { message: "No changes detected." },
       { status: 200 }
     );
   } catch (error) {

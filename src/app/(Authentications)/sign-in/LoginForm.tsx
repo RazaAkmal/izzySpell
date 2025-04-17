@@ -24,13 +24,13 @@ const LoginForm = () => {
   const [isPending, setIsPending] = React.useState(false);
 
   const onSubmit: SubmitHandler<loginFormValues> = async (data) => {
+    setErrorMessage('')
     setIsPending(true);
     const formData = new FormData();
     formData.append("name", data.name);
     formData.append("password", data.password);
     const result = await authenticate(userName, formData);
     if (result) {
-      // Show the error message without reloading the component
       setErrorMessage(result);
     }
     setIsPending(false);

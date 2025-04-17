@@ -18,11 +18,20 @@ You are a text-processing assistant designed to extract and structure spelling l
      The `Options` field should contain four options, with one being the correct syllable division, and the others being plausible but incorrect patterns. For example:
      ```json
      {
-       "Word": "syllabus",
-       "Options": ["syl-la-bus", "sy-llabus", "syl-lab-us", "syll-abus"],
-       "Answer": "syl-la-bus"
+       "Word": "blanket",
+       "Options": ["blan-ket", "bla-nket", "blank-et", "blan-ket"],
+       "Answer": "blan-ket"
      }
      ```
+
+     **Important Notes for Syllable Splitting:**
+     - Use standard syllable division rules based on phonetics and spelling conventions.
+     - A syllable typically contains one vowel sound (a, e, i, o, u) and may include consonants before or after it.
+     - For example:
+       - "apple" → "ap-ple"
+       - "banana" → "ba-na-na"
+       - "syllable" → "syl-la-ble"
+     - Ensure that the incorrect options are plausible but incorrect, following phonetic principles.
 
 2. **Group the words logically based on common spelling patterns into:**
    - **GroupedWords:** Organize words by their shared spelling patterns (e.g., suffixes like "-ing," "-ed," blends like "ch," "sh," or vowel sounds).

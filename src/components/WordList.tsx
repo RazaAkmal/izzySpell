@@ -9,7 +9,8 @@ import Progress from "./Progress";
 import { processFileWithAI } from "@/app/actions/AiService";
 import { SpellingListItem } from "@/lib/defination";
 
-const WordList = ({ spellingLists, user }: { spellingLists: SpellingListItem[], user: any }) => {
+const WordList = ({ spellingLists, user, refreshSpellingLists }: { spellingLists: SpellingListItem[], user: any,   refreshSpellingLists: () => Promise<void>; // Add the callback prop
+}) => {
   const [isTextAreaMode, setIsTextAreaMode] = useState(false);
   const [inputField, setInputField] = useState<string[]>(["", "", ""]);
   const [textAreaContent, setTextAreaContent] = useState<string>("");
@@ -211,6 +212,7 @@ const WordList = ({ spellingLists, user }: { spellingLists: SpellingListItem[], 
       {/* Modal */}
       {aiResponse && (
         <Modal
+          refreshSpellingLists={refreshSpellingLists}
           spellingLists={spellingLists}
           aiResponse={aiResponse}
           isOpen={isModalOpen}

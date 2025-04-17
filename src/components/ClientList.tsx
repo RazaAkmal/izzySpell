@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { SpellingListItem } from "@/lib/defination";
 import CustomButton from "./HeadlessButton";
@@ -11,31 +11,27 @@ const ClientList = ({
 }: {
   spellingLists: SpellingListItem[];
 }) => {
-  const router=useRouter()
+  const router = useRouter();
 
   const [displayedLists, setDisplayedLists] = useState(
-    spellingLists.slice(-3)
+    spellingLists.slice(0, 3)
   );
   const [allLists, setAllLists] = useState(spellingLists);
 
+  // Sync state with updated spellingLists prop
+  useEffect(() => {
+    setAllLists(spellingLists);
+    setDisplayedLists(spellingLists.slice(0, 3)); // Always show the newest 3 lists
+  }, [spellingLists]);
+
   const handleRemoveItem = (itemId: number) => {
-    const newDisplayedLists = displayedLists.filter(
-      (item) => item.id !== itemId
-    );
-    if (
-      newDisplayedLists.length < 3 &&
-      allLists.length > displayedLists.length
-    ) {
-      const remainingItems = allLists.slice(
-        displayedLists.length,
-        displayedLists.length + 1
-      );
-      setDisplayedLists([...newDisplayedLists, ...remainingItems]);
-    } else {
-      setDisplayedLists(newDisplayedLists);
-    }
-    setAllLists(allLists.filter((item) => item.id !== itemId));
+    const updatedAllLists = allLists.filter((item) => item.id !== itemId);
+    setAllLists(updatedAllLists);
+
+    const updatedDisplayedLists = updatedAllLists.slice(-3); // Update displayed lists
+    setDisplayedLists(updatedDisplayedLists);
   };
+
   const handleNavigateToList = () => {
     const isNavigate = localStorage.getItem("isNavigate");
     if (isNavigate === "true") {
@@ -48,13 +44,14 @@ const ClientList = ({
       if (userConfirmed) {
         router.push("/lists");
         localStorage.removeItem("isNavigate");
-      } 
+      }
     } else {
       router.push("/lists");
       localStorage.removeItem("isNavigate");
     }
   };
-  const handleNavigateToSpellParactice = (id: number) => {
+
+  const handleNavigateToSpellPractice = (id: number) => {
     const isNavigate = localStorage.getItem("isNavigate");
     if (isNavigate === "true") {
       router.push(`/spellPractice/${id}`);
@@ -66,7 +63,7 @@ const ClientList = ({
       if (userConfirmed) {
         router.push(`/spellPractice/${id}`);
         localStorage.removeItem("isNavigate");
-      } 
+      }
     } else {
       router.push(`/spellPractice/${id}`);
       localStorage.removeItem("isNavigate");
@@ -77,13 +74,13 @@ const ClientList = ({
     <>
       <div className="flex items-center justify-between md:flex-row flex-col">
         <div className="w-52 md:block hidden"></div>
-          <Image
-            src="/images/titles/MyListTitle.svg"
-            alt="User avatar"
-            width={40}
-            height={40}
-            className="w-52"
-          />
+        <Image
+          src="/images/titles/MyListTitle.svg"
+          alt="User avatar"
+          width={40}
+          height={40}
+          className="w-52"
+        />
         <CustomButton
           label="Manage Lists"
           fullWidth={false}
@@ -98,7 +95,7 @@ const ClientList = ({
           {displayedLists.map((item) => (
             <div
               key={item.id}
-              onClick={() => handleNavigateToSpellParactice(item.id)}
+              onClick={() => handleNavigateToSpellPractice(item.id)}
               className="flex w-full items-center p-2 bg-white border-[1px] border-gray-600 rounded-lg shadow-md space-x-3"
             >
               <div
@@ -109,7 +106,10 @@ const ClientList = ({
               </span>
               <button
                 className="text-gray-400 hover:text-gray-600"
-                onClick={() => handleRemoveItem(item.id)}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent triggering the parent click
+                  handleRemoveItem(item.id);
+                }}
               >
                 <Image
                   src="/images/Vector.svg"

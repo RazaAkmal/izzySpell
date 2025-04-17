@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { Button } from "@headlessui/react";
 import CustomButton from "./HeadlessButton";
-import { revalidateRoute } from "@/app/actions/revalidate";
 import { SpellingListItem } from "@/lib/defination";
 import { debounce } from "lodash";
 import { processFileWithAI } from "@/app/actions/AiService";
@@ -15,6 +14,7 @@ interface ModalProps {
   onClose: () => void;
   userId?: string;
   spellingLists: SpellingListItem[];
+  refreshSpellingLists: () => Promise<void>; 
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -23,6 +23,7 @@ const Modal: React.FC<ModalProps> = ({
   onClose,
   userId,
   spellingLists,
+  refreshSpellingLists,
 }) => {
   const [listName, setListName] = useState<string>("");
   const [isInvalid, setIsInvalid] = useState<boolean>(false);
@@ -58,34 +59,36 @@ const Modal: React.FC<ModalProps> = ({
 
   const saveWordsList = async (finalAiResponse: any) => {
     try {
-    const response = await fetch("/api/save-words", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        listName,
-        words: spellList.map((spell) => spell.word),
-        extractedWords: finalAiResponse,
-        userId: userId,
-      }),
-    });
-    await revalidateRoute("/dashboard");
+      const response = await fetch("/api/save-words", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          listName,
+          words: spellList.map((spell) => spell.word),
+          extractedWords: finalAiResponse,
+          userId: userId,
+        }),
+      });
 
-    if (!response.ok) {
-      throw new Error("Failed to save the list");
+      if (!response.ok) {
+        throw new Error("Failed to save the list");
+      }
+
+      // Re-fetch the spelling lists after saving
+      await refreshSpellingLists();
+
+      setListName("");
+      alert("Your list has been saved successfully!");
+      setLoading(false);
+      onClose(); // Close the modal after saving
+    } catch (error) {
+      setLoading(false);
+      console.error("Error saving the list:", error);
+      alert("An error occurred while saving the list. Please try again.");
     }
-
-    setListName("");
-    alert("Your list has been saved successfully!");
-    setLoading(false)
-    onClose(); // Close the modal after saving
-  } catch (error) {
-    setLoading(false)
-    console.error("Error saving the list:", error);
-    alert("An error occurred while saving the list. Please try again.");
-  }
-  }
+  };
 
   const handleSave = async () => {
     if (spellList.some((spell) => !spell.word.trim()) || !listName.trim()) {

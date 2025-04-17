@@ -90,81 +90,82 @@ const EditWordModal: React.FC<ModalProps> = ({
 
   const handleSave = async () => {
     setLoading(true);
+
     if (
       modifiedWords.some((word) => !word.word.trim()) ||
       !listName.trim() ||
       newWords.some((word) => !word.trim())
     ) {
       alert("Please ensure all words are valid and the list name is provided.");
+      setLoading(false);
       return;
     }
+
     // Check if the spelling list has changed
     const originalWordsString = JSON.stringify(
       listWithWords.words.map((word) => word.word)
     );
-    const currentWordsString = JSON.stringify(
-      spellList.map((word) => word.word)
-    );
+    const currentWordsArray = spellList.map((word) => word.word); // Convert current words to an array
+    const mergedWordsArray = [...currentWordsArray, ...newWords]; // Merge current words with new words
+    const mergedWordsString = JSON.stringify(mergedWordsArray); // Convert merged array to a JSON string
 
     const hasWordsChanged =
-      originalWordsString !== currentWordsString || newWords.length > 0;
+      originalWordsString !== JSON.stringify(currentWordsArray) || newWords.length > 0;
+
+    const hasListNameChanged = listName !== listWithWords.listName;
+
+    if (!hasWordsChanged && !hasListNameChanged) {
+      alert("There is no change to save");
+      setLoading(false);
+      return;
+    }
 
     try {
-      if (hasWordsChanged) {
-        const mergedWordsString = `${currentWordsString} ${newWords.join(" ")}`;
+      const requestData = {
+        userId,
+        listId: listWithWords.id,
+        listName,
+        words: [
+          ...modifiedWords,
+          ...newWords.map((word) => ({ id: null, word })),
+        ],
+        extractedWords: {}, // Pass an empty object if no AI processing is needed
+      };
 
+      if (hasWordsChanged) {
         const response = await processFileWithAI(mergedWordsString);
         const AIResponse = await response.data;
+
         if (!response.success) {
           alert(`${response.error}`);
+          setLoading(false);
           return;
         }
-        try {
-          const requestData = {
-            userId,
-            listId: listWithWords.id,
-            listName,
-            words: [
-              ...modifiedWords,
-              ...newWords.map((word) => ({ id: null, word })),
-            ],
-            extractedWords: AIResponse, // Object containing syllable and grouped words
-          };
-          const response = await fetch("/api/update-words", {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(requestData),
-          });
 
-          if (!response.ok) {
-            throw new Error("Failed to save the list");
-          }
-
-          alert("Your changes have been saved successfully!");
-          await revalidateRoute("/lists");
-          setModifiedWords([]);
-          setNewWords([]);
-          setLoading(false);
-          onClose();
-        } catch (error) {
-          console.error("Error saving the list:", error);
-          setLoading(false);
-          alert("An error occurred while saving the list. Please try again.");
-        }
-        return;
-      } else {
-        alert("There is no change to save");
-        setLoading(false);
-        return;
+        requestData.extractedWords = AIResponse; // Add AI response to the request
       }
-    } catch (error) {
+
+      const response = await fetch("/api/update-words", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save the list");
+      }
+      alert("Your changes have been saved successfully!");
+      await revalidateRoute("/lists");
+      setModifiedWords([]);
+      setNewWords([]);
       setLoading(false);
+      onClose();
+    } catch (error) {
       console.error("Error saving the list:", error);
-      alert(
-        "An unexpected error occurred while processing the file. Please try again."
-      );
+      setLoading(false);
+      alert("An error occurred while saving the list. Please try again.");
     }
   };
 
@@ -174,7 +175,6 @@ const EditWordModal: React.FC<ModalProps> = ({
     <div>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-lightBlue border-2 border-sky-300 flex flex-col rounded-md shadow-lg p-4 max-w-screen-lg w-full z-10">
-          {/* Close Button */}
           <div className="flex justify-end">
             <Button onClick={onClose} className="focus:outline-none">
               <Image
