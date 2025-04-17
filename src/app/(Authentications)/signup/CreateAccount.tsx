@@ -75,12 +75,12 @@ const SignupForm = () => {
             message: "Username must be at least 4 characters",
           },
           pattern: {
-            value: /^[A-Za-z0-9]+$/,
+            value: /^[\p{L}\p{N}]+$/u,
             message: "Username must contain only letters and numbers",
           },
           validate: {
             notOnlyNumbers: (value: string) =>
-              /[a-zA-Z]/.test(value) || "Username cannot be all numbers",
+              /\p{L}/u.test(value) || "Username cannot be all numbers",
           },
         }}
       />

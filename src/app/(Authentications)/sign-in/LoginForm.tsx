@@ -1,32 +1,47 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
+import React from "react";
+import { useForm, SubmitHandler } from "react-hook-form";
 import CustomButton from "@/components/HeadlessButton";
 import InputField from "@/components/Input";
 import Link from "next/link";
-import React from "react";
-import { useForm } from "react-hook-form";
 import { loginFormValues } from "@/lib/defination";
-import { useActionState } from "react";
 import { authenticate } from "@/app/actions/authenticate";
 import { useSearchParams } from "next/navigation";
 
 const LoginForm = () => {
   const searchParams = useSearchParams();
-  const userName = searchParams.get("userName") || ""; 
+  const userName = searchParams.get("userName") || "";
   const {
     register,
+    handleSubmit,
     formState: { errors },
+    watch,
   } = useForm<loginFormValues>({
-    defaultValues: { name: userName || '' },
+    defaultValues: { name: userName },
   });
-  const [errorMessage, formAction, isPending] = useActionState(
-    authenticate,
-    undefined
-  );
+  const [errorMessage, setErrorMessage] = React.useState("");
+  const [isPending, setIsPending] = React.useState(false);
+
+  const onSubmit: SubmitHandler<loginFormValues> = async (data) => {
+    setIsPending(true);
+    const formData = new FormData();
+    formData.append("name", data.name);
+    formData.append("password", data.password);
+    const result = await authenticate(userName, formData);
+    if (result) {
+      // Show the error message without reloading the component
+      setErrorMessage(result);
+    }
+    setIsPending(false);
+  };
+
+  const name = watch("name");
+  const password = watch("password");
 
   return (
     <form
-      action={formAction}
+      onSubmit={handleSubmit(onSubmit)}
       className="space-y-4 w-full flex flex-col items-center"
     >
       <InputField
@@ -54,16 +69,14 @@ const LoginForm = () => {
       </div>
       <div className="w-full max-w-md px-4">
         <CustomButton
-          disabled={isPending}
+          disabled={isPending || !name || !password}
           type="submit"
           label="Log in"
           fullWidth
         />
       </div>
       {errorMessage && (
-        <>
-          <p className="text-sm text-red-500">{errorMessage}</p>
-        </>
+        <p className="text-sm text-red-500">{errorMessage}</p>
       )}
     </form>
   );
