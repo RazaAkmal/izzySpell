@@ -8,7 +8,10 @@ import Modal from "@/components/WordListModal";
 import { readFileContent } from "@/app/utils/fileReaderUtil";
 import { processFileWithAI } from "@/app/actions/AiService";
 
-function UploadWord({ user }: any) {
+function UploadWord({ user, refreshSpellingLists }: {
+  user: any,   
+  refreshSpellingLists: () => Promise<void>;
+}) {
   const [file, setFile] = useState<File | null>(null); // Store the file
   const [progress, setProgress] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -152,6 +155,7 @@ function UploadWord({ user }: any) {
       {/* Modal */}
       {aiResponse && (
         <Modal
+          refreshSpellingLists={refreshSpellingLists}
           aiResponse={aiResponse}
           isOpen={isModalOpen}
           userId={user.id}

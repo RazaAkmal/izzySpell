@@ -28,7 +28,7 @@ const DashboardClient: React.FC<DashboardClientProps> = ({
   return (
     <div>
       <div className="flex flex-col md:flex-row justify-around gap-2 m-2">
-        <UploadWord user={user} />
+        <UploadWord user={user} refreshSpellingLists={refreshSpellingLists} />
         <WordList
           user={user}
           spellingLists={spellingLists}
