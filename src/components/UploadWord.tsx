@@ -24,15 +24,16 @@ function UploadWord({ user, refreshSpellingLists }: {
 
     const uploadInterval = setInterval(() => {
       currentStep += 1;
-      setProgress((currentStep / totalSteps) * 100);
+      setProgress(Math.round((currentStep / totalSteps) * 100)); // Round the progress value
 
       if (currentStep === totalSteps - 1) {
         clearInterval(uploadInterval);
       }
-    }, 1000);
+    }, 2000);
+
     try {
       const content = await readFileContent(uploadedFile);
-        
+
       if (!content) {
         alert(
           "The file content is empty or could not be read. Please try another file."
@@ -41,6 +42,7 @@ function UploadWord({ user, refreshSpellingLists }: {
         return;
       }
 
+      console.log(content);
       const response = await processFileWithAI(content);
 
       if (response.success) {
@@ -57,7 +59,6 @@ function UploadWord({ user, refreshSpellingLists }: {
         setProgress(0);
       }
     } catch (error) {
-      // Catch unexpected errors during execution
       console.error("Unexpected Error:", error);
       alert(
         "An unexpected error occurred while processing the file. Please try again."
