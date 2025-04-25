@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.3",
+    "@aws-sdk/client-textract": "^3.796.0",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.1.5",
     "@prisma/client": "^5.22.0",

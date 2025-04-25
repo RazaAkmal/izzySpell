@@ -23,7 +23,8 @@ const MarkAsStudiedButton: React.FC<MarkAsStudiedButtonProps> = ({ wordIds }) =>
       size="small"
       variant="success"
       radius="rounded"
-      onClick={markWordsStudied} // onClick handler in Client Component
+      className="w-full md:w-auto"
+      onClick={markWordsStudied}
     />
   );
 };

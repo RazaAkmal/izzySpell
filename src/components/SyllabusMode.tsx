@@ -57,6 +57,11 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
   const checkAnswer = (selectedOption: string) => {
     if (selectedOption === correctSyllable) {
       setIsCorrectAnswer(true);
+      setTimeout(() => {
+        setCurrentPage((prevPage) => prevPage + 1);
+        setSelectedOption(null);
+        setIsCorrectAnswer(null);
+      }, 2000);
     } else {
       setIsCorrectAnswer(false);
     }

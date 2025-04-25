@@ -7,6 +7,7 @@ import CustomButton from "@/components/HeadlessButton";
 import TextToSpeech from "@/components/TextToSpeach";
 import PracticeWordModal from "@/components/PraticeWordModal";
 import MarkAsStudiedButton from "@/components/MarkAsStudiedButton";
+import GoToHomeButton from "@/components/GoToHomeButton";
 
 export default async function WordsPage({
   listId,
@@ -25,7 +26,7 @@ export default async function WordsPage({
 
   return (
     <div className="bg-skyBlue m-3 max-h-max rounded-md p-6">
-      <div className="w-full flex flex-col md:flex-row flex-wrap justify-between items-center gap-4">
+      <div className="w-full flex flex-col lg:flex-row flex-wrap justify-between items-center gap-4">
         <div className="flex-shrink-0">
           <CustomButton
             label={`Page ${page} / ${totalPages}`}
@@ -33,6 +34,14 @@ export default async function WordsPage({
             size="small"
             radius="rounded"
             img="/images/bookIcon.svg"
+            className="cursor-default"
+          />
+          <CustomButton
+            label={`Words: ${total}`}
+            size="small"
+            variant="success"
+            radius="rounded"
+            img="/images/AlphaIcon.svg"
             className="cursor-default"
           />
         </div>
@@ -45,16 +54,9 @@ export default async function WordsPage({
           />
         </div>
 
-        <div className="flex-shrink-0">
-          <CustomButton
-            label={`Words: ${total}`}
-            size="small"
-            variant="success"
-            radius="rounded"
-            img="/images/AlphaIcon.svg"
-            className="cursor-default"
-          />
+        <div className="flex flex-col">
           <MarkAsStudiedButton wordIds={wordIds} />
+          <GoToHomeButton />
         </div>
       </div>
 

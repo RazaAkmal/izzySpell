@@ -6,7 +6,7 @@ import { SpellingListItem } from "@/lib/defination";
 import CustomButton from "./HeadlessButton";
 import { useRouter } from "next/navigation";
 
-const ClientList = ({
+const MyRecentList = ({
   spellingLists,
 }: {
   spellingLists: SpellingListItem[];
@@ -130,4 +130,4 @@ const ClientList = ({
   );
 };
 
-export default ClientList;
+export default MyRecentList;

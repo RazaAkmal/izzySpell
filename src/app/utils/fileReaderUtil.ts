@@ -1,16 +1,18 @@
 import * as XLSX from "xlsx";
 import mammoth from "mammoth";
 import pdfToText from "react-pdftotext";
-import Tesseract from "tesseract.js";
 
-export const readFileContent = (file: File): Promise<string[] | null> => {
+export const readFileContent = (file: File): Promise<string[]> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
+    // TEXT FILE
     if (file.type.startsWith("text/")) {
       reader.onload = () => resolve((reader.result as string).split(/\s+/));
       reader.onerror = () => reject(new Error("Failed to read the text file."));
       reader.readAsText(file);
+
+    // PDF FILE
     } else if (file.type === "application/pdf") {
       reader.onload = async () => {
         try {
@@ -22,7 +24,12 @@ export const readFileContent = (file: File): Promise<string[] | null> => {
       };
       reader.onerror = () => reject(new Error("Failed to read the PDF file."));
       reader.readAsArrayBuffer(file);
-    } else if (file.type === "text/csv" || file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+
+    // CSV or EXCEL FILE
+    } else if (
+      file.type === "text/csv" ||
+      file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    ) {
       reader.onload = () => {
         try {
           const workbook = XLSX.read(reader.result, { type: "array" });
@@ -38,10 +45,14 @@ export const readFileContent = (file: File): Promise<string[] | null> => {
       };
       reader.onerror = () => reject(new Error("Failed to read the spreadsheet file."));
       reader.readAsArrayBuffer(file);
+
+    // DOCX FILE
     } else if (file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
       reader.onload = async () => {
         try {
-          const { value } = await mammoth.extractRawText({ arrayBuffer: reader.result as ArrayBuffer });
+          const { value } = await mammoth.extractRawText({
+            arrayBuffer: reader.result as ArrayBuffer
+          });
           resolve(value.split(/\s+/));
         } catch {
           reject(new Error("Failed to extract text from DOCX file."));
@@ -49,28 +60,39 @@ export const readFileContent = (file: File): Promise<string[] | null> => {
       };
       reader.onerror = () => reject(new Error("Failed to read the DOCX file."));
       reader.readAsArrayBuffer(file);
+
+    // IMAGE FILES (use API route for Textract)
     } else if (file.type.startsWith("image/")) {
       reader.onload = async () => {
         try {
-          // Perform OCR using Tesseract.js
-          const { data } = await Tesseract.recognize(reader.result as string, "eng");
+          const base64 = (reader.result as string).split(",")[1]; // Remove data:image/... prefix
 
-          // Extract only words (filter out non-alphabetic characters)
-          const words = data.text
-            .split(/\s+/) // Split text into words by whitespace
-            .map((word) => word.replace(/[^a-zA-Z]/g, "")) // Remove non-alphabetic characters
-            .filter((word) => word.length > 0); // Remove empty strings
+          const res = await fetch("/api/textract", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ fileBase64: base64 }),
+          });
 
-          resolve(words);
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data.error || "Textract failed");
+          }
+
+          resolve(data.words);
         } catch (error) {
-          console.error("Failed to extract text from image:", error);
+          console.error("Textract API error:", error);
           reject(new Error("Failed to extract text from image."));
         }
       };
-
       reader.onerror = () => reject(new Error("Failed to read the image file."));
-      reader.readAsDataURL(file);
-    } else {
+      reader.readAsDataURL(file); // Required for base64
+    }
+
+    // UNSUPPORTED FILE TYPE
+    else {
       reject(new Error("Unsupported file type."));
     }
   });
