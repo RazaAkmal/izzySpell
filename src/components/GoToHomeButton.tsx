@@ -13,7 +13,7 @@ const GoToHomeButton: React.FC = () => {
       variant="success"
       radius="rounded"
       className="w-full md:w-auto mt-0"
-      onClick={() => router.push("/")}
+      onClick={() => router.push("/dashboard")}
     />
   );
 };

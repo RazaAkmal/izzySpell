@@ -34,10 +34,7 @@ const MyRecentList = ({
 
   const handleNavigateToList = () => {
     const isNavigate = localStorage.getItem("isNavigate");
-    if (isNavigate === "true") {
-      router.push("/lists");
-      localStorage.removeItem("isNavigate");
-    } else if (isNavigate === "false") {
+    if (isNavigate === "false") {
       const userConfirmed = confirm(
         "Changes you made may not be saved. Are you sure you want to continue?"
       );
@@ -53,10 +50,7 @@ const MyRecentList = ({
 
   const handleNavigateToSpellPractice = (id: number) => {
     const isNavigate = localStorage.getItem("isNavigate");
-    if (isNavigate === "true") {
-      router.push(`/spellPractice/${id}`);
-      localStorage.removeItem("isNavigate");
-    } else if (isNavigate === "false") {
+    if (isNavigate === "false") {
       const userConfirmed = confirm(
         "Changes you made may not be saved. Are you sure you want to continue?"
       );
