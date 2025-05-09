@@ -164,8 +164,9 @@ function UploadWord({ user, refreshSpellingLists }: {
             setFile(null);
             setProgress(0);
             setIsModalOpen(false);
-          } } 
-          spellingLists={[]}        />
+          }}
+          spellingLists={[]}
+        />
       )}
     </div>
   );

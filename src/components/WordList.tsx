@@ -8,6 +8,7 @@ import Modal from "@/components/WordListModal";
 import Progress from "./Progress"; 
 import { processFileWithAI } from "@/app/actions/AiService";
 import { SpellingListItem } from "@/lib/defination";
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 const WordList = ({ spellingLists, user, refreshSpellingLists }: { 
   spellingLists: SpellingListItem[], 
@@ -18,9 +19,13 @@ const WordList = ({ spellingLists, user, refreshSpellingLists }: {
   const [inputField, setInputField] = useState<string[]>(["", "", ""]);
   const [textAreaContent, setTextAreaContent] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const [progress, setProgress] = useState<number>(0); // Progress state
+  const [progress, setProgress] = useState<number>(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [aiResponse, setAiResponse] = useState(null);
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showSwitchModeModal, setShowSwitchModeModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Add new input field
   const handleInputField = () => {
@@ -47,7 +52,8 @@ const WordList = ({ spellingLists, user, refreshSpellingLists }: {
           .map((word) => word.trim());
 
     if (wordList.length === 0) {
-      alert("Please enter a word.");
+      setErrorMessage("Please enter a word.");
+      setShowValidationModal(true);
       return;
     }
 
@@ -78,13 +84,15 @@ const WordList = ({ spellingLists, user, refreshSpellingLists }: {
         setTextAreaContent("")
         setInputField(["", "", ""])
       } else {
-        alert(`${response.error}`);
+        setErrorMessage(response.error || "Error processing file with AI");
+        setShowErrorModal(true);
         clearInterval(uploadInterval);
         setProgress(0);
       }
     } catch (error) {
       console.error("Error saving words:", error);
-      alert("Error processing file with AI, Please Try again");
+      setErrorMessage("Error processing file with AI, Please Try again");
+      setShowErrorModal(true);
     } finally {
       clearInterval(uploadInterval);
       setProgress(100);
@@ -94,15 +102,7 @@ const WordList = ({ spellingLists, user, refreshSpellingLists }: {
 
   const handelSwitchBulkMode = (mode: boolean) => {
     if (mode) {
-      const userConfirmed = confirm(
-        "Switching to Bulk Entry! You can add lots of words at once, but you won’t be able to go back to one-at-a-time. Continue?"
-      );
-      if (userConfirmed) {
-        setTextAreaContent(inputField.join("\n").trim());
-        setIsTextAreaMode(mode);
-      } else {
-        return;
-      }
+      setShowSwitchModeModal(true);
     } else {
       setIsTextAreaMode(mode);
     }
@@ -212,7 +212,38 @@ const WordList = ({ spellingLists, user, refreshSpellingLists }: {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modals */}
+      <ConfirmationModal
+        isOpen={showValidationModal}
+        onClose={() => setShowValidationModal(false)}
+        onConfirm={() => setShowValidationModal(false)}
+        title="Validation Error"
+        message={errorMessage}
+        showCancelButton={false}
+      />
+
+      <ConfirmationModal
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        onConfirm={() => setShowErrorModal(false)}
+        title="Error"
+        message={errorMessage}
+        showCancelButton={false}
+      />
+
+      <ConfirmationModal
+        isOpen={showSwitchModeModal}
+        onClose={() => setShowSwitchModeModal(false)}
+        onConfirm={() => {
+          setTextAreaContent(inputField.join("\n").trim());
+          setIsTextAreaMode(true);
+          setShowSwitchModeModal(false);
+        }}
+        title="Switch to Bulk Entry"
+        message="Switching to Bulk Entry! You can add lots of words at once, but you won't be able to go back to one-at-a-time. Continue?"
+      />
+
+      {/* Existing Modal */}
       {aiResponse && (
         <Modal
           refreshSpellingLists={refreshSpellingLists}

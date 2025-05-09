@@ -5,6 +5,7 @@ import Image from "next/image";
 import { SpellingListItem } from "@/lib/defination";
 import CustomButton from "./HeadlessButton";
 import { useRouter } from "next/navigation";
+import ConfirmationModal from "./ConfirmationModal";
 
 const MyRecentList = ({
   spellingLists,
@@ -17,6 +18,8 @@ const MyRecentList = ({
     spellingLists.slice(0, 3)
   );
   const [allLists, setAllLists] = useState(spellingLists);
+  const [showNavigateConfirmation, setShowNavigateConfirmation] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<{ path: string; id?: number } | null>(null);
 
   // Sync state with updated spellingLists prop
   useEffect(() => {
@@ -32,36 +35,38 @@ const MyRecentList = ({
     setDisplayedLists(updatedDisplayedLists);
   };
 
-  const handleNavigateToList = () => {
+  const initiateNavigation = (path: string, id?: number) => {
     const isNavigate = localStorage.getItem("isNavigate");
     if (isNavigate === "false") {
-      const userConfirmed = confirm(
-        "Changes you made may not be saved. Are you sure you want to continue?"
-      );
-      if (userConfirmed) {
-        router.push("/lists");
-        localStorage.removeItem("isNavigate");
-      }
+      setShowNavigateConfirmation(true);
+      setPendingNavigation({ path, id });
     } else {
-      router.push("/lists");
-      localStorage.removeItem("isNavigate");
+      executeNavigation(path);
     }
   };
 
-  const handleNavigateToSpellPractice = (id: number) => {
-    const isNavigate = localStorage.getItem("isNavigate");
-    if (isNavigate === "false") {
-      const userConfirmed = confirm(
-        "Changes you made may not be saved. Are you sure you want to continue?"
-      );
-      if (userConfirmed) {
-        router.push(`/spellPractice/${id}`);
-        localStorage.removeItem("isNavigate");
-      }
-    } else {
-      router.push(`/spellPractice/${id}`);
-      localStorage.removeItem("isNavigate");
+  const executeNavigation = (path: string) => {
+    router.push(path);
+    localStorage.removeItem("isNavigate");
+  };
+
+  const handleConfirmNavigation = () => {
+    if (pendingNavigation) {
+      const path = pendingNavigation.id 
+        ? `/spellPractice/${pendingNavigation.id}` 
+        : pendingNavigation.path;
+      executeNavigation(path);
     }
+    setShowNavigateConfirmation(false);
+    setPendingNavigation(null);
+  };
+
+  const handleNavigateToList = () => {
+    initiateNavigation("/lists");
+  };
+
+  const handleNavigateToSpellPractice = (id: number) => {
+    initiateNavigation("", id);
   };
 
   return (
@@ -120,6 +125,16 @@ const MyRecentList = ({
           No recent list to show
         </p>
       )}
+      <ConfirmationModal
+        isOpen={showNavigateConfirmation}
+        onClose={() => {
+          setShowNavigateConfirmation(false);
+          setPendingNavigation(null);
+        }}
+        onConfirm={handleConfirmNavigation}
+        title="Unsaved Changes"
+        message="Changes you made may not be saved. Are you sure you want to continue?"
+      />
     </>
   );
 };

@@ -5,6 +5,7 @@ import CustomButton from "./HeadlessButton";
 import { SpellingListItem } from "@/lib/defination";
 import { debounce } from "lodash";
 import { processFileWithAI } from "@/app/actions/AiService";
+import ConfirmationModal from "./ConfirmationModal";
 
 interface ModalProps {
   isOpen: boolean;
@@ -33,6 +34,19 @@ const Modal: React.FC<ModalProps> = ({
   );
   const [editingSpellId, setEditingSpellId] = useState<number | null>(null);
   const [editedWord, setEditedWord] = useState<string>("");
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const handleClose = () => {
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmClose = () => {
+    setShowConfirmation(false);
+    onClose();
+  };
 
   useEffect(() => {
     if (aiResponse?.OriginalWords) {
@@ -80,13 +94,13 @@ const Modal: React.FC<ModalProps> = ({
       await refreshSpellingLists();
 
       setListName("");
-      alert("Your list has been saved successfully!");
+      setShowSuccessModal(true);
       setLoading(false);
-      onClose(); // Close the modal after saving
     } catch (error) {
       setLoading(false);
       console.error("Error saving the list:", error);
-      alert("An error occurred while saving the list. Please try again.");
+      setErrorMessage("An error occurred while saving the list. Please try again.");
+      setShowErrorModal(true);
     }
   };
 
@@ -159,7 +173,7 @@ const Modal: React.FC<ModalProps> = ({
         <div className="bg-lightBlue border-2 border-sky-300 flex flex-col rounded-md shadow-lg p-4 max-w-screen-lg w-full z-10">
           {/* Close Button */}
           <div className="flex justify-end">
-            <Button onClick={onClose} className="focus:outline-none">
+            <Button onClick={handleClose} className="focus:outline-none">
               <Image
                 src="/images/Vector.svg"
                 alt="Cancel Button"
@@ -265,6 +279,38 @@ const Modal: React.FC<ModalProps> = ({
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showConfirmation}
+        onClose={() => setShowConfirmation(false)}
+        onConfirm={handleConfirmClose}
+        title="Close Confirmation"
+        message="Are you sure you want to close? All processed words will be lost."
+      />
+
+      <ConfirmationModal
+        isOpen={showSuccessModal}
+        onClose={() => {
+          setShowSuccessModal(false);
+          onClose();
+        }}
+        onConfirm={() => {
+          setShowSuccessModal(false);
+          onClose();
+        }}
+        title="Success!"
+        message="Your list has been saved successfully!"
+        showCancelButton={false}
+      />
+
+      <ConfirmationModal
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        onConfirm={() => setShowErrorModal(false)}
+        title="Error"
+        message={errorMessage}
+        showCancelButton={false}
+      />
     </div>
   );
 };

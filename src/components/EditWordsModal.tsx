@@ -5,6 +5,7 @@ import CustomButton from "./HeadlessButton";
 import { SpellingListWithWords } from "@/lib/defination";
 import { revalidateRoute } from "@/app/actions/revalidate";
 import { processFileWithAI } from "@/app/actions/AiService";
+import ConfirmationModal from "./ConfirmationModal";
 
 interface ModalProps {
   isOpen: boolean;
@@ -26,6 +27,15 @@ const EditWordModal: React.FC<ModalProps> = ({
     { id: number; word: string }[]
   >([]);
   const [newWords, setNewWords] = useState<string[]>([]);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [pendingDeleteWordId, setPendingDeleteWordId] = useState<number | null>(
+    null
+  );
 
   const handleWordChange = (id: number, newWord: string) => {
     setSpellList((prevList) =>
@@ -63,12 +73,14 @@ const EditWordModal: React.FC<ModalProps> = ({
     setListName(listWithWords.listName);
   }, [listWithWords]);
 
+  const initiateDelete = (wordId: number) => {
+    setPendingDeleteWordId(wordId);
+    setShowDeleteConfirmation(true);
+  };
+
   const handleDelete = async (wordId: number) => {
-    const confirmed = confirm("Are you sure you want to delete this word?");
-    if (!confirmed) return;
-    setLoading(true)
+    setLoading(true);
     try {
-      // Call the delete API route
       await fetch(
         `/api/delete-word?wordId=${wordId}&&listId=${listWithWords.id}`,
         {
@@ -79,12 +91,33 @@ const EditWordModal: React.FC<ModalProps> = ({
         }
       );
       setSpellList(spellList.filter((word) => word.id !== wordId));
-      setLoading(false)
+      setLoading(false);
       await revalidateRoute("/lists");
     } catch (error) {
-      setLoading(false)
+      setLoading(false);
       console.error("Error deleting word:", error);
-      alert("Failed to delete the word. Please try again.");
+      setErrorMessage("Failed to delete the word. Please try again.");
+      setShowErrorModal(true);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (pendingDeleteWordId !== null) {
+      await handleDelete(pendingDeleteWordId);
+      setPendingDeleteWordId(null);
+    }
+    setShowDeleteConfirmation(false);
+  };
+
+  const initiateClose = () => {
+    const hasChanges =
+      modifiedWords.length > 0 ||
+      newWords.length > 0 ||
+      listName !== listWithWords.listName;
+    if (hasChanges) {
+      setShowCloseConfirmation(true);
+    } else {
+      onClose();
     }
   };
 
@@ -96,26 +129,30 @@ const EditWordModal: React.FC<ModalProps> = ({
       !listName.trim() ||
       newWords.some((word) => !word.trim())
     ) {
-      alert("Please ensure all words are valid and the list name is provided.");
+      setErrorMessage(
+        "Please ensure all words are valid and the list name is provided."
+      );
+      setShowValidationModal(true);
       setLoading(false);
       return;
     }
 
-    // Check if the spelling list has changed
     const originalWordsString = JSON.stringify(
       listWithWords.words.map((word) => word.word)
     );
-    const currentWordsArray = spellList.map((word) => word.word); // Convert current words to an array
-    const mergedWordsArray = [...currentWordsArray, ...newWords]; // Merge current words with new words
-    const mergedWordsString = JSON.stringify(mergedWordsArray); // Convert merged array to a JSON string
+    const currentWordsArray = spellList.map((word) => word.word);
+    const mergedWordsArray = [...currentWordsArray, ...newWords];
+    const mergedWordsString = JSON.stringify(mergedWordsArray);
 
     const hasWordsChanged =
-      originalWordsString !== JSON.stringify(currentWordsArray) || newWords.length > 0;
+      originalWordsString !== JSON.stringify(currentWordsArray) ||
+      newWords.length > 0;
 
     const hasListNameChanged = listName !== listWithWords.listName;
 
     if (!hasWordsChanged && !hasListNameChanged) {
-      alert("There is no change to save");
+      setErrorMessage("There is no change to save");
+      setShowValidationModal(true);
       setLoading(false);
       return;
     }
@@ -129,7 +166,7 @@ const EditWordModal: React.FC<ModalProps> = ({
           ...modifiedWords,
           ...newWords.map((word) => ({ id: null, word })),
         ],
-        extractedWords: {}, // Pass an empty object if no AI processing is needed
+        extractedWords: {},
       };
 
       if (hasWordsChanged) {
@@ -137,12 +174,13 @@ const EditWordModal: React.FC<ModalProps> = ({
         const AIResponse = await response.data;
 
         if (!response.success) {
-          alert(`${response.error}`);
+          setErrorMessage(response.error || 'Failed to process the list');
+          setShowErrorModal(true);
           setLoading(false);
           return;
         }
 
-        requestData.extractedWords = AIResponse; // Add AI response to the request
+        requestData.extractedWords = AIResponse;
       }
 
       const response = await fetch("/api/update-words", {
@@ -156,16 +194,19 @@ const EditWordModal: React.FC<ModalProps> = ({
       if (!response.ok) {
         throw new Error("Failed to save the list");
       }
-      alert("Your changes have been saved successfully!");
+
       await revalidateRoute("/lists");
       setModifiedWords([]);
       setNewWords([]);
+      setShowSuccessModal(true);
       setLoading(false);
-      onClose();
     } catch (error) {
       console.error("Error saving the list:", error);
       setLoading(false);
-      alert("An error occurred while saving the list. Please try again.");
+      setErrorMessage(
+        "An error occurred while saving the list. Please try again."
+      );
+      setShowErrorModal(true);
     }
   };
 
@@ -176,7 +217,7 @@ const EditWordModal: React.FC<ModalProps> = ({
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-lightBlue border-2 border-sky-300 flex flex-col rounded-md shadow-lg p-4 max-w-screen-lg w-full z-10">
           <div className="flex justify-end">
-            <Button onClick={onClose} className="focus:outline-none">
+            <Button onClick={initiateClose} className="focus:outline-none">
               <Image
                 src="/images/Vector.svg"
                 alt="Cancel Button"
@@ -187,7 +228,6 @@ const EditWordModal: React.FC<ModalProps> = ({
             </Button>
           </div>
 
-          {/* Title */}
           <Image
             src="/images/titles/WordListTitle.svg"
             alt="Add Spelling List"
@@ -196,7 +236,6 @@ const EditWordModal: React.FC<ModalProps> = ({
             className="w-96 mx-auto"
           />
 
-          {/* Input Field */}
           <input
             type="text"
             placeholder="Enter the list name here..."
@@ -211,7 +250,6 @@ const EditWordModal: React.FC<ModalProps> = ({
             </p>
           </div>
 
-          {/* Editable Word List */}
           <div className="m-3 rounded-md ">
             <h2 className="text-center text-xl font-bold text-purple mb-4">
               View and Edit Your List
@@ -227,7 +265,9 @@ const EditWordModal: React.FC<ModalProps> = ({
                   </span>
                   <input
                     value={spell.word}
-                    onChange={(e) => handleWordChange(spell.id, e.target.value)}
+                    onChange={(e) =>
+                      handleWordChange(spell.id, e.target.value)
+                    }
                     className="text-gray-700 font-semibold border-b-2 bg-transparent border-gray-200 p-1 focus:outline-none focus:border-blue-500"
                   />
                   <Image
@@ -236,7 +276,7 @@ const EditWordModal: React.FC<ModalProps> = ({
                     width={30}
                     height={30}
                     className="cursor-pointer"
-                    onClick={() => handleDelete(spell.id)}
+                    onClick={() => initiateDelete(spell.id)}
                   />
                 </div>
               ))}
@@ -251,7 +291,9 @@ const EditWordModal: React.FC<ModalProps> = ({
                   </span>
                   <input
                     value={word}
-                    onChange={(e) => handleNewWordChange(index, e.target.value)}
+                    onChange={(e) =>
+                      handleNewWordChange(index, e.target.value)
+                    }
                     className="text-gray-700 font-semibold border-b-2 bg-transparent border-gray-200 p-1 focus:outline-none focus:border-blue-500"
                   />
                 </div>
@@ -278,6 +320,61 @@ const EditWordModal: React.FC<ModalProps> = ({
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirmation}
+        onClose={() => {
+          setShowDeleteConfirmation(false);
+          setPendingDeleteWordId(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Delete Word"
+        message="Are you sure you want to delete this word?"
+      />
+
+      <ConfirmationModal
+        isOpen={showCloseConfirmation}
+        onClose={() => setShowCloseConfirmation(false)}
+        onConfirm={() => {
+          setShowCloseConfirmation(false);
+          onClose();
+        }}
+        title="Unsaved Changes"
+        message="You have unsaved changes. Are you sure you want to close?"
+      />
+
+      <ConfirmationModal
+        isOpen={showSuccessModal}
+        onClose={() => {
+          setShowSuccessModal(false);
+          onClose();
+        }}
+        onConfirm={() => {
+          setShowSuccessModal(false);
+          onClose();
+        }}
+        title="Success!"
+        message="Your changes have been saved successfully!"
+        showCancelButton={false}
+      />
+
+      <ConfirmationModal
+        isOpen={showValidationModal}
+        onClose={() => setShowValidationModal(false)}
+        onConfirm={() => setShowValidationModal(false)}
+        title="Validation Error"
+        message={errorMessage}
+        showCancelButton={false}
+      />
+
+      <ConfirmationModal
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        onConfirm={() => setShowErrorModal(false)}
+        title="Error"
+        message={errorMessage}
+        showCancelButton={false}
+      />
     </div>
   );
 };
