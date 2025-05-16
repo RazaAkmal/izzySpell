@@ -95,8 +95,8 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({ page }) => {
               />
               <ModeCard
                 imageSrc="/images/SyllabusMode.svg"
-                altText="Syllabus Mode"
-                label="Syllabus Mode"
+                altText="syllables Mode"
+                label="Syllables Mode"
                 onClick={() => navigateTo("SyllabusModePractice")}
               />
               <ModeCard

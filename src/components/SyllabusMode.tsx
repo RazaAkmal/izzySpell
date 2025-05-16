@@ -78,7 +78,7 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
       <div className="bg-skyBlue m-7 p-10 rounded-lg shadow-lg">
         <div className="w-full flex  md:flex-row items-center justify-between mb-4">
           <p className="text-2xl md:text-4xl md:ml-8 font-bold text-center w-full text-purple">
-            Syllabus Mode
+            Syllables Mode
           </p>
           <button
             className="  md:ml-4 focus:outline-none"

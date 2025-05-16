@@ -37,7 +37,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = async ({
                   alt="Logo"
                   width={200}
                   height={40}
-                  className="mx-auto"
+                  className="mx-auto hover-scale !shadow-none"
                 />
               </Link>
             </div>
