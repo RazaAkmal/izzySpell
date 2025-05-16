@@ -1,6 +1,4 @@
 'use server'
-import fs from "fs";
-import path from "path";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
@@ -10,10 +8,9 @@ const openai = new OpenAI({
 export const processFileWithAI = async (content: any) => {
   try {
     // Read the system prompt from the file
-    const systemPrompt = fs.readFileSync(
-      path.join(process.cwd(), "src/app/actions/systempromt.txt"),
-      "utf-8"
-    );
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/prompts/systempromt.txt`);
+    const systemPrompt = await res.text();
+
 
     const gptResponse = await openai.chat.completions.create({
       model: "gpt-4",
