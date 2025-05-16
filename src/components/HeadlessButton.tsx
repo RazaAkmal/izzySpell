@@ -5,11 +5,11 @@ import Image from "next/image";
 // Define styles for each variant
 const variantStyles = {
   primary:
-    "bg-blue text-white  data-[hover]:bg-darkBlue data-[active]:bg-blue border-[2px] border-[#FFFFFF] opacity-100 ",
+    "bg-blue text-white border-[2px] border-[#FFFFFF] opacity-100",
   secondary:
-    "bg-gray-200 text-blue font-bold hover:bg-gray-300 border-2 border-blue ",
-  success: "bg-green border-2 border-white text-white hover:bg-green-600",
-  danger: "bg-red-500 text-white hover:bg-red-600",
+    "bg-gray-200 text-blue font-bold border-2 border-blue",
+  success: "bg-green border-2 border-white text-white",
+  danger: "bg-red-500 text-white",
 };
 
 // Define styles for each size
@@ -54,11 +54,11 @@ const CustomButton: React.FC<CustomButtonProps> = ({
       onClick={disabled ? undefined : onClick}
       aria-disabled={disabled}
       disabled={disabled}
-      className={`font-Pally transition-colors shadow-[2px_2px_0px_rgba(0,0,250,0.4)] 
-      flex items-center justify-center gap-2 
+      className={`font-Pally shadow-[2px_2px_0px_rgba(0,0,250,0.4)] 
+      flex items-center justify-center gap-2 hover-scale
       ${variantStyles[variant]} ${sizeStyles[size]} ${radiusStyle[radius]} ${
         fullWidth ? "w-full" : "w-auto"
-      } ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${className}`}
+      } ${disabled ? "opacity-50 cursor-not-allowed pointer-events-none" : ""} ${className}`}
       {...props}
     >
       {img && (

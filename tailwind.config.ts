@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import plugin from 'tailwindcss/plugin';
 
 const config: Config = {
   content: [
@@ -45,7 +46,20 @@ const config: Config = {
   },
   plugins: [
     require('tailwind-scrollbar'),
-
+    plugin(function({ addUtilities }) {
+      addUtilities({
+        '.hover-scale': {
+          '@apply transition-all duration-200': {},
+          '&:hover': {
+            '@apply shadow-lg scale-[1.02]': {},
+          },
+          '&:active': {
+            '@apply scale-[0.98]': {},
+          }
+        }
+      })
+    })
   ],
 };
+
 export default config;

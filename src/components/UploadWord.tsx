@@ -5,6 +5,7 @@ import CustomButton from "./HeadlessButton";
 import Image from "next/image";
 import Progress from "./Progress";
 import Modal from "@/components/WordListModal";
+import ConfirmationModal from "@/components/ConfirmationModal";
 import { readFileContent } from "@/app/utils/fileReaderUtil";
 import { processFileWithAI } from "@/app/actions/AiService";
 
@@ -12,10 +13,13 @@ function UploadWord({ user, refreshSpellingLists }: {
   user: any,   
   refreshSpellingLists: () => Promise<void>;
 }) {
-  const [file, setFile] = useState<File | null>(null); // Store the file
+  const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [aiResponse, setAiResponse] = useState(null);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const uploadedFile = acceptedFiles[0];
     setFile(uploadedFile);
@@ -24,7 +28,7 @@ function UploadWord({ user, refreshSpellingLists }: {
 
     const uploadInterval = setInterval(() => {
       currentStep += 1;
-      setProgress(Math.round((currentStep / totalSteps) * 100)); // Round the progress value
+      setProgress(Math.round((currentStep / totalSteps) * 100));
 
       if (currentStep === totalSteps - 1) {
         clearInterval(uploadInterval);
@@ -35,14 +39,12 @@ function UploadWord({ user, refreshSpellingLists }: {
       const content = await readFileContent(uploadedFile);
 
       if (!content) {
-        alert(
-          "The file content is empty or could not be read. Please try another file."
-        );
+        setErrorMessage("The file content is empty or could not be read. Please try another file.");
+        setShowErrorModal(true);
         setProgress(0);
         return;
       }
 
-      console.log(content);
       const response = await processFileWithAI(content);
 
       if (response.success) {
@@ -53,16 +55,16 @@ function UploadWord({ user, refreshSpellingLists }: {
           setIsModalOpen(true);
         }, 1000);
       } else {
-        alert(`${response.error}`);
+        setErrorMessage(response.error || "Error processing file");
+        setShowErrorModal(true);
         clearInterval(uploadInterval);
         setFile(null);
         setProgress(0);
       }
     } catch (error) {
       console.error("Unexpected Error:", error);
-      alert(
-        "An unexpected error occurred while processing the file. Please try again."
-      );
+      setErrorMessage("An unexpected error occurred while processing the file. Please try again.");
+      setShowErrorModal(true);
       clearInterval(uploadInterval);
       setFile(null);
       setProgress(0);
@@ -153,7 +155,22 @@ function UploadWord({ user, refreshSpellingLists }: {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modals */}
+      <ConfirmationModal
+        isOpen={showErrorModal}
+        onClose={() => {
+          setShowErrorModal(false);
+          setFile(null);
+        }}
+        onConfirm={() => {
+          setShowErrorModal(false);
+          setFile(null);
+        }}
+        title="Error"
+        message={errorMessage}
+        showCancelButton={false}
+      />
+
       {aiResponse && (
         <Modal
           refreshSpellingLists={refreshSpellingLists}

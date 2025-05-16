@@ -7,6 +7,7 @@ import moment from "moment";
 import EditWordModal from "./EditWordsModal";
 import { deleteList, fetchWordsForList } from "@/app/actions/prismaActions";
 import { revalidateRoute } from "@/app/actions/revalidate";
+import ConfirmationModal from "./ConfirmationModal";
 
 function AllListData({
   spellingLists,
@@ -18,6 +19,11 @@ function AllListData({
   const route = useRouter();
   const [listWithWords, setListWithWords] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
   const handleContinueLearning = (listId: number) => {
     route.push(`/spellPractice/${listId}`);
   };
@@ -33,20 +39,19 @@ function AllListData({
       console.log(err);
     }
   };
+
+  const initiateDelete = (listId: number) => {
+    setPendingDeleteId(listId);
+    setShowDeleteConfirmation(true);
+  };
+
   const handleDelete = async (listId: number) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this list?"
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
     try {
       const result = await deleteList(listId, userId!);
 
       if (result.success) {
-        alert(result.message)
+        setSuccessMessage(result.message);
+        setShowSuccessModal(true);
         revalidateRoute("/lists");
       } else {
         console.error(
@@ -58,6 +63,7 @@ function AllListData({
       console.error("Error in handleDelete:", error);
     }
   };
+
   return (
     <div className="mt-5 rounded-lg md:px-4">
       {spellingLists.map((item) => (
@@ -92,14 +98,14 @@ function AllListData({
           <div className="md:col-span-4 flex justify-between md:justify-center gap-2 sm:flex-row items-center text-left">
             <button
               onClick={() => handleContinueLearning(item.id)}
-              className={`px-3 py-1 lg:px-5 lg:py-2 ${
+              className={`px-3 hover-scale py-1 lg:px-5 lg:py-2 ${
                 item.progress === 0 ? item.color : "bg-blue"
               } border-[3px] border-b-white rounded-lg text-white font-bold text-sm sm:text-lg`}
             >
               {item.progress === 0 ? "Start Learning Now" : "Continue Learning"}
             </button>
             <button
-              className="px-3 py-1 lg:px-5 lg:py-2 bg-blue border-[3px] border-gray-300 text-white font-bold rounded-lg text-sm md:text-lg"
+              className="px-3 hover-scale py-1 lg:px-5 lg:py-2 bg-blue border-[3px] border-gray-300 text-white font-bold rounded-lg text-sm md:text-lg"
               onClick={() => handleViewList(item.id)}
             >
               View All
@@ -109,7 +115,7 @@ function AllListData({
               alt="editIcon"
               width={40}
               height={40}
-              className="lg:w-10 lg:h-10 w-8 h-8 cursor-pointer"
+              className="hover-scale lg:w-10 lg:h-10 w-8 h-8 cursor-pointer"
               onClick={() => {
                 fetchWordsFromList(item.id);
               }}
@@ -119,14 +125,13 @@ function AllListData({
               alt="deleteIcon"
               width={40}
               height={40}
-              className="lg:w-10 lg:h-10 w-8 h-8 cursor-pointer"
-              onClick={() => {
-                handleDelete(item.id);
-              }}
+              className="hover-scale lg:w-10 lg:h-10 w-8 h-8 cursor-pointer"
+              onClick={() => initiateDelete(item.id)}
             />
           </div>
         </div>
       ))}
+
       {listWithWords && (
         <EditWordModal
           listWithWords={listWithWords}
@@ -137,6 +142,32 @@ function AllListData({
           }}
         />
       )}
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirmation}
+        onClose={() => {
+          setShowDeleteConfirmation(false);
+          setPendingDeleteId(null);
+        }}
+        onConfirm={() => {
+          if (pendingDeleteId) {
+            handleDelete(pendingDeleteId);
+            setShowDeleteConfirmation(false);
+            setPendingDeleteId(null);
+          }
+        }}
+        title="Delete List"
+        message="Are you sure you want to delete this list?"
+      />
+
+      <ConfirmationModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        onConfirm={() => setShowSuccessModal(false)}
+        title="Success"
+        message={successMessage}
+        showCancelButton={false}
+      />
     </div>
   );
 }

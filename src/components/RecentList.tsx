@@ -13,10 +13,7 @@ const MyRecentList = ({
   spellingLists: SpellingListItem[];
 }) => {
   const router = useRouter();
-
-  const [displayedLists, setDisplayedLists] = useState(
-    spellingLists.slice(0, 3)
-  );
+  const [displayedLists, setDisplayedLists] = useState(spellingLists.slice(0, 3));
   const [allLists, setAllLists] = useState(spellingLists);
   const [showNavigateConfirmation, setShowNavigateConfirmation] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<{ path: string; id?: number } | null>(null);
@@ -41,12 +38,13 @@ const MyRecentList = ({
       setShowNavigateConfirmation(true);
       setPendingNavigation({ path, id });
     } else {
-      executeNavigation(path);
+      executeNavigation(path, id);
     }
   };
 
-  const executeNavigation = (path: string) => {
-    router.push(path);
+  const executeNavigation = (path: string, id?: number) => {
+    const finalPath = id ? `/spellPractice/${id}` : path;
+    router.push(finalPath);
     localStorage.removeItem("isNavigate");
   };
 
@@ -65,9 +63,6 @@ const MyRecentList = ({
     initiateNavigation("/lists");
   };
 
-  const handleNavigateToSpellPractice = (id: number) => {
-    initiateNavigation("", id);
-  };
 
   return (
     <>
@@ -90,16 +85,16 @@ const MyRecentList = ({
         />
       </div>
       {displayedLists.length > 0 ? (
-        <div className="flex justify-between gap-5 md:flex-row flex-col cursor-pointer">
+        <div className="flex justify-between gap-5 md:flex-row flex-col">
           {displayedLists.map((item) => (
             <div
               key={item.id}
-              onClick={() => handleNavigateToSpellPractice(item.id)}
-              className="flex w-full items-center p-2 bg-white border-[1px] border-gray-600 rounded-lg shadow-md space-x-3"
+              onClick={() => initiateNavigation("", item.id)}
+              className={`flex w-full items-center p-2 bg-white border-[1px] border-gray-600 rounded-lg shadow-md space-x-3 hover-scale cursor-pointer`}
             >
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center ${item.color}`}
-              ></div>
+              />
               <span className="flex-grow font-medium text-gray-700">
                 {item.listName}
               </span>
