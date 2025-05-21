@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@headlessui/react";
 import { GroupedWord } from "@prisma/client";
@@ -49,6 +49,21 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
     groupedWords.map((word) => Array(word.word.length).fill("default"))
   );
 
+  // Add effect to check if all words are correct and move to next page
+  useEffect(() => {
+    const allWordsCorrect = currentGroup.every((_, rowIndex) =>
+      validationStates[rowIndex].every((state) => state === "valid")
+    );
+
+    if (allWordsCorrect && currentPage < validGroups.length) {
+      const timer = setTimeout(() => {
+        handlePageChange(currentPage + 1);
+      }, 2000); // Wait 2 seconds before moving to next page
+
+      return () => clearTimeout(timer);
+    }
+  }, [validationStates, currentPage, validGroups.length]);
+
   const handleInputChange = (
     rowIndex: number,
     boxIndex: number,
@@ -79,11 +94,12 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
         word === userWord
           ? Array(word.length).fill("valid")
           : Array(word.length).fill("invalid");
+      setValidationStates(updatedValidation);
     } else {
       // Reset to default during typing
       updatedValidation[rowIndex][boxIndex + 2] = "default";
+      setValidationStates(updatedValidation);
     }
-    setValidationStates(updatedValidation);
   };
 
   const handleKeyDown = (rowIndex: number, boxIndex: number, key: string) => {

@@ -1,5 +1,7 @@
 'use server'
 import OpenAI from "openai";
+import { responseSchema } from "@/lib/defination";
+
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || "",
@@ -21,40 +23,63 @@ export const processFileWithAI = async (content: any) => {
         },
         {
           role: "user",
-          content: `I have the below spelling list that I need structured into a JSON format.
+          content: `Analyze this spelling list and return a JSON object with EXACTLY this structure (no additional fields):
+{
+  "ListName": "<name of list>",
+  "OriginalWords": [<array of valid English words>],
+  "SyllabusWords": [
+    {
+      "Word": "<original word>",
+      "Options": ["<correct division>", "<incorrect 1>", "<incorrect 2>", "<incorrect 3>"],
+      "Answer": "<correct division>"
+    }
+  ],
+  "GroupedWords": {
+    "Group 1": [<related words>],
+    "Group 2": [<related words>]
+  },
+  "SightWords": [<sight words or empty array>]
+}
 
-SpellingList: ${content}
+Spelling List: ${content}
 
-Please perform the following tasks:
-
-1. Extract only valid English words from the list. Exclude any random strings, abbreviations, or meaningless characters (e.g., "TT", "oN", "Fo", "fF").
-2. Organize the output into the following JSON structure:
-   - ListName: The name of the spelling list.
-   - OriginalWords: A flat list of all valid words extracted from the list.
-   - SyllabusWords: A list of objects, where each object represents a single word. Each object has three properties:
-     - Word: The original word.
-     - Options: A list of four possible syllable divisions for the word, including one correct division and three incorrect options.
-     - Answer: The correct syllable division for the word.
-   - GroupedWords: Group the words logically based on spelling patterns (e.g., words with common suffixes like "-ing," "-ed," or blends like "ch," "sh," or vowel sounds). Create groups as "Group 1," "Group 2," etc.
-   - SightWords: A list of words that are considered "sight words" (words that should be recognized immediately by sight). If no sight words are found in the list, this will be an empty list.
-
-**Important Notes:**
-- For "SyllabusWords", generate three plausible incorrect syllable divisions along with the correct one.
-- Group "GroupedWords" logically based on spelling patterns (e.g., suffixes, blends, vowel sounds).
-- If no sight words are found, the "SightWords" field should be an empty array (e.g., "SightWords": []).`,
+Requirements:
+1. Follow the exact JSON structure above
+2. Each SyllabusWords entry must have exactly 4 options
+3. The correct syllable division must be both in Options[0] and Answer
+4. GroupedWords must group similar spelling patterns
+5. Return valid JSON that can be parsed`,
         },
       ],
       max_tokens: 2000,
-      temperature: 0.5,
+      temperature: 0.3, // Reduced temperature for more consistent output
     });
-    const extractedWords = JSON.parse(gptResponse.choices[0]?.message?.content || "{}");
-    if (!extractedWords.OriginalWords) {
-      return { success: false, error: "OriginalWords field is missing in the response." };
+
+    const response = gptResponse.choices[0]?.message?.content;
+    if (!response) {
+      throw new Error("No response from OpenAI");
     }
 
-    return { success: true, data: extractedWords };
+    const extractedWords = JSON.parse(response);
+    
+    // Validate the response against our schema
+    const validatedData = responseSchema.parse(extractedWords);
+
+    // Additional validation to ensure Options[0] matches Answer
+    const isValid = validatedData.SyllabusWords.every(
+      word => word.Options[0] === word.Answer
+    );
+
+    if (!isValid) {
+      throw new Error("Syllable options validation failed");
+    }
+
+    return { success: true, data: validatedData };
   } catch (error) {
-    console.log(error);
-    return { success: false, error: `Error processing file with AI` };
+    console.error("AI Processing Error:", error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Error processing file with AI"
+    };
   }
 };

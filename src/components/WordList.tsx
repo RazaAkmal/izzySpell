@@ -7,8 +7,12 @@ import { Textarea } from "@headlessui/react";
 import Modal from "@/components/WordListModal"; 
 import Progress from "./Progress"; 
 import { processFileWithAI } from "@/app/actions/AiService";
-import { SpellingListItem } from "@/lib/defination";
+import { SpellingListItem, responseSchema } from "@/lib/defination";
 import ConfirmationModal from "@/components/ConfirmationModal";
+import { z } from "zod";
+
+// Define type for AI response based on the zod schema
+type AIResponse = z.infer<typeof responseSchema>;
 
 const WordList = ({ spellingLists, user, refreshSpellingLists }: { 
   spellingLists: SpellingListItem[], 
@@ -21,7 +25,7 @@ const WordList = ({ spellingLists, user, refreshSpellingLists }: {
   const [loading, setLoading] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [aiResponse, setAiResponse] = useState(null);
+  const [aiResponse, setAiResponse] = useState<AIResponse | null>(null);
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showSwitchModeModal, setShowSwitchModeModal] = useState(false);
@@ -74,7 +78,7 @@ const WordList = ({ spellingLists, user, refreshSpellingLists }: {
 
     try {
       const response = await processFileWithAI(wordList.join(", "));
-      if (response.success) {
+      if (response.success && response.data) {
         setProgress(100);
         clearInterval(uploadInterval);
         setTimeout(() => {

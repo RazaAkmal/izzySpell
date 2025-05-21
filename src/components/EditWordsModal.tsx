@@ -171,16 +171,15 @@ const EditWordModal: React.FC<ModalProps> = ({
 
       if (hasWordsChanged) {
         const response = await processFileWithAI(mergedWordsString);
-        const AIResponse = await response.data;
-
-        if (!response.success) {
+        
+        if (!response.success || !response.data) {
           setErrorMessage(response.error || 'Failed to process the list');
           setShowErrorModal(true);
           setLoading(false);
           return;
         }
 
-        requestData.extractedWords = AIResponse;
+        requestData.extractedWords = response.data;
       }
 
       const response = await fetch("/api/update-words", {

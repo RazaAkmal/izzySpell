@@ -15,11 +15,18 @@ const CustomPagination: React.FC<CustomPaginationProps> = ({
   onPageChange,
 }) => {
   const isSmallScreen = typeof window !== "undefined" && window.innerWidth <= 768;
+  const handlePageChange = (page: number) => {
+    // Only allow navigation to adjacent pages
+    if (Math.abs(page - currentPage) === 1) {
+      onPageChange(page);
+    }
+  };
   return (
     <Pagination
       current={currentPage}
       total={totalPages * 10}
       pageSize={10}
+      disabled
       prevIcon={
         <span
           className={`relative${
@@ -54,7 +61,7 @@ const CustomPagination: React.FC<CustomPaginationProps> = ({
           />
         </span>
       }
-      onChange={onPageChange}
+      onChange={handlePageChange}
       className={`custom-pagination ${isSmallScreen ? "small-screen" : ""}`}
     />
   );

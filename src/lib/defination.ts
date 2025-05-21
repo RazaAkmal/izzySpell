@@ -1,5 +1,5 @@
 import { SpellingList, Word } from "@prisma/client";
-
+import { z } from "zod";
 export type User = {
   id: string; name: string; password: string; firstName: string | null; lastName: string | null; age: string | null; grade: string | null; profileUpdated: boolean; createdAt: Date; updatedAt: Date;
 };
@@ -43,3 +43,15 @@ export interface SpellingListItem  extends SpellingList {
 export interface SpellingListWithWords extends SpellingListItem {
   words: Word[];
 }
+
+export const responseSchema = z.object({
+  ListName: z.string(),
+  OriginalWords: z.array(z.string()),
+  SyllabusWords: z.array(z.object({
+    Word: z.string(),
+    Options: z.array(z.string()).length(4),
+    Answer: z.string()
+  })),
+  GroupedWords: z.record(z.array(z.string())),
+  SightWords: z.array(z.string())
+});

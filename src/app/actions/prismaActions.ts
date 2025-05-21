@@ -67,15 +67,11 @@ export async function fetchWordsForList(userId: string, listId: number) {
   return spellingListWithWords;
 }
 
-export async function getWordsByListId(listId: number, page = 1, pageSize = 5) {
-  const skip = (page - 1) * pageSize;
-  const take = pageSize;
+export async function getWordsByListId(listId: number,) {
 
   const [words, total] = await Promise.all([
     prisma.word.findMany({
       where: { listId },
-      skip,
-      take,
       orderBy: { id: 'asc' },
     }),
     prisma.word.count({
@@ -83,17 +79,13 @@ export async function getWordsByListId(listId: number, page = 1, pageSize = 5) {
     }),
   ]);
 
-  return { words, total, page, pageSize };
+  return { words, total };
 }
-export async function getSyllableWordsByListId(listId: number, page = 1, pageSize = 5) {
-  const skip = (page - 1) * pageSize;
-  const take = pageSize;
+export async function getSyllableWordsByListId(listId: number) {
 
   const [syllableWords, total] = await Promise.all([
     prisma.syllableWord.findMany({
       where: { listId },
-      skip,
-      take,
       orderBy: { id: 'asc' },
     }),
     prisma.syllableWord.count({
@@ -101,18 +93,14 @@ export async function getSyllableWordsByListId(listId: number, page = 1, pageSiz
     }),
   ]);
 
-  return { syllableWords, total, page, pageSize };
+  return { syllableWords, total};
 }
 
-export async function getGroupedWordsByListId(listId: number, page = 1, pageSize = 5) {
-  const skip = (page - 1) * pageSize;
-  const take = pageSize;
+export async function getGroupedWordsByListId(listId: number) {
 
   const [groupedWords, total] = await Promise.all([
     prisma.groupedWord.findMany({
       where: { listId },
-      skip,
-      take,
       orderBy: { id: 'asc' },
     }),
     prisma.groupedWord.count({
@@ -120,7 +108,7 @@ export async function getGroupedWordsByListId(listId: number, page = 1, pageSize
     }),
   ]);
 
-  return { groupedWords, total, page, pageSize };
+  return { groupedWords, total };
 }
 
 

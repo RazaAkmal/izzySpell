@@ -10,6 +10,8 @@ import TextToSpeech from "./TextToSpeach";
 import { useRouter } from "next/navigation";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import ConfirmationModal from "./ConfirmationModal";
+import { markWordsAsStudied } from "@/app/actions/prismaActions";
 
 interface DefaultModePageProps {
   words: Word[];
@@ -124,6 +126,7 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
   );
   const [isCorrect, setIsCorrect] = useState(true);
   const [scrambledLetters, setScrambledLetters] = useState<string[]>([]);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   const currentWord = wordsSpell[currentPage - 1];
 
@@ -230,6 +233,22 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
     }
   };
 
+  const handleClose = () => {
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmClose = async () => {
+    // Get IDs of completed words (up to current page)
+    router.push(`/spellPractice/${listId}`);
+    const completedWordIds = words
+      .slice(0, currentPage)
+      .map((word) => word.id);
+
+    if (completedWordIds.length > 0) {
+      await markWordsAsStudied(completedWordIds);
+    }
+  };
+
   useEffect(() => {
     if (currentWord) {
       setScrambledLetters(scrambleWord(currentWord));
@@ -282,7 +301,7 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
       <div className="bg-skyBlue m-7 mt-1 p-6 rounded-lg shadow-lg">
         <div className="flex items-center justify-between flex-col-reverse md:flex-row relative">
           <CustomButton
-            label={`Page ${currentPage} / ${wordsSpell.length}`}
+            label={`Total Words ${currentPage} / ${wordsSpell.length}`}
             variant="success"
             size="small"
             img="/images/bookIcon.svg"
@@ -300,7 +319,7 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
               alt="Cancel Button"
               width={30}
               height={30}
-              onClick={() => router.push(`/spellPractice/${listId}`)}
+              onClick={handleClose}
             />
           </Button>
         </div>
@@ -320,7 +339,11 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
               <div className="flex flex-col md:flex-row items-center justify-center gap-2">
                 <div
                   className={`flex flex-wrap border-[3px] rounded-2xl md:ml-4 p-4 bg-white justify-center gap-3 ${
-                    selectedLetters.every((item) => item !== "") ? isCorrect  ? "border-darkGreen" : "border-red-500" : 'border-darkGreen'
+                    selectedLetters.every((item) => item !== "")
+                      ? isCorrect
+                        ? "border-darkGreen"
+                        : "border-red-500"
+                      : "border-darkGreen"
                   }`}
                 >
                   {selectedLetters.map((letter, index) => (
@@ -333,16 +356,17 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
                   ))}
                 </div>
                 <div className="flex items-center justify-center">
-                  {!isCorrect && selectedLetters.every((item) => item !== "") && (
-                    <button onClick={handleReset} className="rounded-2xl">
-                      <Image
-                        src="/images/resetIcon.svg"
-                        alt="Reset"
-                        width={60}
-                        height={60}
-                      />
-                    </button>
-                  )}
+                  {!isCorrect &&
+                    selectedLetters.every((item) => item !== "") && (
+                      <button onClick={handleReset} className="rounded-2xl">
+                        <Image
+                          src="/images/resetIcon.svg"
+                          alt="Reset"
+                          width={60}
+                          height={60}
+                        />
+                      </button>
+                    )}
                 </div>
 
                 {isCorrect && selectedLetters.every((item) => item !== "") && (
@@ -370,6 +394,14 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
           )}
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showConfirmation}
+        onClose={() => router.push(`/spellPractice/${listId}`)}
+        onConfirm={handleConfirmClose}
+        title="Mark Words as Studied"
+        message="Would you like to mark your completed words as studied before leaving?"
+      />
     </DndProvider>
   );
 };

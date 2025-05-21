@@ -5,16 +5,11 @@ import { getWordsByListId } from "@/app/actions/prismaActions";
 
 async function page({
   params,
-  searchParams,
 }: {
   params: Promise<{ listId: string }>;
-  searchParams: Promise<{ page?: string }>;
 }) {
   const listId = (await params).listId
-
-  const page = parseInt((await searchParams).page as string) || 1;
-  const { words } = await getWordsByListId(parseInt(listId), page);
-
+  const { words } = await getWordsByListId(parseInt(listId));
   return (
     <>
       <DashboardLayout showFooter={false}>

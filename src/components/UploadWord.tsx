@@ -9,6 +9,13 @@ import ConfirmationModal from "@/components/ConfirmationModal";
 import { readFileContent } from "@/app/utils/fileReaderUtil";
 import { processFileWithAI } from "@/app/actions/AiService";
 
+// Define type for AI response based on the zod schema
+type AIResponse = {
+  success: boolean;
+  data?: any;
+  error?: string;
+};
+
 function UploadWord({ user, refreshSpellingLists }: {
   user: any,   
   refreshSpellingLists: () => Promise<void>;
@@ -16,7 +23,7 @@ function UploadWord({ user, refreshSpellingLists }: {
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [aiResponse, setAiResponse] = useState(null);
+  const [aiResponse, setAiResponse] = useState<AIResponse | null>(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -47,11 +54,11 @@ function UploadWord({ user, refreshSpellingLists }: {
 
       const response = await processFileWithAI(content);
 
-      if (response.success) {
+      if (response.success && response.data) {
         setProgress(100);
         clearInterval(uploadInterval);
         setTimeout(() => {
-          setAiResponse(response.data);
+          setAiResponse(response);
           setIsModalOpen(true);
         }, 1000);
       } else {
@@ -174,7 +181,7 @@ function UploadWord({ user, refreshSpellingLists }: {
       {aiResponse && (
         <Modal
           refreshSpellingLists={refreshSpellingLists}
-          aiResponse={aiResponse}
+          aiResponse={aiResponse.data}
           isOpen={isModalOpen}
           userId={user.id}
           onClose={() => {

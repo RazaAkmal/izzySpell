@@ -9,10 +9,9 @@ const GoToHomeButton: React.FC = () => {
   return (
     <CustomButton
       label="Go to Home"
-      size="small"
+      size="medium"
       variant="success"
       radius="rounded"
-      className="w-full md:w-auto mt-0"
       onClick={() => router.push("/dashboard")}
     />
   );

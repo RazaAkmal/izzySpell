@@ -14,8 +14,8 @@ const variantStyles = {
 
 // Define styles for each size
 const sizeStyles = {
-  small: "py-1 m-3 px-8 text-lg  ",
-  medium: " py-3 px-8 text-lg",
+  small: "py-1 px-8 text-lg  ",
+  medium: " py-2 px-8 text-lg",
   large: "py-2 px-16 text-lg",
   extralarge: "py-2 px-24 text-lg",
 };
@@ -63,8 +63,8 @@ const CustomButton: React.FC<CustomButtonProps> = ({
     >
       {img && (
         <Image
-          width={50}
-          height={50}
+          width={40}
+          height={40}
           src={img}
           alt="Arrow"
           className="w-10 h-10"
@@ -73,11 +73,11 @@ const CustomButton: React.FC<CustomButtonProps> = ({
       {label}
       {arrow && (
         <Image
-          width={50}
-          height={50}
+          width={40}
+          height={40}
           src={arrow}
           alt="Arrow"
-          className="w-5 h-5"
+          className="w-5 h-5 "
         />
       )}
     </Button>
