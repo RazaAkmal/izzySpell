@@ -68,6 +68,7 @@ model GroupedWord {
   listId       Int
   groupName    String
   word         String
+  studied    Boolean      @default(false) // Field to track if the grouped word is studied
   spellingList SpellingList @relation(fields: [listId], references: [id])
 
   @@map(name: "grouped_words")
@@ -78,7 +79,8 @@ model SyllableWord {
   listId       Int
   word         String
   options      Json         
-  answer       String     
+  answer       String
+  studied      Boolean      @default(false) // Field to track if the syllable word is studied     
   spellingList SpellingList @relation(fields: [listId], references: [id])
 
   @@map(name: "syllable_words")

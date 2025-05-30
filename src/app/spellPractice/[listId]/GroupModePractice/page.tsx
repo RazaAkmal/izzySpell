@@ -10,13 +10,13 @@ async function page({
 }) {
   const listId = (await params).listId
 
-  const { groupedWords } = await getGroupedWordsByListId(parseInt(listId));
-  console.log(groupedWords, 'groupedWords')
+  const { groupedWords, totalStudiedGroups } = await getGroupedWordsByListId(parseInt(listId));
+
   return (
     <>
       <DashboardLayout showFooter={false}>
 
-      {groupedWords.length > 0 && <GroupModePage groupedWords={groupedWords} listId={listId} />}
+      {groupedWords.length > 0 && <GroupModePage studiedPage={totalStudiedGroups + 1}  groupedWords={groupedWords} listId={listId} />}
       </DashboardLayout>
     </>
   );

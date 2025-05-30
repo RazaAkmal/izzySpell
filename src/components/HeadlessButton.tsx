@@ -26,7 +26,7 @@ const radiusStyle = {
 
 interface CustomButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  label: string;
+  label: React.ReactNode;
   variant?: keyof typeof variantStyles;
   size?: keyof typeof sizeStyles;
   radius?: keyof typeof radiusStyle;

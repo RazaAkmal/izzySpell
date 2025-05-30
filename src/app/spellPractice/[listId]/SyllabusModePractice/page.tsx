@@ -11,10 +11,11 @@ async function page({
   //for listId
   const listId = (await params).listId;
 
-  const { syllableWords } = await getSyllableWordsByListId(parseInt(listId));
+  const { syllableWords,  studiedWordCount } = await getSyllableWordsByListId(parseInt(listId));
+  console.log("syllableWords", studiedWordCount);
   return (
     <DashboardLayout showFooter={false}>
-      {syllableWords.length > 0 && <SyllabusModePage syllableWords={syllableWords} listId={listId} />}
+      {syllableWords.length > 0 && <SyllabusModePage studiedWordCount={studiedWordCount} syllableWords={syllableWords} listId={parseInt(listId)} />}
     </DashboardLayout>
   );
 }

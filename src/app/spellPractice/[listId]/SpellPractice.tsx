@@ -1,6 +1,6 @@
 "use server";
 
-import { getWordsByListId } from "@/app/actions/prismaActions";
+import { getWordCountForEachExercise } from "@/app/actions/prismaActions";
 import PracticeWordModal from "@/components/PraticeWordModal";
 import GoToHomeButton from "@/components/GoToHomeButton";
 import CustomButton from "@/components/HeadlessButton";
@@ -10,13 +10,16 @@ export default async function WordsPage({
 }: {
   listId: string;
 }) {
-  const { total } = await getWordsByListId(parseInt(listId));
-
+  const { total, studiedWordCount, studiedSyllableWord, studiedGroupCount, totalGroups } = await getWordCountForEachExercise(parseInt(listId));
+  const validStudiedGroups = studiedGroupCount.filter(group => group._count.word > 1);
+  const totalStudiedGroups = validStudiedGroups.length;
+  const totalGroupsCount = totalGroups.length;
+  const groupedProgress = totalGroupsCount > 0
+    ? (totalStudiedGroups / totalGroupsCount) * 100
+    : 0;
   return (
-    <div className="bg-skyBlue m-3 rounded-md p-6">
-       
-
-      <div className="w-full flex flex-col lg:flex-row lg:items-start  justify-between items-center gap-4">
+    <div className="min-h-[75vh] flex flex-col items-center gap-6 bg-skyBlue rounded-md p-6 mx-4 md:mx-8 lg:mx-7">
+      <div className="w-full flex flex-col lg:flex-row lg:items-start justify-between items-center gap-4">
         <CustomButton
           label={`Words: ${total}`}
           size="small"
@@ -25,7 +28,7 @@ export default async function WordsPage({
           img="/images/AlphaIcon.svg"
           className="cursor-default"
         />
-        <PracticeWordModal />
+        <PracticeWordModal totalGroups={totalGroupsCount} totalStudiedGroups={totalStudiedGroups} totalWords={total} studiedCount={studiedWordCount} studiedSyllableCount={studiedSyllableWord} studiedGroupCount={Math.round(groupedProgress)} />
         <GoToHomeButton />
       </div>
     </div>

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { SpellingListItem } from "@/lib/defination";
 import moment from "moment";
 import EditWordModal from "./EditWordsModal";
-import { deleteList, fetchWordsForList } from "@/app/actions/prismaActions";
+import { deleteList, fetchWordsForList, resetListProgress } from "@/app/actions/prismaActions";
 import { revalidateRoute } from "@/app/actions/revalidate";
 import ConfirmationModal from "./ConfirmationModal";
 
@@ -21,8 +21,12 @@ function AllListData({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+  const [pendingResetId, setPendingResetId] = useState<number | null>(null);
+  const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const [isResetLoading, setIsResetLoading] = useState(false);
 
   const handleContinueLearning = (listId: number) => {
     route.push(`/spellPractice/${listId}`);
@@ -45,12 +49,19 @@ function AllListData({
     setShowDeleteConfirmation(true);
   };
 
+  const initiateReset = (listId: number) => {
+    setPendingResetId(listId);
+    setShowResetConfirmation(true);
+  };
+
   const handleDelete = async (listId: number) => {
+    setIsDeleteLoading(true);
     try {
       const result = await deleteList(listId, userId!);
 
       if (result.success) {
         setSuccessMessage(result.message);
+        setShowDeleteConfirmation(false);
         setShowSuccessModal(true);
         revalidateRoute("/lists");
       } else {
@@ -61,6 +72,33 @@ function AllListData({
       }
     } catch (error) {
       console.error("Error in handleDelete:", error);
+    } finally {
+      setIsDeleteLoading(false);
+      setPendingDeleteId(null);
+    }
+  };
+
+  const handleReset = async (listId: number) => {
+    setIsResetLoading(true);
+    try {
+      const result = await resetListProgress(listId, userId!);
+
+      if (result.success) {
+        setSuccessMessage(result.message);
+        setShowResetConfirmation(false);
+        setShowSuccessModal(true);
+        revalidateRoute("/lists");
+      } else {
+        console.error(
+          "Error resetting list progress:",
+          result.message || "Unknown error"
+        );
+      }
+    } catch (error) {
+      console.error("Error in handleReset:", error);
+    } finally {
+      setIsResetLoading(false);
+      setPendingResetId(null);
     }
   };
 
@@ -102,7 +140,7 @@ function AllListData({
                 item.progress === 0 ? item.color : "bg-blue"
               } border-[3px] border-b-white rounded-lg text-white font-bold text-sm sm:text-lg`}
             >
-              {item.progress === 0 ? "Start Learning Now" : "Continue Learning"}
+              {item.progress === 0 ? "Start Learning" : "Continue Learning"}
             </button>
             <button
               className="px-3 hover-scale py-1 lg:px-5 lg:py-2 bg-blue border-[3px] border-gray-300 text-white font-bold rounded-lg text-sm md:text-lg"
@@ -128,6 +166,14 @@ function AllListData({
               className="hover-scale lg:w-10 lg:h-10 w-8 h-8 cursor-pointer"
               onClick={() => initiateDelete(item.id)}
             />
+            <Image
+              src="/images/resetIcon.svg"
+              alt="resetIcon"
+              width={40}
+              height={40}
+              className="hover-scale lg:w-10 lg:h-10 w-8 h-8 cursor-pointer"
+              onClick={() => initiateReset(item.id)}
+            />
           </div>
         </div>
       ))}
@@ -146,18 +192,39 @@ function AllListData({
       <ConfirmationModal
         isOpen={showDeleteConfirmation}
         onClose={() => {
-          setShowDeleteConfirmation(false);
-          setPendingDeleteId(null);
-        }}
-        onConfirm={() => {
-          if (pendingDeleteId) {
-            handleDelete(pendingDeleteId);
+          if (!isDeleteLoading) {
             setShowDeleteConfirmation(false);
             setPendingDeleteId(null);
           }
         }}
+        onConfirm={() => {
+          if (pendingDeleteId && !isDeleteLoading) {
+            handleDelete(pendingDeleteId);
+          }
+        }}
         title="Delete List"
         message="Are you sure you want to delete this list?"
+        isLoading={isDeleteLoading}
+        confirmText="Yes"
+      />
+
+      <ConfirmationModal
+        isOpen={showResetConfirmation}
+        onClose={() => {
+          if (!isResetLoading) {
+            setShowResetConfirmation(false);
+            setPendingResetId(null);
+          }
+        }}
+        onConfirm={() => {
+          if (pendingResetId && !isResetLoading) {
+            handleReset(pendingResetId);
+          }
+        }}
+        title="Reset List Progress"
+        message="Are you sure you want to reset all progress for this list? This will mark all words as unstudied."
+        isLoading={isResetLoading}
+        confirmText="Yes"
       />
 
       <ConfirmationModal

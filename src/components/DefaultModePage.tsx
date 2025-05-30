@@ -16,6 +16,7 @@ import { markWordsAsStudied } from "@/app/actions/prismaActions";
 interface DefaultModePageProps {
   words: Word[];
   listId: string;
+  studiedWordCount: number;
 }
 
 interface Letter {
@@ -116,19 +117,41 @@ const SlotComponent = ({
     </div>
   );
 };
-const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
+const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studiedWordCount }) => {
   const wordsSpell = words.map((word) => word.word);
   const router = useRouter();
-
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(studiedWordCount || 1);
+  const [highestReachedPage, setHighestReachedPage] = useState(studiedWordCount || 1);
   const [selectedLetters, setSelectedLetters] = useState<string[]>(
     Array(wordsSpell[0]?.length || 0).fill("")
   );
   const [isCorrect, setIsCorrect] = useState(true);
   const [scrambledLetters, setScrambledLetters] = useState<string[]>([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [isConfirmLoading, setIsConfirmLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const currentWord = wordsSpell[currentPage - 1];
+
+  useEffect(() => {
+    // Check and handle the start parameter on mount
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const startParam = params.get('start');
+      
+      if (startParam === '0') {
+        setCurrentPage(1);
+        setHighestReachedPage(1);
+      }
+
+      // Remove the start parameter from URL
+      if (startParam && window.history) {
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('start');
+        window.history.replaceState({}, '', newUrl.toString());
+      }
+    }
+  }, []); // Empty dependency array as this should only run once on mount
 
   const scrambleWord = useCallback((word: string): string[] => {
     const letters = [...word];
@@ -140,9 +163,12 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
   }, []);
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    setSelectedLetters(Array(wordsSpell[page - 1]?.length || 0).fill(""));
-    setIsCorrect(true);
+    // Allow navigation to any page up to the highest reached page
+    if (page <= highestReachedPage) {
+      setCurrentPage(page);
+      setSelectedLetters(Array(wordsSpell[page - 1]?.length || 0).fill(""));
+      setIsCorrect(true);
+    }
   };
 
   const validateWord = (letters: string[]) => {
@@ -153,10 +179,18 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
       if (isMatching) {
         setIsCorrect(true);
         setTimeout(() => {
-          setCurrentPage((prevPage) => prevPage + 1);
-          setSelectedLetters(
-            Array(wordsSpell[currentPage]?.length || 0).fill("")
-          );
+          // Prevent going beyond the last word
+          if (currentPage < wordsSpell.length) {
+            const nextPage = currentPage + 1;
+            setCurrentPage(nextPage);
+            setHighestReachedPage(Math.max(highestReachedPage, nextPage));
+            setSelectedLetters(
+              Array(wordsSpell[nextPage - 1]?.length || 0).fill("")
+            );
+          } else {
+            // We're on the last page, just update highest reached page
+            setHighestReachedPage(Math.max(highestReachedPage, currentPage));
+          }
         }, 2000);
       } else {
         setIsCorrect(false);
@@ -237,18 +271,6 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
     setShowConfirmation(true);
   };
 
-  const handleConfirmClose = async () => {
-    // Get IDs of completed words (up to current page)
-    router.push(`/spellPractice/${listId}`);
-    const completedWordIds = words
-      .slice(0, currentPage)
-      .map((word) => word.id);
-
-    if (completedWordIds.length > 0) {
-      await markWordsAsStudied(completedWordIds);
-    }
-  };
-
   useEffect(() => {
     if (currentWord) {
       setScrambledLetters(scrambleWord(currentWord));
@@ -298,47 +320,57 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="bg-skyBlue m-7 mt-1 p-6 rounded-lg shadow-lg">
+      <div className="bg-skyBlue h-[75vh] m-7 mt-1 p-6 rounded-lg shadow-lg">
         <div className="flex items-center justify-between flex-col-reverse md:flex-row relative">
-          <CustomButton
-            label={`Total Words ${currentPage} / ${wordsSpell.length}`}
-            variant="success"
-            size="small"
-            img="/images/bookIcon.svg"
-          />
-          <Image
-            src="/images/titles/DefaultModeTitle.svg"
-            alt="Default title"
-            width={250}
-            height={24}
-            className="md:mr-40"
-          />
-          <Button className="focus:outline-none md:relative absolute md:right-0 top-0 right-[-10]">
-            <Image
-              src="/images/Vector.svg"
-              alt="Cancel Button"
-              width={30}
-              height={30}
-              onClick={handleClose}
+          <div className="z-10">
+            <CustomButton
+              label={`Total Words ${currentPage} / ${wordsSpell.length}`}
+              variant="success"
+              size="small"
+              img="/images/bookIcon.svg"
             />
-          </Button>
+          </div>
+          <div className="absolute left-0 right-0 flex justify-center pointer-events-none">
+            <Image
+              src="/images/titles/DefaultModeTitle.svg"
+              alt="Default title"
+              width={250}
+              height={24}
+              priority
+            />
+          </div>
+          <div className="z-10">
+            <Button 
+              className="focus:outline-none" 
+              disabled={isConfirmLoading}
+            >
+              <Image
+                src="/images/Vector.svg"
+                alt="Cancel Button"
+                width={30}
+                height={30}
+                onClick={handleClose}
+              />
+            </Button>
+          </div>
         </div>
 
-        <div className="flex flex-col items-center space-y-6">
+        <div className="flex mt-10 flex-col items-center space-y-6">
           <CustomPagination
             currentPage={currentPage}
             totalPages={wordsSpell.length}
             onPageChange={handlePageChange}
+            highestReachedPage={highestReachedPage}
           />
-          {currentWord && (
-            <>
-              <p className="text-base md:text-2xl font-bold text-darkBlue text-center">
+          <p className="text-base md:text-2xl font-bold text-darkBlue !mb-6 text-center">
                 Click or drag letters to form the word!
               </p>
-
+              </div>
+          {currentWord && (
+            <>
               <div className="flex flex-col md:flex-row items-center justify-center gap-2">
                 <div
-                  className={`flex flex-wrap border-[3px] rounded-2xl md:ml-4 p-4 bg-white justify-center gap-3 ${
+                  className={`relative flex flex-wrap border-[3px] rounded-2xl md:ml-4 p-4 bg-white justify-center gap-3 ${
                     selectedLetters.every((item) => item !== "")
                       ? isCorrect
                         ? "border-darkGreen"
@@ -354,8 +386,7 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
                       key={index}
                     />
                   ))}
-                </div>
-                <div className="flex items-center justify-center">
+                  <div className="absolute right-[-5rem]">
                   {!isCorrect &&
                     selectedLetters.every((item) => item !== "") && (
                       <button onClick={handleReset} className="rounded-2xl">
@@ -370,7 +401,7 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
                 </div>
 
                 {isCorrect && selectedLetters.every((item) => item !== "") && (
-                  <div className="flex items-center justify-center">
+                  <div className="absolute right-[-5rem]">
                     <button className="text-white font-bold text-lg rounded-full">
                       <Image
                         src="/images/completeIcon.svg"
@@ -381,26 +412,49 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId }) => {
                     </button>
                   </div>
                 )}
+                </div>
               </div>
 
               <div className="flex flex-wrap justify-center gap-3">
                 <ScrambledDropZone />
               </div>
 
-              <div>
+              <div className="flex items-center justify-center mt-4">
                 <TextToSpeech heightWidth={60} spell={currentWord} />
               </div>
             </>
           )}
-        </div>
       </div>
 
       <ConfirmationModal
         isOpen={showConfirmation}
-        onClose={() => router.push(`/spellPractice/${listId}`)}
-        onConfirm={handleConfirmClose}
+        onClose={() => !isConfirmLoading && router.push(`/spellPractice/${listId}`)}
+        onConfirm={async () => {
+          try {
+            setIsConfirmLoading(true);
+            setError(null);
+            
+            // Get IDs of completed words (up to current page)
+            const completedWordIds = words
+              .slice(0, currentPage)
+              .map((word) => word.id);
+
+            if (completedWordIds.length > 0) {
+              await markWordsAsStudied(completedWordIds);
+            }
+            
+            router.push(`/spellPractice/${listId}`);
+          } catch (err) {
+            setError(`Failed to save progress: ${err instanceof Error ? err.message : 'Unknown error'}`);
+            console.error('Error marking words as studied:', err);
+          } finally {
+            setIsConfirmLoading(false);
+          }
+        }}
         title="Mark Words as Studied"
-        message="Would you like to mark your completed words as studied before leaving?"
+        message={error || "Would you like to mark your completed words as studied before leaving?"}
+        isLoading={isConfirmLoading}
+        confirmText="Yes, Save Progress"
       />
     </DndProvider>
   );

@@ -22,6 +22,7 @@ const SpellPracticePagination: React.FC<ClientComponentProps> = ({ listId, total
       currentPage={page}
       totalPages={totalPages} 
       onPageChange={handlePageChange} 
+      highestReachedPage={2}
     />
   );
 }

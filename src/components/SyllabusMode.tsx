@@ -5,20 +5,25 @@ import CustomPagination from "./CustomPagination";
 import { SyllableWord } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import TextToSpeech from "./TextToSpeach";
+import ConfirmationModal from "./ConfirmationModal";
+import { markSyllableWordsAsStudied } from "@/app/actions/prismaActions";
 
 interface SyllabusModePageProps {
-  listId: string;
+  listId: number;
   syllableWords: SyllableWord[];
+  studiedWordCount: number;
 }
 
 const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
   listId,
   syllableWords,
+  studiedWordCount
 }) => {
-  const [currentPage, setCurrentPage] = useState(1);
+  const router = useRouter();
+  const [currentPage, setCurrentPage] = useState(studiedWordCount || 1);
+  const [highestReachedPage, setHighestReachedPage] = useState(studiedWordCount || 1);
   const correctSyllable = syllableWords[currentPage - 1].answer;
   const orignalWord = syllableWords[currentPage - 1].word;
-  const router = useRouter();
 
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [syllableBoxes, setSyllableBoxes] = useState<string[]>(
@@ -26,6 +31,9 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
   );
   const [isCorrectAnswer, setIsCorrectAnswer] = useState<boolean | null>(null);
   const [options, setOptions] = useState<string[]>([]);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [isConfirmLoading, setIsConfirmLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const shuffleAnswers = (array: string[]) => {
     for (let i = array.length - 1; i > 0; i--) {
@@ -34,6 +42,25 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
     }
     return array;
   };
+useEffect(() => {
+    // Check and handle the start parameter on mount
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const startParam = params.get('start');
+      
+      if (startParam === '0') {
+        setCurrentPage(1);
+        setHighestReachedPage(1);
+      }
+
+      // Remove the start parameter from URL
+      if (startParam && window.history) {
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('start');
+        window.history.replaceState({}, '', newUrl.toString());
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const generatedOptions = syllableWords.filter(
@@ -57,6 +84,10 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
   const checkAnswer = (selectedOption: string) => {
     if (selectedOption === correctSyllable) {
       setIsCorrectAnswer(true);
+      // Update highest reached page when answer is correct
+      if (currentPage < syllableWords.length) {
+        setHighestReachedPage(prev => Math.max(prev, currentPage + 1));
+      }
       setTimeout(() => {
         setCurrentPage((prevPage) => prevPage + 1);
         setSelectedOption(null);
@@ -68,9 +99,12 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
   };
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    setSelectedOption(null);
-    setIsCorrectAnswer(null);
+    // Only allow navigation to pages up to the highest reached page
+    if (page >= 1 && page <= syllableWords.length && page <= highestReachedPage) {
+      setCurrentPage(page);
+      setSelectedOption(null);
+      setIsCorrectAnswer(null);
+    }
   };
 
   return (
@@ -81,8 +115,8 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
             Syllables Mode
           </p>
           <button
-            className="  md:ml-4 focus:outline-none"
-            onClick={() => router.push(`/spellPractice/${listId}`)}
+            className="md:ml-4 focus:outline-none"
+            onClick={() => setShowConfirmation(true)}
           >
             <Image
               src="/images/Vector.svg"
@@ -99,6 +133,7 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
             currentPage={currentPage}
             totalPages={syllableWords.length}
             onPageChange={handlePageChange}
+            highestReachedPage={highestReachedPage}
           />
         </div>
 
@@ -159,6 +194,35 @@ const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showConfirmation}
+        onClose={() => !isConfirmLoading && router.push(`/spellPractice/${listId}`)}
+        onConfirm={async () => {
+          try {
+            setIsConfirmLoading(true);
+            // Get IDs of completed syllable words (up to current page)
+            const completedWordIds = syllableWords
+              .slice(0, currentPage)
+              .map((word) => word.id);
+
+            if (completedWordIds.length > 0) {
+              await markSyllableWordsAsStudied(completedWordIds, listId);
+            }
+            
+            router.push(`/spellPractice/${listId}`);
+          } catch (err) {
+            setError(`Failed to save progress: ${err instanceof Error ? err.message : 'Unknown error'}`);
+            console.error('Error marking syllable words as studied:', err);
+          } finally {
+            setIsConfirmLoading(false);
+          }
+        }}
+        title="Mark Words as Studied"
+        message={error || "Would you like to mark your completed words as studied before leaving?"}
+        isLoading={isConfirmLoading}
+        confirmText="Yes"
+      />
     </>
   );
 };

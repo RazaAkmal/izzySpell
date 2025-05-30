@@ -36,8 +36,8 @@ const AllListsPage = async () => {
         <div className="hidden p-3 md:grid grid-cols-12 font-bold text-xl text-darkBlue bg-[#ECF7FF] border-2 border-sky-300 rounded-2xl">
           <div className="col-span-3">List Name</div>
           <div className="col-span-2">Date</div>
-          <div className="col-span-3">Status</div>
-          <div className="col-span-4 text-center">Actions</div>
+          <div className="col-span-2">Status</div>
+          <div className="col-span-5 text-center">Actions</div>
         </div>
         </div>
         {user ? <AllListData userId={user.id} spellingLists={spellingWithColors} /> : <div>Loading...</div>}

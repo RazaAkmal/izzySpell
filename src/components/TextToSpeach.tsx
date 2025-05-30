@@ -7,7 +7,7 @@ function TextToSpeech({ spell, heightWidth }: { spell: string, heightWidth: numb
     const utterance = new SpeechSynthesisUtterance(text);
     speechSynthesis.speak(utterance);
   };
-
+  console.log("spell", spell);
   return (
     <>
       <Image

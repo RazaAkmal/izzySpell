@@ -6,72 +6,112 @@ import { GroupedWord } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import CustomPagination from "./CustomPagination";
 import TextToSpeech from "./TextToSpeach";
+import ConfirmationModal from "./ConfirmationModal";
+import { markGroupAsStudied } from "@/app/actions/prismaActions";
 
 interface GroupModePageProps {
   listId: string;
   groupedWords: GroupedWord[];
+  studiedPage: number;
 }
 
 const GroupModePage: React.FC<GroupModePageProps> = ({
   listId,
   groupedWords,
+  studiedPage,
 }) => {
   const router = useRouter();
-  const [currentPage, setCurrentPage] = useState(1);
-  console.log("pages", currentPage);
+  console.log(studiedPage, 'studiedPage');
+  // All state declarations at the top
+  const [currentPage, setCurrentPage] = useState(studiedPage || 1);
+  const [highestReachedPage, setHighestReachedPage] = useState(studiedPage || 1);
+  const [currentGroupIndex, setCurrentGroupIndex] = useState(studiedPage - 1 || 0);
+  const [userInputs, setUserInputs] = useState<Record<string, string[][]>>({});
+  const [validationStates, setValidationStates] = useState<Record<string, string[][]>>({});
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [isConfirmLoading, setIsConfirmLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Group words by groupName
-  const groups = groupedWords.reduce((acc, word) => {
-    if (!acc[word.groupName]) {
-      acc[word.groupName] = [];
-    }
-    acc[word.groupName].push(word);
-    return acc;
-  }, {} as Record<string, GroupedWord[]>);
 
-  const validGroups = Object.keys(groups).filter(
-    (groupName) => groups[groupName].length > 1
-  );
-  console.log("valid", validGroups);
+   useEffect(() => {
+      // Check and handle the start parameter on mount
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const startParam = params.get('start');
+        
+        if (startParam === '0') {
+          setCurrentPage(1);
+          setHighestReachedPage(1);
+          setCurrentGroupIndex(0);
+        }
+  
+        // Remove the start parameter from URL
+        if (startParam && window.history) {
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete('start');
+          window.history.replaceState({}, '', newUrl.toString());
+        }
+      }
+    }, []);
 
-  // State to manage the current group index
-  const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
+  const groups = React.useMemo(() => 
+    groupedWords.reduce((acc, word) => {
+      if (!acc[word.groupName]) {
+        acc[word.groupName] = [];
+      }
+      acc[word.groupName].push(word);
+      return acc;
+    }, {} as Record<string, GroupedWord[]>)
+  , [groupedWords]);
+
+  const validGroups = React.useMemo(() => 
+    Object.keys(groups).filter((groupName) => groups[groupName].length > 1)
+  , [groups]);
+
   const currentGroupName = validGroups[currentGroupIndex];
-  const currentGroup = groups[currentGroupName] || [];
-  console.log("current words", currentGroup);
-
-  // State for user inputs corresponding to the current group's words
-  const [userInputs, setUserInputs] = useState<string[][]>(
-    groupedWords.map((word) => Array(word.word.length).fill(""))
+  const currentGroup = React.useMemo(() => 
+    groups[currentGroupName] || [], 
+    [groups, currentGroupName]
   );
 
-  const [validationStates, setValidationStates] = useState<string[][]>(
-    groupedWords.map((word) => Array(word.word.length).fill("default"))
-  );
-
-  // Add effect to check if all words are correct and move to next page
-  useEffect(() => {
-    const allWordsCorrect = currentGroup.every((_, rowIndex) =>
-      validationStates[rowIndex].every((state) => state === "valid")
-    );
-
-    if (allWordsCorrect && currentPage < validGroups.length) {
-      const timer = setTimeout(() => {
-        handlePageChange(currentPage + 1);
-      }, 2000); // Wait 2 seconds before moving to next page
-
-      return () => clearTimeout(timer);
+  // Handlers
+  const handlePageChange = React.useCallback((page: number) => {
+    if (page >= 1 && page <= validGroups.length && page <= highestReachedPage) {
+      const newGroupIndex = page - 1;
+      setCurrentGroupIndex(newGroupIndex);
+      setCurrentPage(page);
+      
+      // Reset the user inputs and validation states for the new page
+      setUserInputs(prev => ({
+        ...prev,
+        [validGroups[newGroupIndex]]: groups[validGroups[newGroupIndex]]?.map(word => 
+          Array(word.word.length).fill("")
+        )
+      }));
+      setValidationStates(prev => ({
+        ...prev,
+        [validGroups[newGroupIndex]]: groups[validGroups[newGroupIndex]]?.map(word => 
+          Array(word.word.length).fill("default")
+        )
+      }));
     }
-  }, [validationStates, currentPage, validGroups.length]);
+  }, [validGroups, groups, highestReachedPage]);
 
   const handleInputChange = (
     rowIndex: number,
     boxIndex: number,
     value: string
   ) => {
-    const updatedInputs = [...userInputs];
-    updatedInputs[rowIndex][boxIndex + 2] = value.slice(-1); // Offset by 2 due to pre-filled letters
-    setUserInputs(updatedInputs);
+    const currentInputs = [...(userInputs[currentGroupName] || [])];
+    currentInputs[rowIndex] = [...(currentInputs[rowIndex] || [])];
+    // If word length is <= 2, don't offset the index
+    const targetIndex = currentGroup[rowIndex].word.length > 2 ? boxIndex + 2 : boxIndex;
+    currentInputs[rowIndex][targetIndex] = value.slice(-1);
+    
+    setUserInputs(prev => ({
+      ...prev,
+      [currentGroupName]: currentInputs
+    }));
 
     // Move focus to the next input box if it exists
     const nextInput = document.getElementById(
@@ -82,31 +122,36 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
     }
 
     //  word is fully type or not
-    const word = currentGroup[rowIndex].word.toLowerCase();;
-    const userWord = [
-      ...word.slice(0, 2),
-      ...updatedInputs[rowIndex].slice(2),
-    ].join("").toLowerCase();;
+    const word = currentGroup[rowIndex].word.toLowerCase();
+    const userWord = word.length > 2
+      ? [...word.slice(0, 2), ...currentInputs[rowIndex].slice(2)].join("").toLowerCase()
+      : (currentInputs[rowIndex] || []).join("").toLowerCase();
 
-    const updatedValidation = [...validationStates];
+    const currentValidation = [...(validationStates[currentGroupName] || [])];
+    currentValidation[rowIndex] = [...(currentValidation[rowIndex] || [])];
+    
     if (userWord.length === word.length) {
-      updatedValidation[rowIndex] =
+      currentValidation[rowIndex] =
         word === userWord
           ? Array(word.length).fill("valid")
           : Array(word.length).fill("invalid");
-      setValidationStates(updatedValidation);
     } else {
       // Reset to default during typing
-      updatedValidation[rowIndex][boxIndex + 2] = "default";
-      setValidationStates(updatedValidation);
+      const targetIndex = word.length > 2 ? boxIndex + 2 : boxIndex;
+      currentValidation[rowIndex][targetIndex] = "default";
     }
+    
+    setValidationStates(prev => ({
+      ...prev,
+      [currentGroupName]: currentValidation
+    }));
   };
 
   const handleKeyDown = (rowIndex: number, boxIndex: number, key: string) => {
     if (
       key === "Backspace" &&
       boxIndex > 0 &&
-      !userInputs[rowIndex][boxIndex + 2]
+      !userInputs[currentGroupName]?.[rowIndex]?.[boxIndex + 2]
     ) {
       const prevInput = document.getElementById(
         `input-${rowIndex}-${boxIndex - 1}`
@@ -117,37 +162,71 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
     }
   };
 
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= validGroups.length) {
-      const newGroupIndex = page - 1;
-      const newGroupName = validGroups[newGroupIndex];
-      const newGroup = groups[newGroupName] || [];
-
-      // Reset userInputs and validationStates for the new group
-      setUserInputs(newGroup.map((word) => Array(word.word.length).fill("")));
-      setValidationStates(
-        newGroup.map((word) => Array(word.word.length).fill("default"))
-      );
-
-      setCurrentGroupIndex(newGroupIndex);
-      setCurrentPage(page);
-    }
-  };
-
   //reset buttonn
   const handleReset = (rowIndex: number) => {
-    const updatedInputs = [...userInputs];
-    updatedInputs[rowIndex] = Array(currentGroup[rowIndex].word.length).fill(
-      ""
-    );
-    setUserInputs(updatedInputs);
+    const currentInputs = [...(userInputs[currentGroupName] || [])];
+    currentInputs[rowIndex] = Array(currentGroup[rowIndex].word.length).fill("");
+    setUserInputs(prev => ({
+      ...prev,
+      [currentGroupName]: currentInputs
+    }));
 
-    const updatedValidation = [...validationStates];
-    updatedValidation[rowIndex] = Array(
+    const currentValidation = [...(validationStates[currentGroupName] || [])];
+    currentValidation[rowIndex] = Array(
       currentGroup[rowIndex].word.length
     ).fill("default");
-    setValidationStates(updatedValidation);
+    setValidationStates(prev => ({
+      ...prev,
+      [currentGroupName]: currentValidation
+    }));
   };
+
+  // Effects
+  useEffect(() => {
+    if (currentGroupName && currentGroup.length > 0) {
+      // Initialize states only if they don't exist for current group
+      if (!userInputs[currentGroupName]) {
+        setUserInputs(prev => ({
+          ...prev,
+          [currentGroupName]: currentGroup.map(word => Array(word.word.length).fill(""))
+        }));
+      }
+      if (!validationStates[currentGroupName]) {
+        setValidationStates(prev => ({
+          ...prev,
+          [currentGroupName]: currentGroup.map(word => Array(word.word.length).fill("default"))
+        }));
+      }
+    }
+  }, [currentGroupName, currentGroup, userInputs, validationStates]);
+
+  useEffect(() => {
+    if (!validationStates[currentGroupName]) return;
+
+    const allWordsCorrect = currentGroup.every((_, rowIndex) =>
+      validationStates[currentGroupName][rowIndex]?.every((state) => state === "valid")
+    );
+
+    if (allWordsCorrect) {
+      console.log(`All words correct in group: ${currentGroupName}`);
+      
+      // If we're on the last page, just update the highest reached page
+      if (currentPage === validGroups.length) {
+        setHighestReachedPage(prevHighest => Math.max(prevHighest, currentPage));
+        return;
+      }
+      
+      // Otherwise, prepare to move to the next page
+      setHighestReachedPage(prevHighest => Math.max(prevHighest, currentPage + 1));
+      
+      const timer = setTimeout(() => {
+        console.log(`Moving to next group: ${currentGroupName}`);
+        handlePageChange(currentPage + 1);
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [currentGroupName, currentGroup, validationStates, currentPage, validGroups.length, handlePageChange]);
 
   return (
     <div className="bg-skyBlue m-5 max-h-max rounded-md p-6">
@@ -166,7 +245,8 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
         </p>
         <Button
           className="focus:outline-none"
-          onClick={() => router.push(`/spellPractice/${listId}`)}
+          onClick={() => setShowConfirmation(true)}
+          disabled={isConfirmLoading}
         >
           <Image
             src="/images/Vector.svg"
@@ -184,6 +264,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
           currentPage={currentPage}
           totalPages={validGroups.length}
           onPageChange={handlePageChange}
+          highestReachedPage={highestReachedPage}
         />
       </div>
 
@@ -199,7 +280,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
             key={rowIndex}
           >
             {/* letters already shown at the start */}
-            {word.word
+            {word.word.length > 2 && word.word
               .split("")
               .slice(0, 2)
               .map((letter, index) => (
@@ -212,21 +293,25 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
               ))}
 
             {/* Input Boxes */}
-            {Array.from({ length: word.word.length - 2 }).map((_, boxIndex) => (
+            {Array.from({ length: word.word.length > 2 ? word.word.length - 2 : word.word.length }).map((_, boxIndex) => (
               <input
                 id={`input-${rowIndex}-${boxIndex}`}
                 type="text"
                 key={boxIndex}
                 maxLength={1}
-                value={userInputs[rowIndex][boxIndex + 2]}
+                value={word.word.length > 2 
+                  ? (userInputs[currentGroupName]?.[rowIndex]?.[boxIndex + 2] || "")
+                  : (userInputs[currentGroupName]?.[rowIndex]?.[boxIndex] || "")}
                 onChange={(e) =>
                   handleInputChange(rowIndex, boxIndex, e.target.value)
                 }
                 onKeyDown={(e) => handleKeyDown(rowIndex, boxIndex, e.key)}
                 className={`w-12 h-12 text-center border-[3px] rounded-lg text-2xl border-darkGreen font-bold focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-                  validationStates[rowIndex][boxIndex + 2] === "valid"
+                  word.word.length > 2
+                    ? validationStates[currentGroupName]?.[rowIndex]?.[boxIndex + 2] === "valid"
+                    : validationStates[currentGroupName]?.[rowIndex]?.[boxIndex] === "valid"
                     ? "border-green-500"
-                    : validationStates[rowIndex][boxIndex + 2] === "invalid"
+                    : validationStates[currentGroupName]?.[rowIndex]?.[boxIndex + 2] === "invalid"
                     ? "border-red-500"
                     : "border-lightGreen "
                 }`}
@@ -236,14 +321,14 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
             {/* Speaker Button */}
             <TextToSpeech spell={word.word} heightWidth={48} />
 
-            {validationStates[rowIndex].every((state) => state === "valid") ? (
+            {validationStates[currentGroupName]?.[rowIndex]?.every((state) => state === "valid") ? (
               <Image
                 src="/images/completeIcon.svg"
                 alt="Correct"
                 width={55}
                 height={55}
               />
-            ) : validationStates[rowIndex].includes("invalid") ? (
+            ) : validationStates[currentGroupName]?.[rowIndex]?.includes("invalid") ? (
               <Button onClick={() => handleReset(rowIndex)}>
                 <Image
                   src="/images/resetIcon.svg"
@@ -256,6 +341,43 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
           </div>
         ))}
       </div>
+
+      <ConfirmationModal
+        isOpen={showConfirmation}
+        onClose={() => !isConfirmLoading && router.push(`/spellPractice/${listId}`)}
+        onConfirm={async () => {
+          try {
+            setIsConfirmLoading(true);
+            setError(null);
+            // Mark each completed group as studied
+            for (let pageIndex = 0; pageIndex < highestReachedPage; pageIndex++) {
+              const groupName = validGroups[pageIndex];
+              const groupValidation = validationStates[groupName];
+              const groupWords = groups[groupName] || [];
+              
+              // Check if all words in this group are correct
+              const allWordsInGroupCorrect = groupWords.every((_, rowIndex) =>
+                groupValidation?.[rowIndex]?.every((state) => state === "valid")
+              );
+
+              if (allWordsInGroupCorrect) {
+                await markGroupAsStudied(groupName, Number(listId));
+              }
+            }
+
+            router.push(`/spellPractice/${listId}`);
+          } catch (err) {
+            setError(`Failed to save study progress: ${err instanceof Error ? err.message : 'Unknown error'}`);
+            console.error('Error marking groups as studied:', err);
+          } finally {
+            setIsConfirmLoading(false);
+          }
+        }}
+        title="Mark Groups as Studied"
+        message={error || "Would you like to mark your completed groups as studied before leaving?"}
+        isLoading={isConfirmLoading}
+        confirmText="Yes"
+      />
     </div>
   );
 };

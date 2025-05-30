@@ -4,8 +4,7 @@ import Image from "next/image";
 export default function Loading() {
   return (
     <DashboardLayout showFooter={false}>
-      <div className="bg-skyBlue m-3 rounded-md p-6">
-        <div className="w-full flex flex-col lg:flex-row lg:items-start justify-between items-center gap-4">
+      <div className="h-[75vh] flex flex-col lg:flex-row lg:items-start justify-between items-center gap-4 bg-skyBlue rounded-md p-6 mx-4 md:mx-8 lg:mx-7">
           {/* Word count button skeleton */}
           <div className="h-12 w-40 bg-white rounded-full animate-pulse" />
 
@@ -47,7 +46,6 @@ export default function Loading() {
           {/* Go to home button skeleton */}
           <div className="h-12 w-40 bg-white rounded-full animate-pulse" />
         </div>
-      </div>
     </DashboardLayout>
   );
 }

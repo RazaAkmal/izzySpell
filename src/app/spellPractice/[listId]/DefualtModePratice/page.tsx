@@ -9,11 +9,11 @@ async function page({
   params: Promise<{ listId: string }>;
 }) {
   const listId = (await params).listId
-  const { words } = await getWordsByListId(parseInt(listId));
+  const { words, studiedWordCount } = await getWordsByListId(parseInt(listId));
   return (
     <>
       <DashboardLayout showFooter={false}>
-        {words.length > 0 && <DefaultModePage words={words} listId={listId} />}
+        {words.length > 0 && <DefaultModePage studiedWordCount={studiedWordCount} words={words} listId={listId} />}
       </DashboardLayout>
     </>
   );
