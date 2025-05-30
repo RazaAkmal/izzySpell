@@ -33,7 +33,7 @@ const ModeCard = ({
   completed = 0
 }: ModeCardType) => (
   <div
-    className={`bg-white flex flex-col items-center justify-end gap-2 p-3 sm:p-4 rounded-lg shadow-md w-full sm:max-w-[250px] lg:max-w-[220px] xl:max-w-xs h-auto pt-6 sm:pt-8 cursor-pointer transition-all duration-200 ${
+    className={`bg-white flex flex-col items-center justify-end gap-3 p-4 sm:p-5 rounded-lg shadow-md w-full sm:max-w-[320px] lg:max-w-[350px] xl:max-w-[380px] min-h-[200px] sm:min-h-[220px] pt-7 sm:pt-9 cursor-pointer transition-all duration-200 ${
       isSelected
         ? "border-2 border-green shadow-lg scale-105"
         : "border border-transparent hover:bg-lightBlue"
@@ -43,12 +43,12 @@ const ModeCard = ({
     <Image
       src={imageSrc}
       alt={altText}
-      className="w-16 h-14 sm:w-20 sm:h-16 lg:w-[80px] xl:w-24 lg:h-[70px] xl:h-20"
+      className="w-18 h-16 sm:w-24 sm:h-20 lg:w-[100px] xl:w-28 lg:h-[85px] xl:h-24"
       width={40}
       height={40}
       priority
     />
-    <span className="text-base sm:text-lg font-bold text-blue mb-1">{label}</span>
+    <span className="text-lg sm:text-xl font-bold text-blue mb-2">{label}</span>
     
     {/* Progress indicator */}
     {total > 0 && (
@@ -186,7 +186,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         </div>
 
         {/* Mode Options */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 justify-items-center gap-4 sm:gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 justify-items-center gap-6 sm:gap-10 mb-10 mx-auto max-w-[1200px]">
           {modesConfig.map((mode) => (
             <ModeCard
               key={mode.id}
@@ -201,42 +201,69 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
             />
           ))}
         </div>
-        {/* Continue/Start Buttons */}
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-6 w-full px-4">
-          {/* Show the Continue button conditionally based on the selected mode */}
-          {currentModeData.showContinue && (
-            <CustomButton
-              label={
-                <div className="flex items-center justify-center w-full sm:w-40 md:w-52 lg:w-48 xl:w-60">
-                  <span className="text-sm sm:text-base whitespace-nowrap">{`Continue Learning (${currentModeData.completed}/${currentModeData.total})`}</span>
+        {/* Button Container - Fixed height and consistent layout */}
+        <div className="h-[120px] sm:h-[80px] mb-6 w-full">
+          {/* Center container for buttons */}
+          <div className="flex justify-center w-full">
+            {/* Fixed-width container to maintain consistent layout */}
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 w-full max-w-[700px] px-4">
+              {currentModeData.showContinue ? (
+                // When two buttons are shown, display them side by side with equal width
+                <>
+                  <CustomButton
+                    label={
+                      <div className="flex items-center justify-center w-full">
+                        <span className="text-sm sm:text-base whitespace-nowrap">{`Continue Learning (${currentModeData.completed}/${currentModeData.total})`}</span>
+                      </div>
+                    }
+                    size="small"
+                    variant="success"
+                    radius="rounded"
+                    onClick={() => navigateTo(selectedMode + `?start=${currentModeData.continueFrom}`)}
+                    img="/images/bookIcon.svg"
+                    disabled={!selectedMode}
+                    className="w-full sm:w-60"
+                  />
+                  
+                  <CustomButton
+                    label={
+                      <div className="flex items-center justify-center w-full">
+                        <span>Begin Again</span>
+                      </div>
+                    }
+                    size="small"
+                    variant="primary"
+                    radius="rounded"
+                    onClick={() =>
+                      selectedMode && navigateTo(selectedMode + "?start=0")
+                    }
+                    img="/images/resetIcon.svg"
+                    disabled={!selectedMode}
+                    className="w-full sm:w-60"
+                  />
+                </>
+              ) : (
+                // When only Begin Again button is shown, center it but keep same width as two-button layout
+                <div className="w-full flex justify-center">
+                  <CustomButton
+                    label={
+                      <div className="flex items-center justify-center w-full">
+                        <span>Start learning</span>
+                      </div>
+                    }
+                    size="small"
+                    variant="primary"
+                    radius="rounded"
+                    onClick={() =>
+                      selectedMode && navigateTo(selectedMode + "?start=0")
+                    }
+                    disabled={!selectedMode}
+                    className="w-full sm:w-60"
+                  />
                 </div>
-              }
-              size="small"
-              variant="success"
-              radius="rounded"
-              onClick={() => navigateTo(selectedMode + `?start=${currentModeData.continueFrom}`)}
-              img="/images/bookIcon.svg"
-              disabled={!selectedMode}
-              className="w-full sm:w-auto"
-            />
-          )}
-
-          <CustomButton
-            label={
-              <div className="flex items-center justify-center w-full sm:w-40 md:w-52 lg:w-48 xl:w-60">
-                <span>Begin Again</span>
-              </div>
-            }
-            size="small"
-            variant="primary"
-            radius="rounded"
-            onClick={() =>
-              selectedMode && navigateTo(selectedMode + "?start=0")
-            }
-            img="/images/resetIcon.svg"
-            disabled={!selectedMode}
-            className="w-full sm:w-auto"
-          />
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </>

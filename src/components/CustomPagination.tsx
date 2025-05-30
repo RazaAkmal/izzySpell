@@ -2,7 +2,7 @@
 import React from "react";
 import Pagination from "rc-pagination";
 import Image from "next/image";
-import "./CustomPagination.module.css";
+import styles from "./CustomPagination.module.css";
 
 interface CustomPaginationProps {
   currentPage: number;
@@ -49,11 +49,12 @@ const CustomPagination: React.FC<CustomPaginationProps> = ({
   };
 
   return (
-    <Pagination
-      current={currentPage}
-      total={totalPages * 10}
-      pageSize={10}
-      prevIcon={
+    <div className={styles.paginationContainer}>
+      <Pagination
+        current={currentPage}
+        total={totalPages * 10}
+        pageSize={10}
+        prevIcon={
         <div
           className={`w-12 h-12 rounded-full flex items-center justify-center border-3 border-sky-300 bg-white transition-all ${
             currentPage === 1
@@ -96,6 +97,7 @@ const CustomPagination: React.FC<CustomPaginationProps> = ({
       itemRender={itemRender}
       className={`custom-pagination ${isSmallScreen ? "small-screen" : ""}`}
     />
+    </div>
   );
 };
 
