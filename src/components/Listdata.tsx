@@ -119,7 +119,7 @@ function AllListData({
             </p>
           </div>
             <p className="md:col-span-2 text-black font-bold text-sm me-3 md:text-xl">
-              {moment(item.createdAt).format("MMM, DD YYYY")}
+              {moment(item.createdAt).format("MMM DD, YYYY")}
             </p>
           <div className="md:col-span-3 flex me-5 gap-2 w-full md:w-auto">
             <div className="w-full bg-gray-200 h-6 border-2 border-sky-300 rounded-full overflow-hidden">
@@ -136,14 +136,14 @@ function AllListData({
           <div className="md:col-span-4 flex justify-between md:justify-center gap-2 sm:flex-row items-center text-left">
             <button
               onClick={() => handleContinueLearning(item.id)}
-              className={`px-3 hover-scale py-1 lg:px-5 lg:py-2 ${
+              className={`!text-sm w-[180px] flex items-center justify-center px-3 hover-scale py-2 lg:px-5 lg:py-2 ${
                 item.progress === 0 ? item.color : "bg-blue"
               } border-[3px] border-b-white rounded-lg text-white font-bold text-sm sm:text-lg`}
             >
               {item.progress === 0 ? "Start Learning" : "Continue Learning"}
             </button>
             <button
-              className="px-3 hover-scale py-1 lg:px-5 lg:py-2 bg-blue border-[3px] border-gray-300 text-white font-bold rounded-lg text-sm md:text-lg"
+              className="!text-sm px-3 hover-scale py-1 lg:px-5 lg:py-2 bg-blue border-[3px] border-gray-300 text-white font-bold rounded-lg"
               onClick={() => handleViewList(item.id)}
             >
               View All

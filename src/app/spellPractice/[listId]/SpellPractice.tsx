@@ -11,9 +11,10 @@ export default async function WordsPage({
   listId: string;
 }) {
   const { total, studiedWordCount, studiedSyllableWord, studiedGroupCount, totalGroups } = await getWordCountForEachExercise(parseInt(listId));
+  const validTotalGroups = totalGroups.filter(group => group._count.word > 1);
   const validStudiedGroups = studiedGroupCount.filter(group => group._count.word > 1);
   const totalStudiedGroups = validStudiedGroups.length;
-  const totalGroupsCount = totalGroups.length;
+  const totalGroupsCount = validTotalGroups.length;
   const groupedProgress = totalGroupsCount > 0
     ? (totalStudiedGroups / totalGroupsCount) * 100
     : 0;

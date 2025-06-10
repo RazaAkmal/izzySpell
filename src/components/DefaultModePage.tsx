@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import ConfirmationModal from "./ConfirmationModal";
+import StudyCompletionModal from "./StudyCompletionModal";
 import { markWordsAsStudied } from "@/app/actions/prismaActions";
 
 interface DefaultModePageProps {
@@ -130,6 +131,7 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isConfirmLoading, setIsConfirmLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   const currentWord = wordsSpell[currentPage - 1];
 
@@ -188,8 +190,9 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
               Array(wordsSpell[nextPage - 1]?.length || 0).fill("")
             );
           } else {
-            // We're on the last page, just update highest reached page
+            // We're on the last page, show completion modal
             setHighestReachedPage(Math.max(highestReachedPage, currentPage));
+            setShowCompletionModal(true);
           }
         }, 2000);
       } else {
@@ -455,6 +458,35 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
         message={error || "Would you like to mark your completed words as studied before leaving?"}
         isLoading={isConfirmLoading}
         confirmText="Yes, Save Progress"
+      />
+
+      <StudyCompletionModal
+        isOpen={showCompletionModal}
+        onClose={() => {
+          setShowCompletionModal(false);
+          // Reset to first page to practice again
+          setCurrentPage(1);
+          setHighestReachedPage(1);
+          setSelectedLetters(Array(wordsSpell[0]?.length || 0).fill(""));
+          setIsCorrect(true);
+          if (wordsSpell[0]) {
+            setScrambledLetters(scrambleWord(wordsSpell[0]));
+          }
+        }}
+        onContinue={async () => {
+          try {
+            setIsConfirmLoading(true);
+            // Mark all words as studied since we completed them
+            const completedWordIds = words.map(word => word.id);
+            await markWordsAsStudied(completedWordIds);
+            router.push(`/spellPractice/${listId}`);
+          } catch (err) {
+            setError(`Failed to save progress: ${err instanceof Error ? err.message : 'Unknown error'}`);
+            console.error('Error marking words as studied:', err);
+          }
+        }}
+        isLoading={isConfirmLoading}
+        mode="Default Mode"
       />
     </DndProvider>
   );

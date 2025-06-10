@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import TextToSpeech from "./TextToSpeach";
 import ConfirmationModal from "./ConfirmationModal";
 import { markSyllableWordsAsStudied } from "@/app/actions/prismaActions";
+import StudyCompletionModal from "./StudyCompletionModal";
 
 interface SyllablesModePageProps {
   listId: number;
@@ -34,6 +35,7 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isConfirmLoading, setIsConfirmLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   const shuffleAnswers = (array: string[]) => {
     for (let i = array.length - 1; i > 0; i--) {
@@ -87,12 +89,20 @@ useEffect(() => {
       // Update highest reached page when answer is correct
       if (currentPage < syllableWords.length) {
         setHighestReachedPage(prev => Math.max(prev, currentPage + 1));
+        // Only increment page if not on the last page
+        setTimeout(() => {
+          setCurrentPage((prevPage) => prevPage + 1);
+          setSelectedOption(null);
+          setIsCorrectAnswer(null);
+        }, 2000);
+      } else {
+        // On the last page, show completion modal after showing correct answer
+        setTimeout(() => {
+          setSelectedOption(null);
+          setIsCorrectAnswer(null);
+          setShowCompletionModal(true);
+        }, 2000);
       }
-      setTimeout(() => {
-        setCurrentPage((prevPage) => prevPage + 1);
-        setSelectedOption(null);
-        setIsCorrectAnswer(null);
-      }, 2000);
     } else {
       setIsCorrectAnswer(false);
     }
@@ -222,6 +232,33 @@ useEffect(() => {
         message={error || "Would you like to mark your completed words as studied before leaving?"}
         isLoading={isConfirmLoading}
         confirmText="Yes"
+      />
+
+      <StudyCompletionModal
+        isOpen={showCompletionModal}
+        onClose={() => {
+          setShowCompletionModal(false);
+          // Reset to first page to practice again
+          setCurrentPage(1);
+          setHighestReachedPage(1);
+          setSelectedOption(null);
+          setIsCorrectAnswer(null);
+        }}
+        onContinue={async () => {
+          try {
+            setIsConfirmLoading(true);
+            setError(null);
+            // Mark all words as studied since we completed them
+            const completedWordIds = syllableWords.map(word => word.id);
+            await markSyllableWordsAsStudied(completedWordIds, listId);
+            router.push(`/spellPractice/${listId}`);
+          } catch (err) {
+            setError(`Failed to save progress: ${err instanceof Error ? err.message : 'Unknown error'}`);
+            console.error('Error marking syllable words as studied:', err);
+          }
+        }}
+        isLoading={isConfirmLoading}
+        mode="Syllables Mode"
       />
     </>
   );

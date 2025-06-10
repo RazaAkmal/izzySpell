@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import CustomPagination from "./CustomPagination";
 import TextToSpeech from "./TextToSpeach";
 import ConfirmationModal from "./ConfirmationModal";
+import StudyCompletionModal from "./StudyCompletionModal";
 import { markGroupAsStudied } from "@/app/actions/prismaActions";
 
 interface GroupModePageProps {
@@ -29,6 +30,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
   const [userInputs, setUserInputs] = useState<Record<string, string[][]>>({});
   const [validationStates, setValidationStates] = useState<Record<string, string[][]>>({});
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [isConfirmLoading, setIsConfirmLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -210,9 +212,12 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
     if (allWordsCorrect) {
       console.log(`All words correct in group: ${currentGroupName}`);
       
-      // If we're on the last page, just update the highest reached page
+      // If we're on the last page, show completion modal
       if (currentPage === validGroups.length) {
         setHighestReachedPage(prevHighest => Math.max(prevHighest, currentPage));
+        setTimeout(() => {
+          setShowCompletionModal(true);
+        }, 2000);
         return;
       }
       
@@ -377,6 +382,44 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
         message={error || "Would you like to mark your completed groups as studied before leaving?"}
         isLoading={isConfirmLoading}
         confirmText="Yes"
+      />
+
+      <StudyCompletionModal
+        isOpen={showCompletionModal}
+        onClose={() => {
+          setShowCompletionModal(false);
+          // Reset to first page to practice again
+          setCurrentPage(1);
+          setHighestReachedPage(1);
+          setCurrentGroupIndex(0);
+          // Reset user inputs and validation states for the first group
+          const firstGroupName = validGroups[0];
+          if (firstGroupName && groups[firstGroupName]) {
+            setUserInputs({
+              [firstGroupName]: groups[firstGroupName].map(word => Array(word.word.length).fill(""))
+            });
+            setValidationStates({
+              [firstGroupName]: groups[firstGroupName].map(word => Array(word.word.length).fill("default"))
+            });
+          }
+        }}
+        onContinue={async () => {
+          try {
+            setIsConfirmLoading(true);
+            // Mark all completed groups as studied
+            for (let pageIndex = 0; pageIndex < validGroups.length; pageIndex++) {
+              const groupName = validGroups[pageIndex];
+              await markGroupAsStudied(groupName, Number(listId));
+            }
+            router.push(`/spellPractice/${listId}`);
+          } catch (err) {
+            setError(`Failed to save progress: ${err instanceof Error ? err.message : 'Unknown error'}`);
+            console.error('Error marking groups as studied:', err);
+          } finally {
+            setIsConfirmLoading(false);
+          }
+        }}
+        mode="Group Mode"
       />
     </div>
   );
