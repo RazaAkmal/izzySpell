@@ -47,7 +47,7 @@ export interface SpellingListWithWords extends SpellingListItem {
 export const responseSchema = z.object({
   ListName: z.string(),
   OriginalWords: z.array(z.string()),
-  SyllabusWords: z.array(z.object({
+  SyllableWords: z.array(z.object({
     Word: z.string(),
     Options: z.array(z.string()).length(4),
     Answer: z.string()

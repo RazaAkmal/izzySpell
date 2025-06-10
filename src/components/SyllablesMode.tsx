@@ -8,13 +8,13 @@ import TextToSpeech from "./TextToSpeach";
 import ConfirmationModal from "./ConfirmationModal";
 import { markSyllableWordsAsStudied } from "@/app/actions/prismaActions";
 
-interface SyllabusModePageProps {
+interface SyllablesModePageProps {
   listId: number;
   syllableWords: SyllableWord[];
   studiedWordCount: number;
 }
 
-const SyllabusModePage: React.FC<SyllabusModePageProps> = ({
+const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
   listId,
   syllableWords,
   studiedWordCount
@@ -227,4 +227,4 @@ useEffect(() => {
   );
 };
 
-export default SyllabusModePage;
+export default SyllablesModePage;

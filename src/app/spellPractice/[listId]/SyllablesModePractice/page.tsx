@@ -1,6 +1,6 @@
 import React from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import SyllabusModePage from "@/components/SyllabusMode";
+import SyllableModePage from "@/components/SyllablesMode";
 import { getSyllableWordsByListId } from "@/app/actions/prismaActions";
 
 async function page({
@@ -15,7 +15,7 @@ async function page({
   console.log("syllableWords", studiedWordCount);
   return (
     <DashboardLayout showFooter={false}>
-      {syllableWords.length > 0 && <SyllabusModePage studiedWordCount={studiedWordCount} syllableWords={syllableWords} listId={parseInt(listId)} />}
+      {syllableWords.length > 0 && <SyllableModePage studiedWordCount={studiedWordCount} syllableWords={syllableWords} listId={parseInt(listId)} />}
     </DashboardLayout>
   );
 }

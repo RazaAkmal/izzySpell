@@ -24,7 +24,7 @@ export async function POST(req: Request) {
           })),
         },
         syllableWords: {
-          create: extractedWords.SyllabusWords.map((syllableWord: any) => ({
+          create: extractedWords.SyllableWords.map((syllableWord: any) => ({
             word: syllableWord.Word,
             answer: syllableWord.Answer,
             options: syllableWord.Options,

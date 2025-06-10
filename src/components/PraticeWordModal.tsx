@@ -8,7 +8,7 @@ import CustomButton from "./HeadlessButton";
 // Reusable ModeCard Component
 type ModeType =
   | "DefualtModePratice"
-  | "SyllabusModePractice"
+  | "SyllablesModePractice"
   | "GroupModePractice";
 
 type ModeCardType = {
@@ -104,7 +104,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
       continueFrom: studiedCount
     },
     {
-      id: "SyllabusModePractice" as const,
+      id: "SyllablesModePractice" as const,
       imageSrc: "/images/SyllabusMode.svg",
       altText: "syllables Mode",
       label: "Syllables Mode",

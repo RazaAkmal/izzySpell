@@ -27,7 +27,7 @@ export const processFileWithAI = async (content: any) => {
 {
   "ListName": "<name of list>",
   "OriginalWords": [<array of valid English words>],
-  "SyllabusWords": [
+  "SyllableWords": [
     {
       "Word": "<original word>",
       "Options": ["<correct division>", "<incorrect 1>", "<incorrect 2>", "<incorrect 3>"],
@@ -45,7 +45,7 @@ Spelling List: ${content}
 
 Requirements:
 1. Follow the exact JSON structure above
-2. Each SyllabusWords entry must have exactly 4 options
+2. Each SyllableWords entry must have exactly 4 options
 3. The correct syllable division must be both in Options[0] and Answer
 4. GroupedWords must group similar spelling patterns
 5. Return valid JSON that can be parsed`,
@@ -66,7 +66,7 @@ Requirements:
     const validatedData = responseSchema.parse(extractedWords);
 
     // Additional validation to ensure Options[0] matches Answer
-    const isValid = validatedData.SyllabusWords.every(
+    const isValid = validatedData.SyllableWords.every(
       word => word.Options[0] === word.Answer
     );
 
