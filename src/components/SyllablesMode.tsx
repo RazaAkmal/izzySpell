@@ -8,6 +8,9 @@ import TextToSpeech from "./TextToSpeach";
 import ConfirmationModal from "./ConfirmationModal";
 import { markSyllableWordsAsStudied } from "@/app/actions/prismaActions";
 import StudyCompletionModal from "./StudyCompletionModal";
+import { useListName } from "@/context/ListNameContext";
+import CustomButton from "./HeadlessButton";
+import { Button } from "@headlessui/react";
 
 interface SyllablesModePageProps {
   listId: number;
@@ -18,11 +21,14 @@ interface SyllablesModePageProps {
 const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
   listId,
   syllableWords,
-  studiedWordCount
+  studiedWordCount,
 }) => {
   const router = useRouter();
+  const { listName } = useListName();
   const [currentPage, setCurrentPage] = useState(studiedWordCount || 1);
-  const [highestReachedPage, setHighestReachedPage] = useState(studiedWordCount || 1);
+  const [highestReachedPage, setHighestReachedPage] = useState(
+    studiedWordCount || 1
+  );
   const correctSyllable = syllableWords[currentPage - 1].answer;
   const orignalWord = syllableWords[currentPage - 1].word;
 
@@ -44,13 +50,13 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
     }
     return array;
   };
-useEffect(() => {
+  useEffect(() => {
     // Check and handle the start parameter on mount
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      const startParam = params.get('start');
-      
-      if (startParam === '0') {
+      const startParam = params.get("start");
+
+      if (startParam === "0") {
         setCurrentPage(1);
         setHighestReachedPage(1);
       }
@@ -58,8 +64,8 @@ useEffect(() => {
       // Remove the start parameter from URL
       if (startParam && window.history) {
         const newUrl = new URL(window.location.href);
-        newUrl.searchParams.delete('start');
-        window.history.replaceState({}, '', newUrl.toString());
+        newUrl.searchParams.delete("start");
+        window.history.replaceState({}, "", newUrl.toString());
       }
     }
   }, []);
@@ -88,7 +94,7 @@ useEffect(() => {
       setIsCorrectAnswer(true);
       // Update highest reached page when answer is correct
       if (currentPage < syllableWords.length) {
-        setHighestReachedPage(prev => Math.max(prev, currentPage + 1));
+        setHighestReachedPage((prev) => Math.max(prev, currentPage + 1));
         // Only increment page if not on the last page
         setTimeout(() => {
           setCurrentPage((prevPage) => prevPage + 1);
@@ -110,7 +116,11 @@ useEffect(() => {
 
   const handlePageChange = (page: number) => {
     // Only allow navigation to pages up to the highest reached page
-    if (page >= 1 && page <= syllableWords.length && page <= highestReachedPage) {
+    if (
+      page >= 1 &&
+      page <= syllableWords.length &&
+      page <= highestReachedPage
+    ) {
       setCurrentPage(page);
       setSelectedOption(null);
       setIsCorrectAnswer(null);
@@ -119,26 +129,39 @@ useEffect(() => {
 
   return (
     <>
-      <div className="bg-skyBlue m-7 p-10 rounded-lg shadow-lg">
-        <div className="w-full flex  md:flex-row items-center justify-between mb-4">
-          <p className="text-2xl md:text-4xl md:ml-8 font-bold text-center w-full text-purple">
-            Syllables Mode
-          </p>
-          <button
-            className="md:ml-4 focus:outline-none"
-            onClick={() => setShowConfirmation(true)}
-          >
-            <Image
-              src="/images/Vector.svg"
-              alt="Cancel Button"
-              width={24}
-              height={24}
-              className="w-8 h-8"
+      <div className="bg-skyBlue m-7 p-6 rounded-lg shadow-lg">
+        <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4 sm:gap-0 items-center">
+          <div className="order-2 sm:order-1 flex justify-start">
+            <CustomButton
+              label={`List name: ${listName}`}
+              variant="success"
+              size="small"
+              img="/images/bookIcon.svg"
             />
-          </button>
+          </div>
+          <div className="order-3 sm:order-2 flex justify-center">
+            <p className="text-2xl md:text-4xl md:ml-8 font-bold text-center w-full text-purple">
+              Syllables Mode
+            </p>
+          </div>
+          <div className="order-1 sm:order-3 flex justify-end">
+            <Button
+              className="focus:outline-none"
+              onClick={() => setShowConfirmation(true)}
+              disabled={isConfirmLoading}
+            >
+              <Image
+                src="/images/Vector.svg"
+                alt="Cancel Button"
+                width={24}
+                height={24}
+                className="w-8 h-8"
+              />
+            </Button>
+          </div>
         </div>
 
-        <div className="mt-6">
+        <div className="flex mt-10 flex-col items-center space-y-6">
           <CustomPagination
             currentPage={currentPage}
             totalPages={syllableWords.length}
@@ -207,7 +230,9 @@ useEffect(() => {
 
       <ConfirmationModal
         isOpen={showConfirmation}
-        onClose={() => !isConfirmLoading && router.push(`/spellPractice/${listId}`)}
+        onClose={() =>
+          !isConfirmLoading && router.push(`/spellPractice/${listId}`)
+        }
         onConfirm={async () => {
           try {
             setIsConfirmLoading(true);
@@ -219,17 +244,24 @@ useEffect(() => {
             if (completedWordIds.length > 0) {
               await markSyllableWordsAsStudied(completedWordIds, listId);
             }
-            
+
             router.push(`/spellPractice/${listId}`);
           } catch (err) {
-            setError(`Failed to save progress: ${err instanceof Error ? err.message : 'Unknown error'}`);
-            console.error('Error marking syllable words as studied:', err);
+            setError(
+              `Failed to save progress: ${
+                err instanceof Error ? err.message : "Unknown error"
+              }`
+            );
+            console.error("Error marking syllable words as studied:", err);
           } finally {
             setIsConfirmLoading(false);
           }
         }}
         title="Mark Words as Studied"
-        message={error || "Would you like to mark your completed words as studied before leaving?"}
+        message={
+          error ||
+          "Would you like to mark your completed words as studied before leaving?"
+        }
         isLoading={isConfirmLoading}
         confirmText="Yes"
       />
@@ -249,12 +281,16 @@ useEffect(() => {
             setIsConfirmLoading(true);
             setError(null);
             // Mark all words as studied since we completed them
-            const completedWordIds = syllableWords.map(word => word.id);
+            const completedWordIds = syllableWords.map((word) => word.id);
             await markSyllableWordsAsStudied(completedWordIds, listId);
             router.push(`/spellPractice/${listId}`);
           } catch (err) {
-            setError(`Failed to save progress: ${err instanceof Error ? err.message : 'Unknown error'}`);
-            console.error('Error marking syllable words as studied:', err);
+            setError(
+              `Failed to save progress: ${
+                err instanceof Error ? err.message : "Unknown error"
+              }`
+            );
+            console.error("Error marking syllable words as studied:", err);
           }
         }}
         isLoading={isConfirmLoading}

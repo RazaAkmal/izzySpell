@@ -1,6 +1,7 @@
 import React from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import SpellPractice from "./SpellPractice";
+import { ListNameProvider } from "@/context/ListNameContext";
 
 async function page({
   params,
@@ -12,7 +13,9 @@ async function page({
   return (
     <>
       <DashboardLayout showFooter={false}>
-        <SpellPractice listId={listId} />
+        <ListNameProvider listId={listId}>
+          <SpellPractice listId={listId} />
+        </ListNameProvider>
       </DashboardLayout>
     </>
   );

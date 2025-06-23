@@ -101,9 +101,26 @@ export async function getWordCountForEachExercise(listId: number) {
   return { total, studiedWordCount, studiedSyllableWord, studiedGroupCount, totalGroups };
 }
 
+export async function getListById(listId: number) {
+  const listName = await prisma.spellingList.findUnique({
+    where: { id: listId },
+    select: {
+      listName: true,
+    }
+  });
+
+  return listName;
+}
+
 export async function getWordsByListId(listId: number) {
 
-  const [words, total, studiedWordCount] = await Promise.all([
+  const [list, words, total, studiedWordCount] = await Promise.all([
+    prisma.spellingList.findUnique({
+      where: { id: listId },
+      select: {
+        listName: true
+      }
+    }),
     prisma.word.findMany({
       where: { listId },
       orderBy: { id: 'asc' },
@@ -115,7 +132,7 @@ export async function getWordsByListId(listId: number) {
     where: { listId, studied: true },
   }),
   ]);
-  return { words, total, studiedWordCount };
+  return { list, words, total, studiedWordCount };
 }
 export async function getSyllableWordsByListId(listId: number) {
 

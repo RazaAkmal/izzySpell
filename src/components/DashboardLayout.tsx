@@ -30,8 +30,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = async ({
       <div className="mx-4 md:mx-8 lg:mx-16">
         <header className="bg-skyBlue m-2 md:m-6 px-8 md:px-4 rounded-2xl shadow-md">
           <div className="flex flex-row md:flex-row justify-between items-center">
-            <div className="relative flex items-center h-20 w-52">
               <Link href="/dashboard">
+            <div className="relative flex items-center h-20 w-52">
                 <Image
                   src="/images/izzyLogo.svg"
                   alt="Logo"
@@ -39,8 +39,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = async ({
                   height={40}
                   className="mx-auto hover-scale !shadow-none"
                 />
-              </Link>
             </div>
+              </Link>
 
             {/* Profile of user */}
             <div className="flex flex-row items-center gap-2">

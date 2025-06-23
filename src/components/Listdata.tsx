@@ -124,10 +124,10 @@ function AllListData({
           <div className="md:col-span-3 flex me-5 gap-2 w-full md:w-auto">
             <div className="w-full bg-gray-200 h-6 border-2 border-sky-300 rounded-full overflow-hidden">
               <div
-                className={`h-full p-2 rounded-full ${item.color}`}
-                style={{ width: `${item.progress}%` }}
+                className={`h-full p-2 rounded-full ${item.progress === 0 ? 'bg-gray-200' : item.color}`}
+                style={{ width: item.progress === 0 ? '100%' : `${item.progress}%` }}
               >
-                <p className="flex ml-3 h-full items-center font-bold text-center justify-center text-white text-sm">
+                <p className={`flex ml-3 h-full items-center font-bold text-center justify-center ${item.progress === 0 ? 'text-gray-500' : 'text-white'} text-sm`}>
                   {item.progress}%
                 </p>
               </div>

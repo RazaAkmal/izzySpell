@@ -9,6 +9,8 @@ import TextToSpeech from "./TextToSpeach";
 import ConfirmationModal from "./ConfirmationModal";
 import StudyCompletionModal from "./StudyCompletionModal";
 import { markGroupAsStudied } from "@/app/actions/prismaActions";
+import CustomButton from "./HeadlessButton";
+import { useListName } from "@/context/ListNameContext";
 
 interface GroupModePageProps {
   listId: string;
@@ -22,7 +24,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
   studiedPage,
 }) => {
   const router = useRouter();
-  console.log(studiedPage, 'studiedPage');
+  const { listName } = useListName();
   // All state declarations at the top
   const [currentPage, setCurrentPage] = useState(studiedPage || 1);
   const [highestReachedPage, setHighestReachedPage] = useState(studiedPage || 1);
@@ -235,32 +237,35 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
 
   return (
     <div className="bg-skyBlue m-5 max-h-max rounded-md p-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        {/* Left Icon */}
-        <Image
-          src="/images/settingIcon.svg"
-          alt="Settings Icon"
-          width={24}
-          height={24}
-          className="w-8 h-8"
-        />
-
-        <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-purple text-center">
-          Word Group Mode
-        </p>
-        <Button
-          className="focus:outline-none"
-          onClick={() => setShowConfirmation(true)}
-          disabled={isConfirmLoading}
-        >
-          <Image
-            src="/images/Vector.svg"
-            alt="Cancel Button"
-            width={24}
-            height={24}
-            className="w-8 h-8"
+      <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4 sm:gap-0 items-center">
+        <div className="order-2 sm:order-1 flex justify-start">
+          <CustomButton
+            label={`List name: ${listName}`}
+            variant="success"
+            size="small"
+            img="/images/bookIcon.svg"
           />
-        </Button>
+        </div>
+        <div className="order-3 sm:order-2 flex justify-center">
+          <p className="text-2xl md:text-4xl md:ml-8 font-bold text-center w-full text-purple">
+            Word Group Mode
+          </p>
+        </div>
+        <div className="order-1 sm:order-3 flex justify-end">
+          <Button
+            className="focus:outline-none"
+            onClick={() => setShowConfirmation(true)}
+            disabled={isConfirmLoading}
+          >
+            <Image
+              src="/images/Vector.svg"
+              alt="Cancel Button"
+              width={24}
+              height={24}
+              className="w-8 h-8"
+            />
+          </Button>
+        </div>
       </div>
 
       {/* Pagination */}
@@ -285,38 +290,52 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
             key={rowIndex}
           >
             {/* letters already shown at the start */}
-            {word.word.length > 2 && word.word
-              .split("")
-              .slice(0, 2)
-              .map((letter, index) => (
-                <div
-                  className="w-12 h-12 flex items-center justify-center border-[3px] border-darkGreen bg-gray-100 rounded-lg font-bold text-2xl"
-                  key={index}
-                >
-                  {letter}
-                </div>
-              ))}
+            {word.word.length > 2 &&
+              word.word
+                .split("")
+                .slice(0, 2)
+                .map((letter, index) => (
+                  <div
+                    className="w-12 h-12 flex items-center justify-center border-[3px] border-darkGreen bg-gray-100 rounded-lg font-bold text-2xl"
+                    key={index}
+                  >
+                    {letter}
+                  </div>
+                ))}
 
             {/* Input Boxes */}
-            {Array.from({ length: word.word.length > 2 ? word.word.length - 2 : word.word.length }).map((_, boxIndex) => (
+            {Array.from({
+              length:
+                word.word.length > 2 ? word.word.length - 2 : word.word.length,
+            }).map((_, boxIndex) => (
               <input
                 id={`input-${rowIndex}-${boxIndex}`}
                 type="text"
                 key={boxIndex}
                 maxLength={1}
-                value={word.word.length > 2 
-                  ? (userInputs[currentGroupName]?.[rowIndex]?.[boxIndex + 2] || "")
-                  : (userInputs[currentGroupName]?.[rowIndex]?.[boxIndex] || "")}
+                value={
+                  word.word.length > 2
+                    ? userInputs[currentGroupName]?.[rowIndex]?.[
+                        boxIndex + 2
+                      ] || ""
+                    : userInputs[currentGroupName]?.[rowIndex]?.[boxIndex] || ""
+                }
                 onChange={(e) =>
                   handleInputChange(rowIndex, boxIndex, e.target.value)
                 }
                 onKeyDown={(e) => handleKeyDown(rowIndex, boxIndex, e.key)}
                 className={`w-12 h-12 text-center border-[3px] rounded-lg text-2xl border-darkGreen font-bold focus:outline-none focus:ring-2 focus:ring-sky-500 ${
                   word.word.length > 2
-                    ? validationStates[currentGroupName]?.[rowIndex]?.[boxIndex + 2] === "valid"
-                    : validationStates[currentGroupName]?.[rowIndex]?.[boxIndex] === "valid"
+                    ? validationStates[currentGroupName]?.[rowIndex]?.[
+                        boxIndex + 2
+                      ] === "valid"
+                    : validationStates[currentGroupName]?.[rowIndex]?.[
+                        boxIndex
+                      ] === "valid"
                     ? "border-green-500"
-                    : validationStates[currentGroupName]?.[rowIndex]?.[boxIndex + 2] === "invalid"
+                    : validationStates[currentGroupName]?.[rowIndex]?.[
+                        boxIndex + 2
+                      ] === "invalid"
                     ? "border-red-500"
                     : "border-lightGreen "
                 }`}
@@ -326,14 +345,18 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
             {/* Speaker Button */}
             <TextToSpeech spell={word.word} heightWidth={48} />
 
-            {validationStates[currentGroupName]?.[rowIndex]?.every((state) => state === "valid") ? (
+            {validationStates[currentGroupName]?.[rowIndex]?.every(
+              (state) => state === "valid"
+            ) ? (
               <Image
                 src="/images/completeIcon.svg"
                 alt="Correct"
                 width={55}
                 height={55}
               />
-            ) : validationStates[currentGroupName]?.[rowIndex]?.includes("invalid") ? (
+            ) : validationStates[currentGroupName]?.[rowIndex]?.includes(
+                "invalid"
+              ) ? (
               <Button onClick={() => handleReset(rowIndex)}>
                 <Image
                   src="/images/resetIcon.svg"
@@ -349,17 +372,23 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
 
       <ConfirmationModal
         isOpen={showConfirmation}
-        onClose={() => !isConfirmLoading && router.push(`/spellPractice/${listId}`)}
+        onClose={() =>
+          !isConfirmLoading && router.push(`/spellPractice/${listId}`)
+        }
         onConfirm={async () => {
           try {
             setIsConfirmLoading(true);
             setError(null);
             // Mark each completed group as studied
-            for (let pageIndex = 0; pageIndex < highestReachedPage; pageIndex++) {
+            for (
+              let pageIndex = 0;
+              pageIndex < highestReachedPage;
+              pageIndex++
+            ) {
               const groupName = validGroups[pageIndex];
               const groupValidation = validationStates[groupName];
               const groupWords = groups[groupName] || [];
-              
+
               // Check if all words in this group are correct
               const allWordsInGroupCorrect = groupWords.every((_, rowIndex) =>
                 groupValidation?.[rowIndex]?.every((state) => state === "valid")
@@ -372,14 +401,21 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
 
             router.push(`/spellPractice/${listId}`);
           } catch (err) {
-            setError(`Failed to save study progress: ${err instanceof Error ? err.message : 'Unknown error'}`);
-            console.error('Error marking groups as studied:', err);
+            setError(
+              `Failed to save study progress: ${
+                err instanceof Error ? err.message : "Unknown error"
+              }`
+            );
+            console.error("Error marking groups as studied:", err);
           } finally {
             setIsConfirmLoading(false);
           }
         }}
         title="Mark Groups as Studied"
-        message={error || "Would you like to mark your completed groups as studied before leaving?"}
+        message={
+          error ||
+          "Would you like to mark your completed groups as studied before leaving?"
+        }
         isLoading={isConfirmLoading}
         confirmText="Yes"
       />
@@ -396,10 +432,14 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
           const firstGroupName = validGroups[0];
           if (firstGroupName && groups[firstGroupName]) {
             setUserInputs({
-              [firstGroupName]: groups[firstGroupName].map(word => Array(word.word.length).fill(""))
+              [firstGroupName]: groups[firstGroupName].map((word) =>
+                Array(word.word.length).fill("")
+              ),
             });
             setValidationStates({
-              [firstGroupName]: groups[firstGroupName].map(word => Array(word.word.length).fill("default"))
+              [firstGroupName]: groups[firstGroupName].map((word) =>
+                Array(word.word.length).fill("default")
+              ),
             });
           }
         }}
@@ -407,14 +447,22 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
           try {
             setIsConfirmLoading(true);
             // Mark all completed groups as studied
-            for (let pageIndex = 0; pageIndex < validGroups.length; pageIndex++) {
+            for (
+              let pageIndex = 0;
+              pageIndex < validGroups.length;
+              pageIndex++
+            ) {
               const groupName = validGroups[pageIndex];
               await markGroupAsStudied(groupName, Number(listId));
             }
             router.push(`/spellPractice/${listId}`);
           } catch (err) {
-            setError(`Failed to save progress: ${err instanceof Error ? err.message : 'Unknown error'}`);
-            console.error('Error marking groups as studied:', err);
+            setError(
+              `Failed to save progress: ${
+                err instanceof Error ? err.message : "Unknown error"
+              }`
+            );
+            console.error("Error marking groups as studied:", err);
           } finally {
             setIsConfirmLoading(false);
           }

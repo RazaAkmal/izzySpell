@@ -13,6 +13,7 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import ConfirmationModal from "./ConfirmationModal";
 import StudyCompletionModal from "./StudyCompletionModal";
 import { markWordsAsStudied } from "@/app/actions/prismaActions";
+import { useListName } from "@/context/ListNameContext";
 
 interface DefaultModePageProps {
   words: Word[];
@@ -120,6 +121,7 @@ const SlotComponent = ({
 };
 const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studiedWordCount }) => {
   const wordsSpell = words.map((word) => word.word);
+  const { listName } = useListName();
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(studiedWordCount || 1);
   const [highestReachedPage, setHighestReachedPage] = useState(studiedWordCount || 1);
@@ -324,26 +326,27 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="bg-skyBlue h-[75vh] m-7 mt-1 p-6 rounded-lg shadow-lg">
-        <div className="flex items-center justify-between flex-col-reverse md:flex-row relative">
-          <div className="z-10">
-            <CustomButton
-              label={`Total Words ${currentPage} / ${wordsSpell.length}`}
+        <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4 sm:gap-0 items-center">
+          <div className="order-2 sm:order-1 flex justify-start">
+           <CustomButton
+              label={`List name ${listName}`}
               variant="success"
               size="small"
               img="/images/bookIcon.svg"
             />
           </div>
-          <div className="absolute left-0 right-0 flex justify-center pointer-events-none">
+          <div className="order-3 sm:order-2 flex justify-center">
             <Image
               src="/images/titles/DefaultModeTitle.svg"
               alt="Default title"
               width={250}
               height={24}
               priority
+              className="w-[200px] sm:w-[250px] h-auto"
             />
           </div>
-          <div className="z-10">
-            <Button 
+          <div className="order-1 sm:order-3 flex justify-end">
+             <Button 
               className="focus:outline-none" 
               disabled={isConfirmLoading}
             >
@@ -355,6 +358,7 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
                 onClick={handleClose}
               />
             </Button>
+            
           </div>
         </div>
 
