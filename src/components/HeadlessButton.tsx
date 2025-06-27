@@ -34,6 +34,7 @@ interface CustomButtonProps
   disabled?: boolean;
   arrow?: string;
   img?: string;
+  imageClassName?: string;
 }
 
 const CustomButton: React.FC<CustomButtonProps> = ({
@@ -47,6 +48,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({
   disabled = false,
   arrow,
   img,
+  imageClassName,
   ...props
 }) => {
   return (
@@ -67,7 +69,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({
           height={40}
           src={img}
           alt="Arrow"
-          className="w-10 h-10"
+          className={imageClassName || "w-10 h-10"}
         />
       )}
       {label}

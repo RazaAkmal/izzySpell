@@ -9,7 +9,8 @@ import CustomButton from "./HeadlessButton";
 type ModeType =
   | "DefualtModePratice"
   | "SyllablesModePractice"
-  | "GroupModePractice";
+  | "GroupModePractice"
+  | "QuizMode";
 
 type ModeCardType = {
   imageSrc: string;
@@ -20,6 +21,7 @@ type ModeCardType = {
   progress?: number;
   total?: number;
   completed?: number;
+  selectedTab: "study" | "quiz" | "extra";
 };
 
 const ModeCard = ({
@@ -30,10 +32,11 @@ const ModeCard = ({
   onClick,
   progress = 0,
   total = 0,
-  completed = 0
+  completed = 0,
+  selectedTab
 }: ModeCardType) => (
   <div
-    className={`bg-white flex flex-col items-center justify-end gap-3 p-4 sm:p-5 rounded-lg shadow-md w-full sm:max-w-[320px] lg:max-w-[350px] xl:max-w-[380px] min-h-[200px] sm:min-h-[220px] pt-7 sm:pt-9 cursor-pointer transition-all duration-200 ${
+    className={`bg-white ${total === 0 &&  "!py-0 justify-center"} ${selectedTab === "quiz" ? "justify-center !px-12": "justify-end "} flex flex-col items-center gap-3 p-4 sm:p-5 rounded-lg shadow-md w-full sm:max-w-[320px] lg:max-w-[350px] xl:max-w-[380px] min-h-[200px] sm:min-h-[220px] pt-7 sm:pt-9 cursor-pointer transition-all duration-200 ${
       isSelected
         ? "border-2 border-green shadow-lg scale-105"
         : "border border-transparent hover:bg-lightBlue"
@@ -87,45 +90,72 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
 }) => {
   const router = useRouter();
   const { listId } = useParams();
-  const [selectedMode, setSelectedMode] = 
-    React.useState<ModeType>("DefualtModePratice");
-    
-  // Create a mapping for mode-specific data to avoid repetitive conditionals
-  const modesConfig = React.useMemo(() => [
-    {
-      id: "DefualtModePratice" as const,
-      imageSrc: "/images/DefaultMode.svg",
-      altText: "Default Mode",
-      label: "Default Mode",
-      completed: studiedCount,
-      total: totalWords,
-      progress: totalWords > 0 ? Math.round((studiedCount / totalWords) * 100) : 0,
-      showContinue: studiedCount > 0,
-      continueFrom: studiedCount
-    },
-    {
-      id: "SyllablesModePractice" as const,
-      imageSrc: "/images/SyllabusMode.svg",
-      altText: "syllables Mode",
-      label: "Syllables Mode",
-      completed: studiedSyllableCount,
-      total: totalWords,
-      progress: totalWords > 0 ? Math.round((studiedSyllableCount / totalWords) * 100) : 0,
-      showContinue: studiedSyllableCount > 0,
-      continueFrom: studiedSyllableCount
-    },
-    {
-      id: "GroupModePractice" as const,
-      imageSrc: "/images/GroupMode.svg",
-      altText: "Word Groups Mode",
-      label: "Word Groups Mode",
-      completed: totalStudiedGroups,
-      total: totalGroups,
-      progress: studiedGroupCount,
-      showContinue: totalStudiedGroups > 0,
-      continueFrom: totalStudiedGroups
+  const [selectedTab, setSelectedTab] = React.useState<"study" | "quiz" | "extra">("study");
+  const [selectedMode, setSelectedMode] = React.useState<ModeType>("DefualtModePratice");
+
+  // Update selected mode when tab changes
+  React.useEffect(() => {
+    if (selectedTab === "quiz") {
+      setSelectedMode("QuizMode");
+    } else if (selectedTab === "study") {
+      setSelectedMode("DefualtModePratice");
     }
-  ], [totalWords, studiedCount, studiedSyllableCount, studiedGroupCount, totalGroups, totalStudiedGroups]);
+  }, [selectedTab]);
+
+  // Create mode configurations based on selected tab
+  const modesConfig = React.useMemo(() => {
+    if (selectedTab === "quiz") {
+      return [
+        {
+          id: "QuizMode" as const,
+          imageSrc: "/images/QuizMode.svg",
+          altText: "Quiz Mode",
+          label: "Start Quiz",
+          completed: 0,
+          total: 0,
+          progress: 0,
+          showContinue: false,
+          continueFrom: 0
+        }
+      ];
+    }
+    
+    return [
+      {
+        id: "DefualtModePratice" as const,
+        imageSrc: "/images/DefaultMode.svg",
+        altText: "Default Mode",
+        label: "Default Mode",
+        completed: studiedCount,
+        total: totalWords,
+        progress: totalWords > 0 ? Math.round((studiedCount / totalWords) * 100) : 0,
+        showContinue: studiedCount > 0,
+        continueFrom: studiedCount
+      },
+      {
+        id: "SyllablesModePractice" as const,
+        imageSrc: "/images/SyllabusMode.svg",
+        altText: "syllables Mode",
+        label: "Syllables Mode",
+        completed: studiedSyllableCount,
+        total: totalWords,
+        progress: totalWords > 0 ? Math.round((studiedSyllableCount / totalWords) * 100) : 0,
+        showContinue: studiedSyllableCount > 0,
+        continueFrom: studiedSyllableCount
+      },
+      {
+        id: "GroupModePractice" as const,
+        imageSrc: "/images/GroupMode.svg",
+        altText: "Word Groups Mode",
+        label: "Word Groups Mode",
+        completed: totalStudiedGroups,
+        total: totalGroups,
+        progress: studiedGroupCount,
+        showContinue: totalStudiedGroups > 0,
+        continueFrom: totalStudiedGroups
+      }
+    ];
+  }, [selectedTab, totalWords, studiedCount, studiedSyllableCount, studiedGroupCount, totalGroups, totalStudiedGroups]);
   
   // Create a mapping for quick access
   const modeData = React.useMemo(() => {
@@ -150,18 +180,18 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
           <CustomButton
             size="small"
             label="Study"
-            variant={selectedMode ? "primary" : "secondary"}
+            variant={selectedTab === "study" ? "primary" : "secondary"}
             radius="rounded"
             img="/images/bookIcon.svg"
-            disabled={!selectedMode}
+            onClick={() => setSelectedTab("study")}
           />
           <CustomButton
             size="small"
             label="Quiz"
-            variant="secondary"
+            variant={selectedTab === "quiz" ? "primary" : "secondary"}
             radius="rounded"
             img="/images/QuizIcon.svg"
-            disabled={true}
+            onClick={() => setSelectedTab("quiz")}
           />
           <CustomButton
             size="small"
@@ -186,9 +216,10 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         </div>
 
         {/* Mode Options */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 justify-items-center gap-6 sm:gap-10 mb-10 mx-auto max-w-[1200px]">
+        <div className={`grid grid-cols-1 ${selectedTab === "quiz" ? "" : "sm:grid-cols-2 xl:grid-cols-3"} gap-6 sm:gap-10 mb-10 mx-auto max-w-[1200]`}>
           {modesConfig.map((mode) => (
             <ModeCard
+              selectedTab={selectedTab}
               key={mode.id}
               imageSrc={mode.imageSrc}
               altText={mode.altText}
@@ -207,7 +238,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
           <div className="flex justify-center w-full">
             {/* Fixed-width container to maintain consistent layout */}
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4 w-full max-w-[700px] px-4">
-              {currentModeData.showContinue ? (
+              {currentModeData?.showContinue ? (
                 // When two buttons are shown, display them side by side with equal width
                 <>
                   <CustomButton
@@ -243,7 +274,6 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                   />
                 </>
               ) : (
-                // When only Begin Again button is shown, center it but keep same width as two-button layout
                 <div className="w-full flex justify-center">
                   <CustomButton
                     label={
