@@ -32,8 +32,48 @@ model User {
   expireYear     String?        @map(name: "expire_year")
   cardCVC        String?        @map(name: "card_cvc")
   spellingLists  SpellingList[] // Relation to SpellingList
+  quizAttempts   QuizAttempt[]
+  quizMistakes   QuizMistake[]
 
   @@map(name: "users")
+}
+
+model QuizAttempt {
+  id               Int           @id @default(autoincrement())
+  totalQuestions   Int
+  correctAnswers   Int           @default(0)
+  incorrectAnswers Int           @default(0)
+  grade            Decimal       @db.Decimal(5, 2)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  userId           String
+  spellingListId   Int
+
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  spellingList     SpellingList  @relation(fields: [spellingListId], references: [id], onDelete: Cascade)
+  mistakes         QuizMistake[]
+
+  @@map("quiz_attempts")
+  @@index([userId])
+  @@index([spellingListId])
+  // @@unique([userId, spellingListId])
+}
+
+model QuizMistake {
+  id            Int         @id @default(autoincrement())
+  userAnswer    String
+  quizAttemptId Int
+  wordId        Int
+  userId        String
+
+  quizAttempt   QuizAttempt @relation(fields: [quizAttemptId], references: [id], onDelete: Cascade)
+  word          Word        @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("quiz_mistakes")
+  @@index([quizAttemptId])
+  @@index([wordId])
+  @@index([userId])
 }
 
 model SpellingList {
@@ -47,6 +87,7 @@ model SpellingList {
   groupedWords  GroupedWord[]
   syllableWords SyllableWord[] // Relation to SyllableWord
   progress      Float          @default(0) // Field to store progress percentage
+  quizAttempts  QuizAttempt[]
 
   @@map(name: "spelling_list")
 }
@@ -59,6 +100,7 @@ model Word {
   type            String       @default("original") // original, syllabus, or grouped
   spellingList    SpellingList @relation(fields: [listId], references: [id])
   studied         Boolean      @default(false) // Field to track if the word is studied
+  quizMistakes    QuizMistake[]
 
   @@map(name: "words")
 }

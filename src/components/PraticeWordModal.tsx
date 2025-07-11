@@ -1,75 +1,26 @@
 "use client";
 
-import React from "react";
+import React, {useEffect} from "react";
 import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import CustomButton from "./HeadlessButton";
+import { getRecentQuizAttempts } from "@/app/actions/getRecentQuizAttempts";
+import ModeCard, { ModeType, QuizAttempt } from "./ModeCard";
 
-// Reusable ModeCard Component
-type ModeType =
-  | "DefualtModePratice"
-  | "SyllablesModePractice"
-  | "GroupModePractice"
-  | "QuizMode";
-
-type ModeCardType = {
+interface ModeConfigItem {
+  id: ModeType;
   imageSrc: string;
   altText: string;
   label: string;
-  isSelected: boolean;
-  onClick: () => void;
-  progress?: number;
-  total?: number;
-  completed?: number;
-  selectedTab: "study" | "quiz" | "extra";
-};
-
-const ModeCard = ({
-  imageSrc,
-  altText,
-  label,
-  isSelected,
-  onClick,
-  progress = 0,
-  total = 0,
-  completed = 0,
-  selectedTab
-}: ModeCardType) => (
-  <div
-    className={`bg-white ${total === 0 &&  "!py-0 justify-center"} ${selectedTab === "quiz" ? "justify-center !px-12": "justify-end "} flex flex-col items-center gap-3 p-4 sm:p-5 rounded-lg shadow-md w-full sm:max-w-[320px] lg:max-w-[350px] xl:max-w-[380px] min-h-[200px] sm:min-h-[220px] pt-7 sm:pt-9 cursor-pointer transition-all duration-200 ${
-      isSelected
-        ? "border-2 border-green shadow-lg scale-105"
-        : "border border-transparent hover:bg-lightBlue"
-    }`}
-    onClick={onClick}
-  >
-    <Image
-      src={imageSrc}
-      alt={altText}
-      className="w-18 h-16 sm:w-24 sm:h-20 lg:w-[100px] xl:w-28 lg:h-[85px] xl:h-24"
-      width={40}
-      height={40}
-      priority
-    />
-    <span className="text-lg sm:text-xl font-bold text-blue mb-2">{label}</span>
-    
-    {/* Progress indicator */}
-    {total > 0 && (
-      <div className="w-full mt-2">
-        <div className="flex justify-between text-xs text-gray-600 mb-1">
-          <span>{completed}/{total} completed</span>
-          <span>{progress}%</span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
-          <div 
-            className="bg-green h-2.5 rounded-full" 
-            style={{ width: `${progress}%` }}
-          ></div>
-        </div>
-      </div>
-    )}
-  </div>
-);
+  completed: number;
+  total: number;
+  progress: number;
+  showContinue: boolean;
+  continueFrom: number;
+  isRecentAttempts: boolean;
+  recentAttempts?: QuizAttempt[];
+  isMistakesPractice?: boolean;
+}
 
 interface PracticeWordModalProps {
   totalWords: number;
@@ -92,20 +43,52 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
   const { listId } = useParams();
   const [selectedTab, setSelectedTab] = React.useState<"study" | "quiz" | "extra">("study");
   const [selectedMode, setSelectedMode] = React.useState<ModeType>("DefualtModePratice");
+  const [recentAttempts, setRecentAttempts] = React.useState<QuizAttempt[]>([]);
+  const [mistakesCount, setMistakesCount] = React.useState(0);
+  
+  // Fetch recent quiz attempts and mistakes count when quiz tab is selected
+  useEffect(() => {
+    if (selectedTab === "quiz" && listId) {
+      getRecentQuizAttempts(parseInt(listId as string, 10))
+        .then((data) => {
+          setRecentAttempts(data.attempts);
+          setMistakesCount(data.uniqueMistakesCount);
+        })
+        .catch((error: Error) => {
+          console.error("Failed to fetch quiz data:", error);
+          setRecentAttempts([]);
+          setMistakesCount(0);
+        });
+    }
+  }, [selectedTab, listId]);
 
   // Update selected mode when tab changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedTab === "quiz") {
-      setSelectedMode("QuizMode");
+      setSelectedMode("RecentAttempts");
     } else if (selectedTab === "study") {
       setSelectedMode("DefualtModePratice");
     }
   }, [selectedTab]);
 
   // Create mode configurations based on selected tab
-  const modesConfig = React.useMemo(() => {
+  const modesConfig = React.useMemo<ModeConfigItem[]>(() => {
     if (selectedTab === "quiz") {
       return [
+        {
+          id: "RecentAttempts" as const,
+          imageSrc: "",
+          altText: "",
+          label: "Recent Attempts",
+          completed: 0,
+          total: 0,
+          progress: 0,
+          showContinue: false,
+          continueFrom: 0,
+          isRecentAttempts: true,
+          recentAttempts: recentAttempts,
+          isMistakesPractice: false
+        },
         {
           id: "QuizMode" as const,
           imageSrc: "/images/QuizMode.svg",
@@ -115,7 +98,22 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
           total: 0,
           progress: 0,
           showContinue: false,
-          continueFrom: 0
+          continueFrom: 0,
+          isRecentAttempts: false,
+          isMistakesPractice: false
+        },
+        {
+          id: "MistakesPractice" as const,
+          imageSrc: "/images/PencelIcon.svg",
+          altText: "Practice Mistakes",
+          label: "Practice Mistakes",
+          completed: 0,
+          total: mistakesCount,
+          progress: 0,
+          showContinue: false,
+          continueFrom: 0,
+          isRecentAttempts: false,
+          isMistakesPractice: true
         }
       ];
     }
@@ -130,7 +128,10 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         total: totalWords,
         progress: totalWords > 0 ? Math.round((studiedCount / totalWords) * 100) : 0,
         showContinue: studiedCount > 0,
-        continueFrom: studiedCount
+        continueFrom: studiedCount,
+        isRecentAttempts: false,
+        recentAttempts: [],
+        isMistakesPractice: false
       },
       {
         id: "SyllablesModePractice" as const,
@@ -141,7 +142,10 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         total: totalWords,
         progress: totalWords > 0 ? Math.round((studiedSyllableCount / totalWords) * 100) : 0,
         showContinue: studiedSyllableCount > 0,
-        continueFrom: studiedSyllableCount
+        continueFrom: studiedSyllableCount,
+        isRecentAttempts: false,
+        recentAttempts: [],
+        isMistakesPractice: false
       },
       {
         id: "GroupModePractice" as const,
@@ -152,10 +156,13 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         total: totalGroups,
         progress: studiedGroupCount,
         showContinue: totalStudiedGroups > 0,
-        continueFrom: totalStudiedGroups
+        continueFrom: totalStudiedGroups,
+        isRecentAttempts: false,
+        recentAttempts: [],
+        isMistakesPractice: false
       }
     ];
-  }, [selectedTab, totalWords, studiedCount, studiedSyllableCount, studiedGroupCount, totalGroups, totalStudiedGroups]);
+  }, [selectedTab, totalWords, studiedCount, studiedSyllableCount, studiedGroupCount, totalGroups, totalStudiedGroups, recentAttempts, mistakesCount]);
   
   // Create a mapping for quick access
   const modeData = React.useMemo(() => {
@@ -216,7 +223,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         </div>
 
         {/* Mode Options */}
-        <div className={`grid grid-cols-1 ${selectedTab === "quiz" ? "" : "sm:grid-cols-2 xl:grid-cols-3"} gap-6 sm:gap-10 mb-10 mx-auto max-w-[1200]`}>
+        <div className={`grid grid-cols-1 ${selectedTab === "quiz" ? "sm:grid-cols-2 xl:grid-cols-3" : "sm:grid-cols-2 xl:grid-cols-3"} gap-6 sm:gap-10 mb-10 mx-auto max-w-[1200]`}>
           {modesConfig.map((mode) => (
             <ModeCard
               selectedTab={selectedTab}
@@ -229,6 +236,9 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
               progress={mode.progress}
               total={mode.total}
               completed={mode.completed}
+              isRecentAttempts={mode.isRecentAttempts}
+              recentAttempts={mode.recentAttempts}
+              isMistakesPractice={mode.isMistakesPractice}
             />
           ))}
         </div>
@@ -238,7 +248,19 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
           <div className="flex justify-center w-full">
             {/* Fixed-width container to maintain consistent layout */}
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4 w-full max-w-[700px] px-4">
-              {currentModeData?.showContinue ? (
+              {selectedMode === "RecentAttempts" ? (
+                <div className="w-full flex justify-center">
+                  <div className="text-center text-gray-500">
+                    <div className="text-sm">Select a quiz option to continue</div>
+                  </div>
+                </div>
+              ) : selectedMode === "MistakesPractice" && mistakesCount === 0 ? (
+                <div className="w-full flex justify-center">
+                  <div className="text-center text-gray-500">
+                    <div className="text-sm">No mistakes to practice. Take a quiz first!</div>
+                  </div>
+                </div>
+              ) : currentModeData?.showContinue ? (
                 // When two buttons are shown, display them side by side with equal width
                 <>
                   <CustomButton
@@ -278,7 +300,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                   <CustomButton
                     label={
                       <div className="flex items-center justify-center w-full">
-                        <span>Start learning</span>
+                        <span>{selectedMode === "MistakesPractice" ? "Practice Now" : "Start learning"}</span>
                       </div>
                     }
                     size="small"
@@ -287,7 +309,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                     onClick={() =>
                       selectedMode && navigateTo(selectedMode + "?start=0")
                     }
-                    disabled={!selectedMode}
+                    disabled={!selectedMode || (selectedMode === "MistakesPractice" && mistakesCount === 0)}
                     className="w-full sm:w-60"
                   />
                 </div>

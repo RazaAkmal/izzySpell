@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import ConfirmationModal from "./ConfirmationModal";
 import { useListName } from "@/context/ListNameContext";
 import QuizSummaryModal from "./QuizSummaryModal";
+import { saveQuizAttempt } from "@/app/actions/saveQuizAttempt";
 
 interface QuizModePageProps {
   words: Word[];
@@ -31,6 +32,7 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [answers, setAnswers] = useState<QuizAnswer[]>([]);
   const [showSummary, setShowSummary] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const currentWord = words[currentPage - 1];
   const isLastWord = currentPage === words.length;
@@ -39,19 +41,36 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId }) => {
     setUserInput(e.target.value);
   };
 
-  const handleNext = () => {
-    // Save current answer
-    const answer: QuizAnswer = {
+  const handleNext = async () => {
+    const newAnswer: QuizAnswer = {
       wordId: String(currentWord.id),
       isCorrect: userInput.toLowerCase().trim() === currentWord.word.toLowerCase(),
       userAnswer: userInput,
-      correctWord: currentWord.word
+      correctWord: currentWord.word,
     };
-    
-    setAnswers(prev => [...prev, answer]);
-    
+
+    const updatedAnswers = [...answers, newAnswer];
+    setAnswers(updatedAnswers);
+
     if (isLastWord) {
-      setShowSummary(true);
+      setIsSaving(true);
+      const stats = calculateStats(updatedAnswers);
+      const mistakes = updatedAnswers
+        .filter(a => !a.isCorrect)
+        .map(a => ({
+          wordId: parseInt(a.wordId, 10),
+          userAnswer: a.userAnswer,
+        }));
+
+      try {
+        await saveQuizAttempt(parseInt(listId, 10), stats, mistakes);
+      } catch (error) {
+        console.error("Failed to save quiz attempt:", error);
+        // Optionally, show an error message to the user
+      } finally {
+        setIsSaving(false);
+        setShowSummary(true);
+      }
     } else {
       setCurrentPage(prev => prev + 1);
       setUserInput("");
@@ -71,10 +90,10 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId }) => {
     setShowConfirmation(true);
   };
 
-  const calculateStats = () => {
-    const total = answers.length;
-    const correct = answers.filter(a => a.isCorrect).length;
-    const grade = Math.round((correct / total) * 100);
+  const calculateStats = (currentAnswers: QuizAnswer[]) => {
+    const total = currentAnswers.length;
+    const correct = currentAnswers.filter(a => a.isCorrect).length;
+    const grade = total > 0 ? Math.round((correct / total) * 100) : 0;
     return { total, correct, incorrect: total - correct, grade };
   };
 
@@ -136,16 +155,18 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId }) => {
 
       {!showSummary && currentWord && (
         <div className="flex flex-col items-center justify-center">
-          <div className="flex items-center justify-center gap-4 w-full max-w-[500px] bg-white p-6 rounded-lg shadow-md">
+          <div className="flex items-center justify-center w-full max-w-[500px] bg-white rounded-full shadow-md border-2 border-gray-200 overflow-hidden focus-within:border-purple transition-colors duration-200">
             <input
               type="text"
               value={userInput}
               onChange={handleInputChange}
               placeholder="Type the word you hear..."
-              className="w-full px-4 py-3 rounded-lg border-2 border-darkGreen focus:outline-none focus:border-blue text-lg text-darkBlue bg-white"
+              className="w-full px-6 py-4 border-0 focus:ring-0 focus:outline-none text-lg text-darkBlue bg-transparent"
               autoFocus
             />
-            <TextToSpeech heightWidth={40} spell={currentWord.word} />
+            <div className="p-2 mr-2">
+              <TextToSpeech heightWidth={40} spell={currentWord.word} />
+            </div>
           </div>
 
           <div className="flex justify-center gap-6 mt-8">
@@ -164,8 +185,12 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId }) => {
               variant={isLastWord ? "success" : "secondary"}
               size="small"
               onClick={handleNext}
-              disabled={!userInput.trim()}
-              img={isLastWord ? "/images/completeIcon.svg" : "/images/NextArrow.svg"}
+              disabled={!userInput.trim() || isSaving}
+              img={
+                isLastWord
+                  ? "/images/completeIcon.svg"
+                  : "/images/NextArrow.svg"
+              }
               className="w-36 flex-row-reverse !gap-2 justify-between"
               imageClassName="w-4 h-4"
             />
@@ -177,7 +202,7 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId }) => {
         isOpen={showSummary}
         onRetake={handleRetakeQuiz}
         onGoHome={() => router.push(`/spellPractice/${listId}`)}
-        stats={calculateStats()}
+        stats={calculateStats(answers)}
       />
 
       <ConfirmationModal

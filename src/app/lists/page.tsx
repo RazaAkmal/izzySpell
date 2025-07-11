@@ -23,7 +23,7 @@ const AllListsPage = async () => {
   
   return (
     <DashboardLayout showFooter={false}>
-      <div className="bg-skyBlue rounded-2xl md:m-6 px-8 py-3 md:px-4">
+      <div className="bg-skyBlue rounded-2xl md:m-6 px-8 py-3 md:px-4 min-h-[80vh]">
         <div className="flex justify-center items-center h-20">
           <Image
             src="/images/titles/All Words Lists.svg"

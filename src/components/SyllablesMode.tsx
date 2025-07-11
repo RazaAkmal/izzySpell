@@ -129,7 +129,7 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
 
   return (
     <>
-      <div className="bg-skyBlue m-7 p-6 rounded-lg shadow-lg">
+      <div className="bg-skyBlue h-[75vh] m-7 mt-1 p-6 rounded-lg shadow-lg">
         <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4 sm:gap-0 items-center">
           <div className="order-2 sm:order-1 flex justify-start">
             <CustomButton
