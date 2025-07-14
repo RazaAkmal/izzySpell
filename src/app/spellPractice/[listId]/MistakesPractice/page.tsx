@@ -8,18 +8,14 @@ import { ListNameProvider } from "@/context/ListNameContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import { getRecentQuizMistakes } from "@/app/actions/getRecentQuizMistakes";
 
-export default async function MistakesPracticePage({
-  params,
-}: {
-  params: { listId: string };
-}) {
+export default async function MistakesPracticePage({ params }: { params: Promise<{ listId: string }> }) {
   const session = await auth();
 
   if (!session?.user) {
     redirect("/api/auth/signin");
   }
 
-  const listId = params.listId;
+  const listId = (await params).listId;
   const userId = session.user.id;
 
   // Check if list exists and belongs to user
