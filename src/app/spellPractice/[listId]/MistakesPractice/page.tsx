@@ -1,9 +1,7 @@
-import { Suspense } from "react";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import MistakesModePractice from "@/components/MistakesModePractice";
-import LoadingComponent from "@/components/LoadingComponent";
 import { ListNameProvider } from "@/context/ListNameContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import { getRecentQuizMistakes } from "@/app/actions/getRecentQuizMistakes";
@@ -34,7 +32,6 @@ export default async function MistakesPracticePage({ params }: { params: Promise
   const formattedMistakes = await getRecentQuizMistakes(parseInt(listId));
 
   return (
-    <Suspense fallback={<LoadingComponent />}>
       <DashboardLayout showFooter={false}>
         <ListNameProvider listId={listId}>
           <MistakesModePractice 
@@ -43,6 +40,5 @@ export default async function MistakesPracticePage({ params }: { params: Promise
           />
         </ListNameProvider>
       </DashboardLayout>
-    </Suspense>
   );
 }

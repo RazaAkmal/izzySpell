@@ -12,16 +12,14 @@ async function page({
   const listId = (await params).listId
   const { words } = await getWordsByListId(parseInt(listId));
   return (
-    <>
-      <DashboardLayout showFooter={false}>
-        <ListNameProvider listId={listId}>
-          <QuizModePage
-            words={words}
-            listId={listId}
-          />
-        </ListNameProvider>
-      </DashboardLayout>
-    </>
+    <DashboardLayout showFooter={false}>
+      <ListNameProvider listId={listId}>
+        <QuizModePage
+          words={words}
+          listId={listId}
+        />
+      </ListNameProvider>
+    </DashboardLayout>
   );
 }
 export default page;

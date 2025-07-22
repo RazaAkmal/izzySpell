@@ -44,6 +44,11 @@ model QuizAttempt {
   correctAnswers   Int           @default(0)
   incorrectAnswers Int           @default(0)
   grade            Decimal       @db.Decimal(5, 2)
+  isTimed          Boolean       @default(false)
+  timerType        String?       // "word" or "list"
+  timeAmount       Int?          // Time in seconds
+  timeElapsed      Int?          // Time elapsed in seconds
+  expiredWords     Int?          @default(0)
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
   userId           String
