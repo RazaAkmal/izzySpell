@@ -364,6 +364,7 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId }) => {
         isOpen={showTimerModal}
         onStart={handleStartQuiz}
         totalWords={words.length}
+        listId={parseInt(listId, 10)}
       />
       
       {/* Notification for word time expiration */}

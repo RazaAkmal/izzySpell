@@ -27,7 +27,11 @@ export async function DELETE(req: Request) {
     // Update the progress of the parent list
     await prisma.spellingList.update({
       where: { id: listId },
-      data: { progress },
+      data: {
+        progress, shortPaceDuration: null,
+        mediumPaceDuration: null,
+        generousPaceDuration: null
+      },
     });
 
     return NextResponse.json({ message: 'Word deleted successfully!' }, { status: 200 });

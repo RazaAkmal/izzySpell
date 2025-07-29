@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma"; // Import your Prisma client instance
 import { revalidatePath } from "next/cache";
+import { generateAndSaveTimeDurations } from "@/app/actions/AiService";
 
 export async function POST(req: Request) {
   try {
@@ -42,6 +43,50 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    // Generate AI time duration suggestions if user has grade and age info
+    if (user.grade && user.age && user.grade.trim() && user.age.trim()) {
+      try {
+        console.log(`Generating AI time suggestions for list ${spellingList.id}`, {
+          userId: user.id,
+          grade: user.grade,
+          age: user.age,
+          wordCount: words.length
+        });
+        
+        // Validate that we have proper words array
+        if (!Array.isArray(words) || words.length === 0) {
+          console.warn('No words available for AI suggestions');
+        } else {
+           await generateAndSaveTimeDurations(
+            spellingList.id,
+            user.grade,
+            user.age,
+            words // Use the original words array
+          );
+          
+        }
+      } catch (error) {
+        console.error("Error generating AI suggestions:", error);
+        // Log more details about the error
+        if (error instanceof Error) {
+          console.error("Error details:", {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+          });
+        }
+        // Continue without AI suggestions - not a critical failure
+      }
+    } else {
+      console.log("User grade/age not available or empty, skipping AI time suggestions", {
+        hasGrade: !!user.grade,
+        hasAge: !!user.age,
+        grade: user.grade,
+        age: user.age
+      });
+    }
+
     revalidatePath("/dashboard");
     return NextResponse.json(
       { message: "Spelling list created successfully!", spellingList },

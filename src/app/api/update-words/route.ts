@@ -58,7 +58,21 @@ export async function PATCH(req: Request) {
       if (hasListNameChanged) {
         await prisma.spellingList.update({
           where: { id: listId },
-          data: { listName },
+          data: { 
+            listName,
+            shortPaceDuration: null,
+            mediumPaceDuration: null,
+            generousPaceDuration: null 
+          },
+        });
+      } else {
+        await prisma.spellingList.update({
+          where: { id: listId },
+          data: { 
+            shortPaceDuration: null,
+            mediumPaceDuration: null,
+            generousPaceDuration: null 
+          },
         });
       }
 
@@ -144,7 +158,7 @@ export async function PATCH(req: Request) {
       }
     }
 
-    // If no changes were detected, return a message
+    // If no changes were detected, we don't reset the AI timer suggestions
     return NextResponse.json(
       { message: "No changes detected." },
       { status: 200 }

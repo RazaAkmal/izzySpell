@@ -82,17 +82,20 @@ model QuizMistake {
 }
 
 model SpellingList {
-  id            Int            @id @default(autoincrement())
-  listName      String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  userId        String 
-  user          User           @relation(fields: [userId], references: [id])
-  words         Word[]
-  groupedWords  GroupedWord[]
-  syllableWords SyllableWord[] // Relation to SyllableWord
-  progress      Float          @default(0) // Field to store progress percentage
-  quizAttempts  QuizAttempt[]
+  id                   Int            @id @default(autoincrement())
+  listName             String
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  userId               String 
+  user                 User           @relation(fields: [userId], references: [id])
+  words                Word[]
+  groupedWords         GroupedWord[]
+  syllableWords        SyllableWord[] // Relation to SyllableWord
+  progress             Float          @default(0) // Field to store progress percentage
+  quizAttempts         QuizAttempt[]
+  shortPaceDuration    Int?          
+  mediumPaceDuration   Int?           
+  generousPaceDuration Int?        
 
   @@map(name: "spelling_list")
 }
