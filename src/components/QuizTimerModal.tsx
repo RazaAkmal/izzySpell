@@ -20,6 +20,7 @@ const QuizTimerModal: React.FC<QuizTimerModalProps> = ({
 }) => {
   const [timerType, setTimerType] = useState<TimerType>("none");
   const [timeAmount, setTimeAmount] = useState<number>(30); // Default 30 seconds
+  const [timeUnit, setTimeUnit] = useState<'sec' | 'min'>('sec'); // Default to seconds
   const [aiSuggestions, setAiSuggestions] = useState<{
     shortPaceDuration: number | null;
     mediumPaceDuration: number | null;
@@ -337,23 +338,43 @@ const QuizTimerModal: React.FC<QuizTimerModalProps> = ({
               >
                 <input
                   type="number"
-                  min="1"
-                  max="1800"
+                  max={timeUnit === 'min' ? 30 : 1800}
                   value={
-                    ![15, 30, 60, 120, 180, 300].includes(timeAmount)
-                      ? timeAmount
-                      : ""
+                    timeUnit === 'min' 
+                      ? timeAmount === 0 ? '' : Math.floor(timeAmount / 60)
+                      : timeAmount === 0 ? '' : timeAmount
                   }
                   onChange={(e) => {
+                    if (e.target.value === '') {
+                      setTimeAmount(0);
+                      return;
+                    }
                     const value = parseInt(e.target.value, 10);
-                    if (!isNaN(value) && value > 0) {
-                      setTimeAmount(value);
+                    if (!isNaN(value)) {
+                      const seconds = timeUnit === 'min' ? value * 60 : value;
+                      setTimeAmount(seconds);
                     }
                   }}
                   placeholder="Custom"
                   className="py-2 text-black px-2 w-16 text-sm text-center bg-transparent border-0 focus:outline-none"
                 />
-                <span className="py-2 px-2 text-sm text-darkBlue">sec</span>
+                <select
+                  value={timeUnit}
+                  onChange={(e) => {
+                    const newUnit = e.target.value as 'sec' | 'min';
+                    setTimeUnit(newUnit);
+                    // Convert the current value when changing units
+                    if (![15, 30, 60, 120, 180, 300].includes(timeAmount)) {
+                      const currentValue = timeUnit === 'min' ? timeAmount / 60 : timeAmount;
+                      const newSeconds = newUnit === 'min' ? currentValue * 60 : currentValue;
+                      setTimeAmount(Math.round(newSeconds));
+                    }
+                  }}
+                  className="py-2 px-2 text-sm text-darkBlue bg-transparent border-0 focus:outline-none cursor-pointer"
+                >
+                  <option value="sec">sec</option>
+                  <option value="min">min</option>
+                </select>
               </div>
             </div>
 
