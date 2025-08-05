@@ -9,7 +9,10 @@ export type ModeType =
   | "GroupModePractice"
   | "QuizMode"
   | "RecentAttempts"
-  | "MistakesPractice";
+  | "MistakesPractice"
+  | "ScrambleWords"
+  | "FlashCards"
+  | "WordMatch";
 
 export type QuizAttempt = {
   id: number;
@@ -29,7 +32,6 @@ export type ModeCardProps = {
   progress?: number;
   total?: number;
   completed?: number;
-  selectedTab: "study" | "quiz" | "extra";
   isRecentAttempts?: boolean;
   recentAttempts?: QuizAttempt[];
   isMistakesPractice?: boolean;
@@ -44,7 +46,6 @@ const ModeCard: React.FC<ModeCardProps> = ({
   progress = 0,
   total = 0,
   completed = 0,
-  selectedTab,
   isRecentAttempts = false,
   recentAttempts = [],
   isMistakesPractice = false,
@@ -59,14 +60,14 @@ const ModeCard: React.FC<ModeCardProps> = ({
   if (isRecentAttempts) {
     return (
       <div
-        className={`bg-white flex flex-col gap-3 p-4 sm:p-5 rounded-lg shadow-md w-full sm:max-w-[320px] lg:max-w-[350px] xl:max-w-[380px] min-h-[200px] sm:min-h-[220px] pt-7 sm:pt-9 cursor-pointer transition-all duration-200 ${
+        className={`bg-white flex flex-col gap-3 p-4 sm:p-6 rounded-lg shadow-md w-full sm:max-w-[320px] lg:max-w-[350px] xl:max-w-[380px] min-h-[250px] sm:min-h-[280px] cursor-pointer transition-all duration-200 ${
           isSelected
             ? "border-2 border-green shadow-lg scale-105"
             : "border border-transparent hover:bg-lightBlue"
         }`}
         onClick={onClick}
       >
-        <span className="text-lg sm:text-xl font-bold text-blue mb-2 text-center">
+        <span className="text-lg sm:text-xl font-bold text-blue mb-2 text-center pt-4 sm:pt-6">
           {label}
         </span>
 
@@ -114,52 +115,54 @@ const ModeCard: React.FC<ModeCardProps> = ({
 
   return (
     <div
-      className={`bg-white ${total === 0 && "!py-0 justify-center"} ${
-        selectedTab === "quiz" ? "justify-center !px-12" : "justify-end "
-      } flex flex-col items-center gap-3 p-4 sm:p-5 rounded-lg shadow-md w-full sm:max-w-[320px] lg:max-w-[350px] xl:max-w-[380px] min-h-[200px] sm:min-h-[220px] pt-7 sm:pt-9 cursor-pointer transition-all duration-200 ${
+      className={`bg-white flex flex-col gap-4 p-4 sm:p-6 rounded-lg shadow-md w-full sm:max-w-[320px] lg:max-w-[350px] xl:max-w-[380px] min-h-[250px] sm:min-h-[280px] cursor-pointer transition-all duration-200 ${
         isSelected
           ? "border-2 border-green shadow-lg scale-105"
           : "border border-transparent hover:bg-lightBlue"
       }`}
       onClick={onClick}
     >
-      {imageSrc && (
-        <Image
-          src={imageSrc}
-          alt={altText || ""}
-          className="w-18 h-16 sm:w-24 sm:h-20 lg:w-[100px] xl:w-28 lg:h-[85px] xl:h-24"
-          width={40}
-          height={40}
-          priority
-        />
-      )}
-      <span className="text-lg sm:text-xl font-bold text-blue mb-2">
-        {label}
-      </span>
+      {/* Main content area - always takes the same space */}
+      <div className="flex flex-col items-center justify-center flex-1 gap-3 min-h-[160px]">
+        {imageSrc && (
+          <Image
+            src={imageSrc}
+            alt={altText || ""}
+            className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24"
+            width={80}
+            height={80}
+            priority
+          />
+        )}
+        <span className="text-lg sm:text-xl font-bold text-blue text-center">
+          {label}
+        </span>
+      </div>
 
-      {/* For mistake practice, show count badge */}
-      {isMistakesPractice && total > 0 ? (
-        <div className="flex items-center justify-center mt-2">
-          <div className="bg-darkBlue text-purple-800 text-sm font-semibold px-3 py-1 rounded-full">
+      {/* Bottom section - consistent height whether content exists or not */}
+      <div className="h-[40px] flex items-center justify-center">
+        {/* For mistake practice, show count badge */}
+        {isMistakesPractice && total > 0 ? (
+          <div className="bg-red-100 text-red-800 text-sm font-semibold px-3 py-1 rounded-full">
             {total} {total === 1 ? 'mistake' : 'mistakes'} to practice
           </div>
-        </div>
-      ) : total > 0 && (
-        <div className="w-full mt-2">
-          <div className="flex justify-between text-xs text-gray-600 mb-1">
-            <span>
-              {completed}/{total} completed
-            </span>
-            <span>{progress}%</span>
+        ) : total > 0 && (
+          <div className="w-full">
+            <div className="flex justify-between text-xs text-gray-600 mb-1">
+              <span>
+                {completed}/{total} completed
+              </span>
+              <span>{progress}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div
+                className="bg-green h-2.5 rounded-full"
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div
-              className="bg-green h-2.5 rounded-full"
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

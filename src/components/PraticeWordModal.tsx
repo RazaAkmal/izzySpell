@@ -68,6 +68,8 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
       setSelectedMode("RecentAttempts");
     } else if (selectedTab === "study") {
       setSelectedMode("DefualtModePratice");
+    } else if (selectedTab === "extra") {
+      setSelectedMode("ScrambleWords");
     }
   }, [selectedTab]);
 
@@ -114,6 +116,50 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
           continueFrom: 0,
           isRecentAttempts: false,
           isMistakesPractice: true
+        }
+      ];
+    }
+
+    if (selectedTab === "extra") {
+      return [
+        {
+          id: "ScrambleWords" as const,
+          imageSrc: "/images/PencelIcon.svg",
+          altText: "Scramble Words",
+          label: "Scramble Words",
+          completed: 0,
+          total: 0,
+          progress: 0,
+          showContinue: false,
+          continueFrom: 0,
+          isRecentAttempts: false,
+          isMistakesPractice: false
+        },
+        {
+          id: "FlashCards" as const,
+          imageSrc: "/images/bookIcon.svg",
+          altText: "Flash Cards",
+          label: "Flash Cards",
+          completed: 0,
+          total: 0,
+          progress: 0,
+          showContinue: false,
+          continueFrom: 0,
+          isRecentAttempts: false,
+          isMistakesPractice: false
+        },
+        {
+          id: "WordMatch" as const,
+          imageSrc: "/images/QuizIcon.svg",
+          altText: "Word Match",
+          label: "Word Match",
+          completed: 0,
+          total: 0,
+          progress: 0,
+          showContinue: false,
+          continueFrom: 0,
+          isRecentAttempts: false,
+          isMistakesPractice: false
         }
       ];
     }
@@ -203,10 +249,10 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
           <CustomButton
             size="small"
             label="Extra"
-            variant="secondary"
+            variant={selectedTab === "extra" ? "primary" : "secondary"}
             radius="rounded"
             img="/images/PencelIcon.svg"
-            disabled={true}
+            onClick={() => setSelectedTab("extra")}
           />
         </div>
 
@@ -223,10 +269,9 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         </div>
 
         {/* Mode Options */}
-        <div className={`grid grid-cols-1 ${selectedTab === "quiz" ? "sm:grid-cols-2 xl:grid-cols-3" : "sm:grid-cols-2 xl:grid-cols-3"} gap-6 sm:gap-10 mb-10 mx-auto max-w-[1200]`}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8 lg:gap-10 mb-10 mx-auto max-w-[1200px] justify-items-center">
           {modesConfig.map((mode) => (
             <ModeCard
-              selectedTab={selectedTab}
               key={mode.id}
               imageSrc={mode.imageSrc}
               altText={mode.altText}
@@ -259,6 +304,24 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                   <div className="text-center text-gray-500">
                     <div className="text-sm">No mistakes to practice. Take a quiz first!</div>
                   </div>
+                </div>
+              ) : selectedTab === "extra" ? (
+                <div className="w-full flex justify-center">
+                  <CustomButton
+                    label={
+                      <div className="flex items-center justify-center w-full">
+                        <span>Play Game</span>
+                      </div>
+                    }
+                    size="small"
+                    variant="primary"
+                    radius="rounded"
+                    onClick={() =>
+                      selectedMode && navigateTo(selectedMode + "?start=0")
+                    }
+                    disabled={!selectedMode}
+                    className="w-full sm:w-60"
+                  />
                 </div>
               ) : currentModeData?.showContinue ? (
                 // When two buttons are shown, display them side by side with equal width
