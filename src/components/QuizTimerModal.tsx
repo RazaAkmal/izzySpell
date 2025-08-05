@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
 import CustomButton from "./HeadlessButton";
+import Image from "next/image";
 import { getTimeDurationsForList } from "@/app/actions/AiService";
 import { generateAiSuggestionsForList } from "@/app/actions/generateAiSuggestions";
+import { useRouter } from "next/navigation";
+import { Button } from "@headlessui/react";
 
 export type TimerType = "none" | "word" | "list";
 
@@ -28,6 +31,7 @@ const QuizTimerModal: React.FC<QuizTimerModalProps> = ({
   } | null>(null);
   const [loadingAiSuggestions, setLoadingAiSuggestions] = useState(false);
   const [generatingAiSuggestions, setGeneratingAiSuggestions] = useState(false);
+  const router = useRouter();
   // Fetch AI suggestions when modal opens and listId is available
   useEffect(() => {
     if (isOpen && listId && !aiSuggestions) {
@@ -77,7 +81,24 @@ const QuizTimerModal: React.FC<QuizTimerModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-8 max-w-md w-full mx-auto shadow-lg">
+      <div className="bg-white rounded-lg p-8 max-w-md w-full mx-auto shadow-lg relative">
+        <Button 
+          className="absolute top-4 right-4 focus:outline-none"
+          onClick={() => {
+            if (listId) {
+              router.push(`/spellPractice/${listId}`);
+            }
+          }}
+        >
+          <Image
+            src="/images/Vector.svg"
+            alt="Cancel Button"
+            width={30}
+            height={30}
+          />
+        </Button>
+       
+
         <h2 className="text-2xl font-bold text-center w-full text-purple mb-4">
           Quiz Timer Options
         </h2>
@@ -356,7 +377,7 @@ const QuizTimerModal: React.FC<QuizTimerModalProps> = ({
                     }
                   }}
                   placeholder="Custom"
-                  className="py-2 text-black px-2 w-16 text-sm text-center bg-transparent border-0 focus:outline-none"
+                  className="py-2 text-black px-2 w-12 text-sm text-center bg-transparent border-0 focus:outline-none"
                 />
                 <select
                   value={timeUnit}
