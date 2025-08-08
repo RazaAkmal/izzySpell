@@ -378,3 +378,46 @@ export async function resetListProgress(listId: number, userId?: string) {
     return { success: false, message: "Error resetting list progress" };
   }
 }
+
+// Flash Cards functions
+export const getFlashCardsByListId = async (listId: number) => {
+  try {
+    const flashCards = await prisma.flashCard.findMany({
+      where: { listId },
+      orderBy: { id: 'asc' }
+    });
+
+    return {
+      success: true,
+      data: flashCards
+    };
+  } catch (error: any) {
+    console.error("Error fetching flash cards:", error.message || error);
+    return {
+      success: false,
+      error: error.message || "Error fetching flash cards"
+    };
+  }
+};
+
+export const checkFlashCardsExist = async (listId: number) => {
+  try {
+    const count = await prisma.flashCard.count({
+      where: { listId }
+    });
+
+    return {
+      success: true,
+      exists: count > 0,
+      count
+    };
+  } catch (error: any) {
+    console.error("Error checking flash cards:", error.message || error);
+    return {
+      success: false,
+      exists: false,
+      count: 0,
+      error: error.message || "Error checking flash cards"
+    };
+  }
+};

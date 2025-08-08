@@ -1,11 +1,13 @@
 "use client";
 
-import React, {useEffect} from "react";
+import React, {useEffect, useState} from "react";
 import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import CustomButton from "./HeadlessButton";
 import { getRecentQuizAttempts } from "@/app/actions/getRecentQuizAttempts";
 import ModeCard, { ModeType, QuizAttempt } from "./ModeCard";
+import { checkFlashCardsExist } from "@/app/actions/prismaActions";
+import { generateAndSaveFlashCards } from "@/app/actions/AiService";
 
 interface ModeConfigItem {
   id: ModeType;
@@ -29,6 +31,7 @@ interface PracticeWordModalProps {
   studiedGroupCount: number;
   totalStudiedGroups: number;
   totalGroups: number;
+  words: string[]; // Array of word strings for flash card generation
 }
 
 const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
@@ -37,7 +40,8 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
   studiedSyllableCount,
   studiedGroupCount,
   totalGroups,
-  totalStudiedGroups
+  totalStudiedGroups,
+  words
 }) => {
   const router = useRouter();
   const { listId } = useParams();
@@ -45,6 +49,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
   const [selectedMode, setSelectedMode] = React.useState<ModeType>("DefualtModePratice");
   const [recentAttempts, setRecentAttempts] = React.useState<QuizAttempt[]>([]);
   const [mistakesCount, setMistakesCount] = React.useState(0);
+  const [isGeneratingFlashCards, setIsGeneratingFlashCards] = useState(false);
   
   // Fetch recent quiz attempts and mistakes count when quiz tab is selected
   useEffect(() => {
@@ -124,7 +129,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
       return [
         {
           id: "ScrambleWords" as const,
-          imageSrc: "/images/PencelIcon.svg",
+          imageSrc: "/images/puzzlePiece.svg",
           altText: "Scramble Words",
           label: "Scramble Words",
           completed: 0,
@@ -137,7 +142,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         },
         {
           id: "FlashCards" as const,
-          imageSrc: "/images/bookIcon.svg",
+          imageSrc: "/images/notesIcon.svg",
           altText: "Flash Cards",
           label: "Flash Cards",
           completed: 0,
@@ -226,6 +231,44 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
     router.push(`/spellPractice/${listId}/${path}`);
   };
 
+  const handleFlashCardsNavigation = async () => {
+    if (!listId || words.length === 0) {
+      console.error("No list ID or words available");
+      return;
+    }
+
+    setIsGeneratingFlashCards(true);
+    
+    try {
+      const numericListId = parseInt(listId as string, 10);
+      
+      // Check if flash cards already exist
+      const checkResult = await checkFlashCardsExist(numericListId);
+      
+      if (checkResult.success && checkResult.exists) {
+        // Flash cards exist, navigate directly
+        navigateTo("FlashCards?start=0");
+      } else {
+        // Generate flash cards first
+        const generateResult = await generateAndSaveFlashCards(numericListId, words);
+        
+        if (generateResult.success) {
+          // Generation successful, navigate to game
+          navigateTo("FlashCards?start=0");
+        } else {
+          console.error("Failed to generate flash cards:", generateResult.error);
+          // You could show an error modal here
+          alert("Failed to generate flash cards. Please try again.");
+        }
+      }
+    } catch (error) {
+      console.error("Error in flash cards navigation:", error);
+      alert("An error occurred. Please try again.");
+    } finally {
+      setIsGeneratingFlashCards(false);
+    }
+  };
+
   return (
     <>
       <div className="flex flex-col gap-6 sm:gap-8 justify-center px-2 sm:px-4">
@@ -310,16 +353,20 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                   <CustomButton
                     label={
                       <div className="flex items-center justify-center w-full">
-                        <span>Play Game</span>
+                        <span>{isGeneratingFlashCards && selectedMode === "FlashCards" ? "Generating..." : "Play Game"}</span>
                       </div>
                     }
                     size="small"
                     variant="primary"
                     radius="rounded"
-                    onClick={() =>
-                      selectedMode && navigateTo(selectedMode + "?start=0")
-                    }
-                    disabled={!selectedMode}
+                    onClick={() => {
+                      if (selectedMode === "FlashCards") {
+                        handleFlashCardsNavigation();
+                      } else if (selectedMode) {
+                        navigateTo(selectedMode + "?start=0");
+                      }
+                    }}
+                    disabled={!selectedMode || (isGeneratingFlashCards && selectedMode === "FlashCards")}
                     className="w-full sm:w-60"
                   />
                 </div>

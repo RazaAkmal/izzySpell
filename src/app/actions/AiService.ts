@@ -296,3 +296,151 @@ export const generateAndSaveTimeDurations = async (
     };
   }
 };
+
+export const generateFlashCards = async (words: string[]) => {
+  try {
+    const systemPrompt = `You are a tool for a children's spelling practice app called IzzySpell.
+
+Your task is to generate multiple-choice spelling challenges from a given list of words. For each word, provide:
+
+1. The original word.
+2. A list of 4 spelling options:
+   - Exactly one must be the correct spelling (the original word).
+   - The other three must be common misspellings or believable errors a child might make. These can include:
+     - Missing letters
+     - Extra letters
+     - Phonetic errors
+     - Letter swaps
+     - Incorrect but similar-looking spellings
+   - All 4 options must be different from each other and appear in **random order**.
+3. The index (0–3) of the correct option.
+4. A **simple definition** of the word, suitable for children aged 6–10.
+5. A short **example sentence** using the word in context. Keep it age-appropriate and easy to understand.
+
+Output Format:
+A JSON array where each item follows this schema:
+
+{
+  "original_word": "string",
+  "options": ["string", "string", "string", "string"],
+  "correct_index": number (0 to 3),
+  "definition": "string",
+  "example_sentence": "string"
+}`;
+
+    const gptResponse = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        {
+          role: "user",
+          content: `Generate flash cards for these words: ${JSON.stringify(words)}`
+        }
+      ],
+      temperature: 0.7,
+    });
+
+    const content = gptResponse.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error("No response from OpenAI");
+    }
+
+    // Clean and validate the content before parsing
+    const cleanedContent = content.trim();
+    if (!cleanedContent) {
+      throw new Error("Empty response from OpenAI");
+    }
+
+    let flashCardsData;
+    try {
+      flashCardsData = JSON.parse(cleanedContent);
+    } catch (parseError) {
+      console.error("JSON Parse Error:", parseError);
+      console.error("Content received:", cleanedContent);
+      throw new Error("Invalid JSON response from AI");
+    }
+    
+    if (!Array.isArray(flashCardsData)) {
+      throw new Error("Response is not an array");
+    }
+
+    if (flashCardsData.length === 0) {
+      throw new Error("No flash cards generated");
+    }
+
+    return {
+      success: true,
+      data: flashCardsData
+    };
+
+  } catch (error) {
+    console.error("Error generating flash cards:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Error generating flash cards"
+    };
+  }
+};
+
+export const generateAndSaveFlashCards = async (listId: number, words: string[]) => {
+  try {
+    // Check if flash cards already exist for this list
+    const existingFlashCards = await prisma.flashCard.findMany({
+      where: { listId }
+    });
+
+    if (existingFlashCards.length > 0) {
+      return {
+        success: true,
+        data: existingFlashCards,
+        message: "Flash cards already exist for this list"
+      };
+    }
+
+    // Generate flash cards using AI
+    const generationResult = await generateFlashCards(words);
+    
+    if (!generationResult.success) {
+      throw new Error(generationResult.error);
+    }
+
+    const flashCardsData = generationResult.data;
+
+    if (!flashCardsData || flashCardsData.length === 0) {
+      throw new Error('No flash cards data generated');
+    }
+
+    // Save flash cards to database
+    const savedFlashCards = await prisma.flashCard.createMany({
+      data: flashCardsData.map((card: any) => ({
+        listId,
+        originalWord: card.original_word,
+        options: card.options,
+        correctIndex: card.correct_index,
+        definition: card.definition,
+        exampleSentence: card.example_sentence
+      }))
+    });
+
+    // Fetch the saved flash cards to return them
+    const flashCards = await prisma.flashCard.findMany({
+      where: { listId }
+    });
+
+    return {
+      success: true,
+      data: flashCards,
+      message: `Generated and saved ${savedFlashCards.count} flash cards`
+    };
+
+  } catch (error) {
+    console.error("Error generating and saving flash cards:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Error generating flash cards"
+    };
+  }
+};

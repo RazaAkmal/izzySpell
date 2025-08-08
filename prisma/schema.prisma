@@ -91,6 +91,7 @@ model SpellingList {
   words                Word[]
   groupedWords         GroupedWord[]
   syllableWords        SyllableWord[] // Relation to SyllableWord
+  flashCards           FlashCard[]    // Relation to FlashCard
   progress             Float          @default(0) // Field to store progress percentage
   quizAttempts         QuizAttempt[]
   shortPaceDuration    Int?          
@@ -134,4 +135,17 @@ model SyllableWord {
   spellingList SpellingList @relation(fields: [listId], references: [id])
 
   @@map(name: "syllable_words")
+}
+
+model FlashCard {
+  id               Int          @id @default(autoincrement())
+  listId           Int
+  originalWord     String
+  options          Json         // Array of 4 spelling options
+  correctIndex     Int          // Index (0-3) of the correct option
+  definition       String       // Simple definition for children
+  exampleSentence  String       // Example sentence using the word
+  spellingList     SpellingList @relation(fields: [listId], references: [id])
+
+  @@map(name: "flash_cards")
 }

@@ -1,6 +1,6 @@
 "use server";
 
-import { getWordCountForEachExercise } from "@/app/actions/prismaActions";
+import { getWordCountForEachExercise, getWordsByListId } from "@/app/actions/prismaActions";
 import PracticeWordModal from "@/components/PraticeWordModal";
 import GoToHomeButton from "@/components/GoToHomeButton";
 import CustomButton from "@/components/HeadlessButton";
@@ -11,6 +11,8 @@ export default async function WordsPage({
   listId: string;
 }) {
   const { total, studiedWordCount, studiedSyllableWord, studiedGroupCount, totalGroups } = await getWordCountForEachExercise(parseInt(listId));
+  const { words } = await getWordsByListId(parseInt(listId));
+  const wordStrings = words.map(word => word.word);
   const validTotalGroups = totalGroups.filter(group => group._count.word > 1);
   const validStudiedGroups = studiedGroupCount.filter(group => group._count.word > 1);
   const totalStudiedGroups = validStudiedGroups.length;
@@ -29,7 +31,15 @@ export default async function WordsPage({
           img="/images/AlphaIcon.svg"
           className="cursor-default"
         />
-        <PracticeWordModal totalGroups={totalGroupsCount} totalStudiedGroups={totalStudiedGroups} totalWords={total} studiedCount={studiedWordCount} studiedSyllableCount={studiedSyllableWord} studiedGroupCount={Math.round(groupedProgress)} />
+        <PracticeWordModal 
+          totalGroups={totalGroupsCount} 
+          totalStudiedGroups={totalStudiedGroups} 
+          totalWords={total} 
+          studiedCount={studiedWordCount} 
+          studiedSyllableCount={studiedSyllableWord} 
+          studiedGroupCount={Math.round(groupedProgress)}
+          words={wordStrings}
+        />
         <GoToHomeButton />
       </div>
     </div>
