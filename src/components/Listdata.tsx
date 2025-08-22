@@ -25,6 +25,8 @@ function AllListData({
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showErrorModal, setShowErrorModal] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [isResetLoading, setIsResetLoading] = useState(false);
 
@@ -65,13 +67,18 @@ function AllListData({
         setShowSuccessModal(true);
         revalidateRoute("/lists");
       } else {
-        console.error(
-          "Error deleting list:",
-          result.message || "Unknown error"
-        );
+        console.error("Error deleting list:", result.message || "Unknown error");
+        
+        // Show error to user
+        setErrorMessage(result.message || "Failed to delete the list. Please try again.");
+        setShowDeleteConfirmation(false);
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.error("Error in handleDelete:", error);
+      setErrorMessage("An unexpected error occurred. Please try again.");
+      setShowDeleteConfirmation(false);
+      setShowErrorModal(true);
     } finally {
       setIsDeleteLoading(false);
       setPendingDeleteId(null);
@@ -89,13 +96,18 @@ function AllListData({
         setShowSuccessModal(true);
         revalidateRoute("/lists");
       } else {
-        console.error(
-          "Error resetting list progress:",
-          result.message || "Unknown error"
-        );
+        console.error("Error resetting list progress:", result.message || "Unknown error");
+        
+        // Show error to user
+        setErrorMessage(result.message || "Failed to reset the list progress. Please try again.");
+        setShowResetConfirmation(false);
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.error("Error in handleReset:", error);
+      setErrorMessage("An unexpected error occurred. Please try again.");
+      setShowResetConfirmation(false);
+      setShowErrorModal(true);
     } finally {
       setIsResetLoading(false);
       setPendingResetId(null);
@@ -234,6 +246,16 @@ function AllListData({
         title="Success"
         message={successMessage}
         showCancelButton={false}
+      />
+
+      <ConfirmationModal
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        onConfirm={() => setShowErrorModal(false)}
+        title="Error"
+        message={errorMessage}
+        showCancelButton={false}
+        confirmText="OK"
       />
     </div>
   );

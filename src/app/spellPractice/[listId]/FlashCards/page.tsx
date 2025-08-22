@@ -1,6 +1,6 @@
 import React from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { getWordsByListId } from "@/app/actions/prismaActions";
+import { getFlashCardsByListId } from "@/app/actions/prismaActions";
 import { ListNameProvider } from "@/context/ListNameContext";
 import FlashCardsGame from "@/components/FlashCardsGame";
 import NoWordsModal from "@/components/NoWordsModal";
@@ -11,22 +11,22 @@ async function page({
   params: Promise<{ listId: string }>;
 }) {
   const listId = (await params).listId;
-  const { words } = await getWordsByListId(parseInt(listId));
+  const result = await getFlashCardsByListId(parseInt(listId));
   
   return (
     <>
       <DashboardLayout showFooter={false}>
         <ListNameProvider listId={listId}>
-          {words.length > 0 ? (
+          {result.success && result.data && result.data.length > 0 ? (
             <FlashCardsGame 
-              words={words} 
-              listId={listId} 
+              listId={listId}
+              flashCardsData={result.data}
             />
           ) : (
             <NoWordsModal 
               isOpen={true}
-              title="No Words Available"
-              message="This list doesn't have any words to play Flash Cards. Please choose another list."
+              title="No Flash Cards Available"
+              message="This list doesn't have flash cards generated yet. Please go back and generate them first."
             />
           )}
         </ListNameProvider>

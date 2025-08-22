@@ -34,13 +34,6 @@ export const deleteList = async (listId: number | string, userId: string) => {
       return { success: false, message: "You are not authorized to delete this list" };
     }
 
-    // Delete related words first
-    await prisma.word.deleteMany({
-      where: { listId: numericListId },
-    });
-    await prisma.groupedWord.deleteMany({ where: { listId: numericListId } });
-    await prisma.syllableWord.deleteMany({ where: { listId: numericListId } });
-
     await prisma.spellingList.delete({
       where: { id: numericListId },
     });
@@ -50,7 +43,25 @@ export const deleteList = async (listId: number | string, userId: string) => {
 
   } catch (error: any) {
     console.error("Error deleting list:", error.message || error);
-    return { success: false, message: "Error deleting list" };
+    
+    // Provide specific error messages based on the error type
+    let userMessage = "Failed to delete the list. Please try again.";
+    
+    if (error.code === 'P2003') {
+      userMessage = "Cannot delete list: There are still related records that need to be removed first.";
+    } else if (error.code === 'P2025') {
+      userMessage = "List not found or already deleted.";
+    } else if (error.message?.includes('Foreign key constraint')) {
+      userMessage = "Cannot delete list: Please contact support if this issue persists.";
+    } else if (error.message?.includes('not found')) {
+      userMessage = "List not found.";
+    }
+    
+    return { 
+      success: false, 
+      message: userMessage,
+      error: error.message // Include technical details for debugging
+    };
   }
 };
 
@@ -418,6 +429,49 @@ export const checkFlashCardsExist = async (listId: number) => {
       exists: false,
       count: 0,
       error: error.message || "Error checking flash cards"
+    };
+  }
+};
+
+// Scramble Words functions
+export const getScrambleWordsByListId = async (listId: number) => {
+  try {
+    const scrambleWords = await prisma.scrambleWord.findMany({
+      where: { listId },
+      orderBy: { id: 'asc' }
+    });
+
+    return {
+      success: true,
+      data: scrambleWords
+    };
+  } catch (error: any) {
+    console.error("Error fetching scramble words:", error.message || error);
+    return {
+      success: false,
+      error: error.message || "Error fetching scramble words"
+    };
+  }
+};
+
+export const checkScrambleWordsExist = async (listId: number) => {
+  try {
+    const count = await prisma.scrambleWord.count({
+      where: { listId }
+    });
+
+    return {
+      success: true,
+      exists: count > 0,
+      count
+    };
+  } catch (error: any) {
+    console.error("Error checking scramble words:", error.message || error);
+    return {
+      success: false,
+      exists: false,
+      count: 0,
+      error: error.message || "Error checking scramble words"
     };
   }
 };

@@ -6,8 +6,8 @@ import { useRouter, useParams } from "next/navigation";
 import CustomButton from "./HeadlessButton";
 import { getRecentQuizAttempts } from "@/app/actions/getRecentQuizAttempts";
 import ModeCard, { ModeType, QuizAttempt } from "./ModeCard";
-import { checkFlashCardsExist } from "@/app/actions/prismaActions";
-import { generateAndSaveFlashCards } from "@/app/actions/AiService";
+import { checkFlashCardsExist, checkScrambleWordsExist } from "@/app/actions/prismaActions";
+import { generateAndSaveFlashCards, generateAndSaveScrambleWords } from "@/app/actions/AiService";
 
 interface ModeConfigItem {
   id: ModeType;
@@ -50,6 +50,9 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
   const [recentAttempts, setRecentAttempts] = React.useState<QuizAttempt[]>([]);
   const [mistakesCount, setMistakesCount] = React.useState(0);
   const [isGeneratingFlashCards, setIsGeneratingFlashCards] = useState(false);
+  const [isGeneratingScrambleWords, setIsGeneratingScrambleWords] = useState(false);
+  const [flashCardsExist, setFlashCardsExist] = useState<boolean | null>(null); // null = checking, true = exist, false = don't exist
+  const [scrambleWordsExist, setScrambleWordsExist] = useState<boolean | null>(null); // null = checking, true = exist, false = don't exist
   
   // Fetch recent quiz attempts and mistakes count when quiz tab is selected
   useEffect(() => {
@@ -66,6 +69,36 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         });
     }
   }, [selectedTab, listId]);
+
+  // Check if flash cards exist for this list on component mount
+  useEffect(() => {
+    if (listId) {
+      const numericListId = parseInt(listId as string, 10);
+      checkFlashCardsExist(numericListId)
+        .then((result) => {
+          setFlashCardsExist(result.success && result.exists);
+        })
+        .catch((error) => {
+          console.error("Error checking flash cards:", error);
+          setFlashCardsExist(false);
+        });
+    }
+  }, [listId]);
+
+  // Check if scramble words exist for this list on component mount
+  useEffect(() => {
+    if (listId) {
+      const numericListId = parseInt(listId as string, 10);
+      checkScrambleWordsExist(numericListId)
+        .then((result) => {
+          setScrambleWordsExist(result.success && result.exists);
+        })
+        .catch((error) => {
+          console.error("Error checking scramble words:", error);
+          setScrambleWordsExist(false);
+        });
+    }
+  }, [listId]);
 
   // Update selected mode when tab changes
   useEffect(() => {
@@ -237,35 +270,93 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
       return;
     }
 
+    // If we already know flash cards exist, navigate directly
+    if (flashCardsExist === true) {
+      navigateTo("FlashCards?start=0");
+      return;
+    }
+
     setIsGeneratingFlashCards(true);
     
     try {
       const numericListId = parseInt(listId as string, 10);
       
-      // Check if flash cards already exist
-      const checkResult = await checkFlashCardsExist(numericListId);
+      // If we haven't checked yet or they don't exist, check again
+      if (flashCardsExist === null || flashCardsExist === false) {
+        const checkResult = await checkFlashCardsExist(numericListId);
+        
+        if (checkResult.success && checkResult.exists) {
+          // Flash cards exist, update state and navigate directly
+          setFlashCardsExist(true);
+          navigateTo("FlashCards?start=0");
+          return;
+        }
+      }
+
+      // Generate flash cards if they don't exist
+      const generateResult = await generateAndSaveFlashCards(numericListId, words);
       
-      if (checkResult.success && checkResult.exists) {
-        // Flash cards exist, navigate directly
+      if (generateResult.success) {
+        // Generation successful, update state and navigate to game
+        setFlashCardsExist(true);
         navigateTo("FlashCards?start=0");
       } else {
-        // Generate flash cards first
-        const generateResult = await generateAndSaveFlashCards(numericListId, words);
-        
-        if (generateResult.success) {
-          // Generation successful, navigate to game
-          navigateTo("FlashCards?start=0");
-        } else {
-          console.error("Failed to generate flash cards:", generateResult.error);
-          // You could show an error modal here
-          alert("Failed to generate flash cards. Please try again.");
-        }
+        console.error("Failed to generate flash cards:", generateResult.error);
+        alert("Failed to generate flash cards. Please try again.");
       }
     } catch (error) {
       console.error("Error in flash cards navigation:", error);
       alert("An error occurred. Please try again.");
     } finally {
       setIsGeneratingFlashCards(false);
+    }
+  };
+
+  const handleScrambleWordsNavigation = async () => {
+    if (!listId || words.length === 0) {
+      console.error("No list ID or words available");
+      return;
+    }
+
+    // If we already know scramble words exist, navigate directly
+    if (scrambleWordsExist === true) {
+      navigateTo("ScrambleWords?start=0");
+      return;
+    }
+
+    setIsGeneratingScrambleWords(true);
+    
+    try {
+      const numericListId = parseInt(listId as string, 10);
+      
+      // If we haven't checked yet or they don't exist, check again
+      if (scrambleWordsExist === null || scrambleWordsExist === false) {
+        const checkResult = await checkScrambleWordsExist(numericListId);
+        
+        if (checkResult.success && checkResult.exists) {
+          // Scramble words exist, update state and navigate directly
+          setScrambleWordsExist(true);
+          navigateTo("ScrambleWords?start=0");
+          return;
+        }
+      }
+
+      // Generate scramble words if they don't exist
+      const generateResult = await generateAndSaveScrambleWords(numericListId, words);
+      
+      if (generateResult.success) {
+        // Generation successful, update state and navigate to game
+        setScrambleWordsExist(true);
+        navigateTo("ScrambleWords?start=0");
+      } else {
+        console.error("Failed to generate scramble words:", generateResult.error);
+        alert("Failed to generate scramble words. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error in scramble words navigation:", error);
+      alert("An error occurred. Please try again.");
+    } finally {
+      setIsGeneratingScrambleWords(false);
     }
   };
 
@@ -335,7 +426,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
           {/* Center container for buttons */}
           <div className="flex justify-center w-full">
             {/* Fixed-width container to maintain consistent layout */}
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 w-full max-w-[700px] px-4">
+            <div className="flex flex-col sm:flex-row justify-center items-stretch gap-4 w-full max-w-[700px] px-4">
               {selectedMode === "RecentAttempts" ? (
                 <div className="w-full flex justify-center">
                   <div className="text-center text-gray-500">
@@ -352,9 +443,11 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                 <div className="w-full flex justify-center">
                   <CustomButton
                     label={
-                      <div className="flex items-center justify-center w-full">
-                        <span>{isGeneratingFlashCards && selectedMode === "FlashCards" ? "Generating..." : "Play Game"}</span>
-                      </div>
+                      selectedMode === "FlashCards" && isGeneratingFlashCards ? "Generating..." :
+                      selectedMode === "ScrambleWords" && isGeneratingScrambleWords ? "Generating..." :
+                      selectedMode === "FlashCards" ? "Flash Cards" :
+                      selectedMode === "ScrambleWords" ? "Scramble Words" :
+                      "Play Game"
                     }
                     size="small"
                     variant="primary"
@@ -362,38 +455,32 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                     onClick={() => {
                       if (selectedMode === "FlashCards") {
                         handleFlashCardsNavigation();
+                      } else if (selectedMode === "ScrambleWords") {
+                        handleScrambleWordsNavigation();
                       } else if (selectedMode) {
                         navigateTo(selectedMode + "?start=0");
                       }
                     }}
-                    disabled={!selectedMode || (isGeneratingFlashCards && selectedMode === "FlashCards")}
-                    className="w-full sm:w-60"
+                    disabled={!selectedMode || (isGeneratingFlashCards && selectedMode === "FlashCards") || (isGeneratingScrambleWords && selectedMode === "ScrambleWords")}
+                    className="w-full sm:w-60 !h-auto flex items-center justify-center"
                   />
                 </div>
               ) : currentModeData?.showContinue ? (
                 // When two buttons are shown, display them side by side with equal width
                 <>
                   <CustomButton
-                    label={
-                      <div className="flex items-center justify-center w-full">
-                        <span className="text-sm sm:text-base whitespace-nowrap">{`Continue Learning (${currentModeData.completed}/${currentModeData.total})`}</span>
-                      </div>
-                    }
+                    label="Continue Learning"
                     size="small"
                     variant="success"
                     radius="rounded"
                     onClick={() => navigateTo(selectedMode + `?start=${currentModeData.continueFrom}`)}
                     img="/images/bookIcon.svg"
                     disabled={!selectedMode}
-                    className="w-full sm:w-60"
+                    className="w-full sm:w-60 !px-2 !h-auto flex items-center justify-center"
                   />
                   
                   <CustomButton
-                    label={
-                      <div className="flex items-center justify-center w-full">
-                        <span>Begin Again</span>
-                      </div>
-                    }
+                    label="Begin Again"
                     size="small"
                     variant="primary"
                     radius="rounded"
@@ -402,17 +489,13 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                     }
                     img="/images/resetIcon.svg"
                     disabled={!selectedMode}
-                    className="w-full sm:w-60"
+                    className="w-full sm:w-60 !px-2 !h-auto flex items-center justify-center"
                   />
                 </>
               ) : (
                 <div className="w-full flex justify-center">
                   <CustomButton
-                    label={
-                      <div className="flex items-center justify-center w-full">
-                        <span>{selectedMode === "MistakesPractice" ? "Practice Now" : "Start learning"}</span>
-                      </div>
-                    }
+                    label={selectedMode === "MistakesPractice" ? "Practice Now" : "Start Learning"}
                     size="small"
                     variant="primary"
                     radius="rounded"
@@ -420,7 +503,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                       selectedMode && navigateTo(selectedMode + "?start=0")
                     }
                     disabled={!selectedMode || (selectedMode === "MistakesPractice" && mistakesCount === 0)}
-                    className="w-full sm:w-60"
+                    className="w-full sm:w-60 !px-2 !h-auto flex items-center justify-center"
                   />
                 </div>
               )}

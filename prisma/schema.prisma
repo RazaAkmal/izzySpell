@@ -92,6 +92,7 @@ model SpellingList {
   groupedWords         GroupedWord[]
   syllableWords        SyllableWord[] // Relation to SyllableWord
   flashCards           FlashCard[]    // Relation to FlashCard
+  scrambleWords        ScrambleWord[] // Relation to ScrambleWord
   progress             Float          @default(0) // Field to store progress percentage
   quizAttempts         QuizAttempt[]
   shortPaceDuration    Int?          
@@ -107,7 +108,7 @@ model Word {
   word            String
   difficultyLevel String       @default("medium")
   type            String       @default("original") // original, syllabus, or grouped
-  spellingList    SpellingList @relation(fields: [listId], references: [id])
+  spellingList    SpellingList @relation(fields: [listId], references: [id], onDelete: Cascade)
   studied         Boolean      @default(false) // Field to track if the word is studied
   quizMistakes    QuizMistake[]
 
@@ -120,7 +121,7 @@ model GroupedWord {
   groupName    String
   word         String
   studied    Boolean      @default(false) // Field to track if the grouped word is studied
-  spellingList SpellingList @relation(fields: [listId], references: [id])
+  spellingList SpellingList @relation(fields: [listId], references: [id], onDelete: Cascade)
 
   @@map(name: "grouped_words")
 }
@@ -132,7 +133,7 @@ model SyllableWord {
   options      Json         
   answer       String
   studied      Boolean      @default(false) // Field to track if the syllable word is studied     
-  spellingList SpellingList @relation(fields: [listId], references: [id])
+  spellingList SpellingList @relation(fields: [listId], references: [id], onDelete: Cascade)
 
   @@map(name: "syllable_words")
 }
@@ -145,7 +146,17 @@ model FlashCard {
   correctIndex     Int          // Index (0-3) of the correct option
   definition       String       // Simple definition for children
   exampleSentence  String       // Example sentence using the word
-  spellingList     SpellingList @relation(fields: [listId], references: [id])
+  spellingList     SpellingList @relation(fields: [listId], references: [id], onDelete: Cascade)
 
   @@map(name: "flash_cards")
+}
+
+model ScrambleWord {
+  id               Int          @id @default(autoincrement())
+  listId           Int
+  originalWord     String
+  scrambledOptions Json         // Array of 4 scrambled versions
+  spellingList     SpellingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@map(name: "scramble_words")
 }
