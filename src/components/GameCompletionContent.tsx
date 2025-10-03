@@ -94,12 +94,20 @@ const GameCompletionContent: React.FC<GameCompletionContentProps> = ({
               
               <div className="mt-6 pt-4 border-t border-white/20">
                 <div className="text-center">
-                  <div className="text-2xl font-bold mb-2">🎯 100% Completion!</div>
+                  <div className="text-2xl font-bold mb-2">
+                    {customStats.length > 0 && customStats.some(stat => stat.label === "Move Efficiency") 
+                      ? "🎯 Strategic Master!" 
+                      : "🎯 100% Completion!"
+                    }
+                  </div>
                   <div className="text-sm opacity-90">
-                    You successfully completed all challenges!
-                    {totalAttempts === totalQuestions 
-                      ? " Perfect first-try performance!" 
-                      : " Great persistence - you got there in the end!"
+                    {customStats.length > 0 && customStats.some(stat => stat.label === "Move Efficiency")
+                      ? "You conquered the Limited Moves challenge with strategic precision!"
+                      : `You successfully completed all challenges!${
+                          totalAttempts === totalQuestions 
+                            ? " Perfect first-try performance!" 
+                            : " Great persistence - you got there in the end!"
+                        }`
                     }
                   </div>
                 </div>
