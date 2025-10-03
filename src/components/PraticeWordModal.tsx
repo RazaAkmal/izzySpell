@@ -188,9 +188,9 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         },
         {
           id: "WordMatch" as const,
-          imageSrc: "/images/QuizIcon.svg",
-          altText: "Word Match",
-          label: "Word Match",
+          imageSrc: "/images/puzzlePiece.svg",
+          altText: "Word Builder",
+          label: "Word Builder",
           completed: 0,
           total: 0,
           progress: 0,
@@ -447,6 +447,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                       selectedMode === "ScrambleWords" && isGeneratingScrambleWords ? "Generating..." :
                       selectedMode === "FlashCards" ? "Flash Cards" :
                       selectedMode === "ScrambleWords" ? "Scramble Words" :
+                      selectedMode === "WordMatch" ? "Word Builder" :
                       "Play Game"
                     }
                     size="small"
@@ -457,6 +458,8 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                         handleFlashCardsNavigation();
                       } else if (selectedMode === "ScrambleWords") {
                         handleScrambleWordsNavigation();
+                      } else if (selectedMode === "WordMatch") {
+                        navigateTo("WordBuilder?start=0");
                       } else if (selectedMode) {
                         navigateTo(selectedMode + "?start=0");
                       }
