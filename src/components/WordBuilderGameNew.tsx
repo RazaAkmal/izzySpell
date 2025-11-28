@@ -683,7 +683,7 @@ export default function WordBuilderGameNew({
                       }`}
                     />
                     <p className="text-xs mt-2 ${
-                      isMovesExhausted ? 'text-darkOrange font-bold' : 'text-darkBlue'
+                      isMovesExhausted ? 'font-bold' : '!text-darkBlue'
                     }">
                       {isMovesExhausted 
                         ? '⚠️ No more moves! Check your word now or it will auto-fail!' 
