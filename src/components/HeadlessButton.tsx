@@ -14,10 +14,10 @@ const variantStyles = {
 
 // Define styles for each size
 const sizeStyles = {
-  small: "py-1 px-8 text-lg  ",
-  medium: " py-2 px-8 text-lg",
-  large: "py-2 px-16 text-lg",
-  extralarge: "py-2 px-24 text-lg",
+  small: "py-1 px-4 sm:px-8 text-sm sm:text-md",
+  medium: "py-2 px-6 sm:px-8 text-base sm:text-lg",
+  large: "py-2 px-8 sm:px-16 text-base sm:text-lg",
+  extralarge: "py-2 px-12 sm:px-24 text-base sm:text-lg",
 };
 const radiusStyle = {
   square: "rounded-xl",
@@ -57,7 +57,8 @@ const CustomButton: React.FC<CustomButtonProps> = ({
       aria-disabled={disabled}
       disabled={disabled}
       className={`font-Pally shadow-[2px_2px_0px_rgba(0,0,250,0.4)] 
-      flex items-center justify-center gap-2 hover-scale
+      flex items-center justify-center gap-1.5 sm:gap-2 hover-scale
+      min-h-[44px] touch-manipulation
       ${variantStyles[variant]} ${sizeStyles[size]} ${radiusStyle[radius]} ${
         fullWidth ? "w-full" : "w-auto"
       } ${disabled ? "opacity-50 cursor-not-allowed pointer-events-none" : ""} ${className}`}
@@ -69,17 +70,17 @@ const CustomButton: React.FC<CustomButtonProps> = ({
           height={40}
           src={img}
           alt="Arrow"
-          className={imageClassName || "w-10 h-10"}
+          className={imageClassName || "w-8 h-8 sm:w-10 sm:h-10"}
         />
       )}
-      {label}
+      <span className="whitespace-nowrap">{label}</span>
       {arrow && (
         <Image
           width={40}
           height={40}
           src={arrow}
           alt="Arrow"
-          className="w-5 h-5 "
+          className="w-4 h-4 sm:w-5 sm:h-5"
         />
       )}
     </Button>

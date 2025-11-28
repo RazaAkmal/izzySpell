@@ -57,8 +57,8 @@ export default function LetterTile({ letter, id, isUsed, onTileUsed, className =
       ref={drag as any}
       className={`
         ${className}
-        ${isUsed || disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-move hover:scale-105'}
-        ${isDragging ? 'opacity-50' : ''}
+        ${isUsed || disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-move hover:scale-105 active:scale-95'}
+        ${isDragging ? 'opacity-50 scale-110' : ''}
         ${isShaking ? 'animate-wiggle' : ''}
         ${getResponsiveWidth()}
         h-16 md:h-20 
@@ -70,12 +70,14 @@ export default function LetterTile({ letter, id, isUsed, onTileUsed, className =
         shadow-lg 
         transition-all duration-200
         select-none
-        touch-manipulation
+        touch-none
         px-2
       `}
       style={{
         minWidth: '44px', // Accessibility: minimum touch target
         minHeight: '44px',
+        WebkitUserSelect: 'none',
+        WebkitTouchCallout: 'none',
       }}
     >
       {letter}

@@ -362,8 +362,8 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
 
   return (
     <>
-      <div className="flex flex-col gap-6 sm:gap-8 justify-center px-2 sm:px-4">
-        <div className="flex gap-1 sm:gap-2 justify-center">
+      <div className="flex flex-col gap-4 sm:gap-6 md:gap-8 justify-center px-2 sm:px-4">
+        <div className="flex flex-wrap gap-2 justify-center">
           <CustomButton
             size="small"
             label="Study"
@@ -391,19 +391,19 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         </div>
 
         {/* Modal Title */}
-        <div className="flex justify-center items-center w-full">
+        <div className="flex justify-center items-center w-full px-2">
           <Image
             src="/images/titles/ChooseModeTitle.svg"
             alt="Choose a Mode to Practice Your Word List"
             width={400}
             height={30}
-            className="mx-auto w-full max-w-md"
+            className="mx-auto w-full max-w-[90%] sm:max-w-md h-auto"
             priority
           />
         </div>
 
         {/* Mode Options */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8 lg:gap-10 mb-10 mx-auto max-w-[1200px] justify-items-center">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-10 mx-auto max-w-[1200px] justify-items-center w-full">
           {modesConfig.map((mode) => (
             <ModeCard
               key={mode.id}
@@ -422,21 +422,21 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
           ))}
         </div>
         {/* Button Container - Fixed height and consistent layout */}
-        <div className="h-[120px] sm:h-[80px] mb-6 w-full">
+        <div className="min-h-[100px] sm:min-h-[80px] mb-4 sm:mb-6 w-full">
           {/* Center container for buttons */}
           <div className="flex justify-center w-full">
             {/* Fixed-width container to maintain consistent layout */}
-            <div className="flex flex-col sm:flex-row justify-center items-stretch gap-4 w-full max-w-[700px] px-4">
+            <div className="flex flex-col sm:flex-row justify-center items-stretch gap-3 sm:gap-4 w-full max-w-[700px] px-2 sm:px-4">
               {selectedMode === "RecentAttempts" ? (
-                <div className="w-full flex justify-center">
+                <div className="w-full flex justify-center px-2">
                   <div className="text-center text-gray-500">
-                    <div className="text-sm">Select a quiz option to continue</div>
+                    <div className="text-xs sm:text-sm">Select a quiz option to continue</div>
                   </div>
                 </div>
               ) : selectedMode === "MistakesPractice" && mistakesCount === 0 ? (
-                <div className="w-full flex justify-center">
+                <div className="w-full flex justify-center px-2">
                   <div className="text-center text-gray-500">
-                    <div className="text-sm">No mistakes to practice. Take a quiz first!</div>
+                    <div className="text-xs sm:text-sm">No mistakes to practice. Take a quiz first!</div>
                   </div>
                 </div>
               ) : selectedTab === "extra" ? (
@@ -465,7 +465,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                       }
                     }}
                     disabled={!selectedMode || (isGeneratingFlashCards && selectedMode === "FlashCards") || (isGeneratingScrambleWords && selectedMode === "ScrambleWords")}
-                    className="w-full sm:w-60 !h-auto flex items-center justify-center"
+                    className="w-full sm:w-auto sm:min-w-[240px] !h-auto flex items-center justify-center"
                   />
                 </div>
               ) : currentModeData?.showContinue ? (
@@ -479,7 +479,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                     onClick={() => navigateTo(selectedMode + `?start=${currentModeData.continueFrom}`)}
                     img="/images/bookIcon.svg"
                     disabled={!selectedMode}
-                    className="w-full sm:w-60 !px-2 !h-auto flex items-center justify-center"
+                    className="w-full sm:w-auto sm:min-w-[200px] !h-auto flex items-center justify-center"
                   />
                   
                   <CustomButton
@@ -492,7 +492,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                     }
                     img="/images/resetIcon.svg"
                     disabled={!selectedMode}
-                    className="w-full sm:w-60 !px-2 !h-auto flex items-center justify-center"
+                    className="w-full sm:w-auto sm:min-w-[200px] !h-auto flex items-center justify-center"
                   />
                 </>
               ) : (
@@ -506,7 +506,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                       selectedMode && navigateTo(selectedMode + "?start=0")
                     }
                     disabled={!selectedMode || (selectedMode === "MistakesPractice" && mistakesCount === 0)}
-                    className="w-full sm:w-60 !px-2 !h-auto flex items-center justify-center"
+                    className="w-full sm:w-auto sm:min-w-[240px] !h-auto flex items-center justify-center"
                   />
                 </div>
               )}

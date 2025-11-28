@@ -82,12 +82,14 @@ export default function DropSlot({
         shadow-lg 
         transition-all duration-300
         select-none
-        touch-manipulation
+        touch-none
         px-2
       `}
       style={{
         minWidth: '44px', // Accessibility: minimum touch target
         minHeight: '44px',
+        WebkitUserSelect: 'none',
+        WebkitTouchCallout: 'none',
       }}
     >
       {letter && (
