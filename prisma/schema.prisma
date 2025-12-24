@@ -112,6 +112,8 @@ model Word {
   studied         Boolean      @default(false) // Field to track if the word is studied
   quizMistakes    QuizMistake[]
 
+  @@index([listId])
+  @@index([listId, studied])
   @@map(name: "words")
 }
 
@@ -123,6 +125,9 @@ model GroupedWord {
   studied    Boolean      @default(false) // Field to track if the grouped word is studied
   spellingList SpellingList @relation(fields: [listId], references: [id], onDelete: Cascade)
 
+  @@index([listId])
+  @@index([listId, studied])
+  @@index([listId, groupName])
   @@map(name: "grouped_words")
 }
 
@@ -135,6 +140,8 @@ model SyllableWord {
   studied      Boolean      @default(false) // Field to track if the syllable word is studied     
   spellingList SpellingList @relation(fields: [listId], references: [id], onDelete: Cascade)
 
+  @@index([listId])
+  @@index([listId, studied])
   @@map(name: "syllable_words")
 }
 
@@ -148,6 +155,7 @@ model FlashCard {
   exampleSentence  String       // Example sentence using the word
   spellingList     SpellingList @relation(fields: [listId], references: [id], onDelete: Cascade)
 
+  @@index([listId])
   @@map(name: "flash_cards")
 }
 
@@ -158,5 +166,6 @@ model ScrambleWord {
   scrambledOptions Json         // Array of 4 scrambled versions
   spellingList     SpellingList @relation(fields: [listId], references: [id], onDelete: Cascade)
 
+  @@index([listId])
   @@map(name: "scramble_words")
 }

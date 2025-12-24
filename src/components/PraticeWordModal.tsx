@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useState, useTransition} from "react";
 import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import CustomButton from "./HeadlessButton";
@@ -45,6 +45,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
 }) => {
   const router = useRouter();
   const { listId } = useParams();
+  const [isPending, startTransition] = useTransition();
   const [selectedTab, setSelectedTab] = React.useState<"study" | "quiz" | "extra">("study");
   const [selectedMode, setSelectedMode] = React.useState<ModeType>("DefualtModePratice");
   const [recentAttempts, setRecentAttempts] = React.useState<QuizAttempt[]>([]);
@@ -261,7 +262,9 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
   const currentModeData = modeData[selectedMode];
 
   const navigateTo = (path: string) => {
-    router.push(`/spellPractice/${listId}/${path}`);
+    startTransition(() => {
+      router.push(`/spellPractice/${listId}/${path}`);
+    });
   };
 
   const handleFlashCardsNavigation = async () => {
@@ -472,18 +475,18 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                 // When two buttons are shown, display them side by side with equal width
                 <>
                   <CustomButton
-                    label="Continue Learning"
+                    label={isPending ? "Loading..." : "Continue Learning"}
                     size="small"
                     variant="success"
                     radius="rounded"
                     onClick={() => navigateTo(selectedMode + `?start=${currentModeData.continueFrom}`)}
                     img="/images/bookIcon.svg"
-                    disabled={!selectedMode}
+                    disabled={!selectedMode || isPending}
                     className="w-full sm:w-auto sm:min-w-[200px] !h-auto flex items-center justify-center"
                   />
                   
                   <CustomButton
-                    label="Begin Again"
+                    label={isPending ? "Loading..." : "Begin Again"}
                     size="small"
                     variant="primary"
                     radius="rounded"
@@ -491,21 +494,21 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                       selectedMode && navigateTo(selectedMode + "?start=0")
                     }
                     img="/images/resetIcon.svg"
-                    disabled={!selectedMode}
+                    disabled={!selectedMode || isPending}
                     className="w-full sm:w-auto sm:min-w-[200px] !h-auto flex items-center justify-center"
                   />
                 </>
               ) : (
                 <div className="w-full flex justify-center">
                   <CustomButton
-                    label={selectedMode === "MistakesPractice" ? "Practice Now" : "Start Learning"}
+                    label={isPending ? "Loading..." : (selectedMode === "MistakesPractice" ? "Practice Now" : "Start Learning")}
                     size="small"
                     variant="primary"
                     radius="rounded"
                     onClick={() =>
                       selectedMode && navigateTo(selectedMode + "?start=0")
                     }
-                    disabled={!selectedMode || (selectedMode === "MistakesPractice" && mistakesCount === 0)}
+                    disabled={!selectedMode || (selectedMode === "MistakesPractice" && mistakesCount === 0) || isPending}
                     className="w-full sm:w-auto sm:min-w-[240px] !h-auto flex items-center justify-center"
                   />
                 </div>
