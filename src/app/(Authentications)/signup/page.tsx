@@ -6,7 +6,7 @@ export default function LoginPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-login-background bg-cover bg-center p-4">
       <div className="bg-lightBlue flex flex-col items-center rounded-3xl shadow-lg p-10 max-w-screen-md w-full z-10">
-        <div className="relative flex items-center h-20 w-72">
+        <div className="relative flex items-center h-20 w-72 overflow-hidden">
           <Image
             src="/images/izzyLogo.svg"
             alt="Logo"
@@ -15,7 +15,7 @@ export default function LoginPage() {
             className="mx-auto"
           />
         </div>
-        <div className="relative flex items-center h-20 w-72">
+        <div className="relative flex items-center h-20 w-72 overflow-hidden">
           <Image
             src="/images/titles/SignupTitle.svg"
             alt="signup title"

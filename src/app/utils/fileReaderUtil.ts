@@ -1,7 +1,6 @@
 'use client'
 import * as XLSX from "xlsx";
 import mammoth from "mammoth";
-import pdfToText from "react-pdftotext";
 
 export const readFileContent = (file: File): Promise<string[]> => {
   return new Promise((resolve, reject) => {
@@ -17,6 +16,7 @@ export const readFileContent = (file: File): Promise<string[]> => {
     } else if (file.type === "application/pdf") {
       reader.onload = async () => {
         try {
+          const { default: pdfToText } = await import("react-pdftotext");
           const text = await pdfToText(file);
           resolve(text.split(/\s+/));
         } catch {

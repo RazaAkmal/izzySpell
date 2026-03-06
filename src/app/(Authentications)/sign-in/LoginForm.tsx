@@ -4,6 +4,7 @@ import React from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import CustomButton from "@/components/HeadlessButton";
 import InputField from "@/components/Input";
+import PasswordToggleButton from "@/components/PasswordToggleButton";
 import Link from "next/link";
 import { loginFormValues } from "@/lib/defination";
 import { authenticate } from "@/app/actions/authenticate";
@@ -22,6 +23,7 @@ const LoginForm = () => {
   });
   const [errorMessage, setErrorMessage] = React.useState("");
   const [isPending, setIsPending] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
 
   const onSubmit: SubmitHandler<loginFormValues> = async (data) => {
     setErrorMessage('')
@@ -53,15 +55,19 @@ const LoginForm = () => {
         requiredValue={true}
         placeholder="User Name"
       />
-      <InputField
-        id="password"
-        register={register}
-        errors={errors}
-        fieldName="password"
-        requiredValue={true}
-        type="password"
-        placeholder="Password"
-      />
+      <div className="relative w-full max-w-md">
+        <InputField
+          id="password"
+          register={register}
+          errors={errors}
+          fieldName="password"
+          requiredValue={true}
+          type={showPassword ? "text" : "password"}
+          placeholder="Password"
+          className="pr-10"
+        />
+        <PasswordToggleButton show={showPassword} onClick={() => setShowPassword((v) => !v)} />
+      </div>
       <div className="w-full max-w-sm text-right text-darkBlue text-sm">
         <Link href="/forgot-password" className="hover:underline">
           Forgot Password?
@@ -69,7 +75,8 @@ const LoginForm = () => {
       </div>
       <div className="w-full max-w-md px-4">
         <CustomButton
-          disabled={isPending || !name || !password}
+          disabled={!name || !password}
+          loading={isPending}
           type="submit"
           label="Log in"
           fullWidth

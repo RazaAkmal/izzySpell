@@ -8,6 +8,60 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || "",
 });
 
+// Part 1: Cheap, fast extraction — filters raw tokens to valid English words
+// and suggests a list name. Uses gpt-4o-mini to minimise cost.
+// Called immediately after file read, before showing the modal.
+export const extractWordsFromContent = async (rawWords: string[]) => {
+  try {
+    const content = rawWords.join(" ");
+
+    const gptResponse = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "You are a spelling list assistant for a children's educational app. Return only valid JSON, no markdown or extra text.",
+        },
+        {
+          role: "user",
+          content: `From the raw tokens below, extract only valid English words. Remove numbers, symbols, punctuation, duplicates, non-English text, and single-character tokens. Suggest a short descriptive list name based on the words.
+
+Return ONLY this JSON structure:
+{
+  "ListName": "<short descriptive name>",
+  "OriginalWords": ["word1", "word2", ...]
+}
+
+Raw tokens: ${content}`,
+        },
+      ],
+      max_tokens: 500,
+      temperature: 0.1,
+    });
+
+    const response = gptResponse.choices[0]?.message?.content;
+    if (!response) throw new Error("No response from OpenAI");
+
+    // Strip markdown code fences if present
+    const cleaned = response.replace(/^```[a-z]*\n?/i, "").replace(/```$/i, "").trim();
+    const data = JSON.parse(cleaned);
+
+    if (!Array.isArray(data.OriginalWords) || !data.ListName) {
+      throw new Error("Invalid response structure from AI");
+    }
+
+    return { success: true, data: { ListName: data.ListName as string, OriginalWords: data.OriginalWords as string[] } };
+  } catch (error) {
+    console.error("Word extraction error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Error extracting words",
+    };
+  }
+};
+
+// Part 2: Full processing — generates SyllableWords, GroupedWords, SightWords.
+// Only called after the user reviews and clicks "Save & Start Learning".
 export const processFileWithAI = async (content: any) => {
   try {
     // Read the system prompt from the file

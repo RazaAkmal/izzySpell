@@ -28,10 +28,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = async ({
     <div className="bg-dashboard-background bg-cover bg-center min-h-screen flex flex-col">
       {/* TopBar */}
       <div className="mx-4 md:mx-8 lg:mx-16">
-        <header className="bg-skyBlue m-2 md:m-6 px-8 md:px-4 rounded-2xl shadow-md">
-          <div className="flex flex-row md:flex-row justify-between items-center">
-              <Link href="/dashboard">
-            <div className="relative flex items-center h-20 w-52">
+        <header className="bg-skyBlue m-2 md:m-6 px-4 md:px-6 rounded-2xl shadow-md">
+          <div className="flex flex-row justify-between items-center h-16 md:h-20">
+            <Link href="/dashboard">
+              <div className="relative flex items-center h-full w-32 md:w-48 overflow-hidden">
                 <Image
                   src="/images/izzyLogo.svg"
                   alt="Logo"
@@ -39,25 +39,25 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = async ({
                   height={40}
                   className="mx-auto hover-scale !shadow-none"
                 />
-            </div>
-              </Link>
+              </div>
+            </Link>
 
             {/* Profile of user */}
-            <div className="flex flex-row items-center gap-2">
+            <div className="flex flex-row items-center gap-2 md:gap-3 flex-shrink-0">
               <div
                 className={`${
                   !userData?.profileImage ? "bg-orange" : ""
-                } w-16 h-16 rounded-full p-1 md:p-2 lg:p-2 flex items-center justify-center overflow-hidden`}
+                } w-10 h-10 md:w-14 md:h-14 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0`}
               >
                 <Image
                   src={userData?.profileImage || "/images/Profile.svg"}
                   alt="User avatar"
-                  width={36}
-                  height={36}
-                  className="w-full h-full  rounded-full"
+                  width={56}
+                  height={56}
+                  className="w-full h-full rounded-full object-cover"
                 />
               </div>
-              <div className="font-bold text-darkBlue text-lg md:text-2xl">
+              <div className="font-bold text-darkBlue text-sm md:text-xl hidden sm:block truncate max-w-[100px] md:max-w-none">
                 {user?.name}
               </div>
               <UserMenu userId={user?.id} />

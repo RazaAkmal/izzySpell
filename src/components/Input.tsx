@@ -16,6 +16,7 @@ type Props = {
   rules? : any
 };
 export default function InputField({
+  id,
   title,
   description,
   placeholder,
@@ -39,10 +40,11 @@ export default function InputField({
           </Description>
         )}
         <Input
+          id={id}
           placeholder={placeholder}
           type={type}
           className={clsx(
-            "w-full px-4 py-2 border border-inputText rounded-xl text-inputText",
+            "block w-full cursor-text px-4 py-2 border border-inputText rounded-xl text-inputText",
             "data-[focus]:outline-2 data-[focus]:outline-offset-2 data-[focus]:outline-inputText ",
             className
           )}

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import SuccessSignUpModal from "./SuccessSignUpModal";
+import PasswordToggleButton from "@/components/PasswordToggleButton";
 
 const SignupForm = () => {
   const {
@@ -20,6 +21,8 @@ const SignupForm = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successModal, setSuccessModal] = useState<boolean>(false);
   const [data, setData] = useState<{ name: string } | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const submitForm = async (data: SignupFormValues) => {
     setLoading(true);
@@ -84,34 +87,43 @@ const SignupForm = () => {
           },
         }}
       />
-      <InputField
-        id="password"
-        register={register}
-        errors={errors}
-        fieldName="password"
-        type="password"
-        requiredValue={true}
-        placeholder="Password"
-        rules={{
-          minLength: {
-            value: 6,
-            message: "Password must be at least 6 characters",
-          },
-        }}
-      />
-      <InputField
-        id="confirmPassword"
-        register={register}
-        errors={errors}
-        fieldName="confirmPassword"
-        type="password"
-        requiredValue={true}
-        placeholder="Confirm Password"
-        rules={{
-          validate: (value: any) =>
-            value === password || "Passwords do not match",
-        }}
-      />
+      <div className="relative w-full max-w-md">
+        <InputField
+          id="password"
+          register={register}
+          errors={errors}
+          fieldName="password"
+          type={showPassword ? "text" : "password"}
+          requiredValue={true}
+          placeholder="Password"
+          className="pr-10"
+          rules={{
+            minLength: {
+              value: 6,
+              message: "Password must be at least 6 characters",
+            },
+          }}
+        />
+        <PasswordToggleButton show={showPassword} onClick={() => setShowPassword((v) => !v)} />
+      </div>
+
+      <div className="relative w-full max-w-md">
+        <InputField
+          id="confirmPassword"
+          register={register}
+          errors={errors}
+          fieldName="confirmPassword"
+          type={showConfirmPassword ? "text" : "password"}
+          requiredValue={true}
+          placeholder="Confirm Password"
+          className="pr-10"
+          rules={{
+            validate: (value: any) =>
+              value === password || "Passwords do not match",
+          }}
+        />
+        <PasswordToggleButton show={showConfirmPassword} onClick={() => setShowConfirmPassword((v) => !v)} />
+      </div>
       {errorMessage && <p className="text-red-500 mt-2">{errorMessage}</p>}
       <div className="w-full max-w-md px-4">
         <CustomButton

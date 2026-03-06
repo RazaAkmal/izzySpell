@@ -26,27 +26,37 @@ const UserMenu = ({ userId }: { userId: string | undefined }) => {
   
   return (
     <Menu as="div" className="relative">
-      <MenuButton className="focus:outline-none">
+      <MenuButton className="focus:outline-none w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/40 transition-colors">
         <Image
           src="/images/DropDown.svg"
           alt="Dropdown Button"
-          width={30}
-          height={30}
-          className="cursor-pointer mt-2"
+          width={22}
+          height={22}
+          className="cursor-pointer"
         />
       </MenuButton>
-      <MenuItems className="absolute right-0 w-28 min-w-fit mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-        <MenuItem>
-          <button
-            onClick={handleNavigateToProfile}
-            className="block px-4 py-1 w-full text-left text-gray-700 hover:bg-gray-100 hover:text-black"
-          >
-            My Profile
-          </button>
-        </MenuItem>
-        <MenuItem>
-          <SignOut />
-        </MenuItem>
+      <MenuItems className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-2xl border border-[#D5EDFF] z-50 overflow-hidden focus:outline-none">
+        {/* Colorful accent strip */}
+        <div className="h-1 bg-gradient-to-r from-[#4793FE] to-[#956CFC]" />
+        <div className="p-2">
+          <MenuItem>
+            {({ focus }) => (
+              <button
+                onClick={handleNavigateToProfile}
+                className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl text-left font-bold text-[#426096] transition-colors ${focus ? "bg-[#D5EDFF] text-[#4793FE]" : ""}`}
+              >
+                <span className="w-8 h-8 rounded-full bg-[#ECF4FF] flex items-center justify-center text-base flex-shrink-0">👤</span>
+                <span className="text-sm">My Profile</span>
+              </button>
+            )}
+          </MenuItem>
+          <div className="mx-3 my-1 border-t border-[#ECF4FF]" />
+          <MenuItem>
+            {({ focus }) => (
+              <SignOut focusStyle={focus} />
+            )}
+          </MenuItem>
+        </div>
       </MenuItems>
     </Menu>
   );

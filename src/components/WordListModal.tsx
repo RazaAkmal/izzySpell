@@ -4,40 +4,41 @@ import { Button } from "@headlessui/react";
 import CustomButton from "./HeadlessButton";
 import { SpellingListItem } from "@/lib/defination";
 import { debounce } from "lodash";
-import { processFileWithAI } from "@/app/actions/AiService";
 import ConfirmationModal from "./ConfirmationModal";
 
 interface ModalProps {
   isOpen: boolean;
-  aiResponse: {
-    OriginalWords: string[];
-  };
+  words: string[];
+  suggestedListName?: string;
   onClose: () => void;
-  userId?: string;
+  onSave: (words: string[], listName: string) => void;
   spellingLists: SpellingListItem[];
-  refreshSpellingLists: () => Promise<void>; 
 }
 
 const Modal: React.FC<ModalProps> = ({
   isOpen,
-  aiResponse,
+  words,
+  suggestedListName,
   onClose,
-  userId,
+  onSave,
   spellingLists,
-  refreshSpellingLists,
 }) => {
-  const [listName, setListName] = useState<string>("");
+  const [listName, setListName] = useState<string>(suggestedListName ?? "");
   const [isInvalid, setIsInvalid] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [spellList, setSpellList] = useState<{ id: number; word: string }[]>(
-    []
-  );
+  const [spellList, setSpellList] = useState<{ id: number; word: string }[]>([]);
   const [editingSpellId, setEditingSpellId] = useState<number | null>(null);
   const [editedWord, setEditedWord] = useState<string>("");
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showErrorModal, setShowErrorModal] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    if (words) {
+      setSpellList(words.map((word, index) => ({ id: index + 1, word })));
+    }
+  }, [words]);
+
+  useEffect(() => {
+    if (suggestedListName) setListName(suggestedListName);
+  }, [suggestedListName]);
 
   const handleClose = () => {
     setShowConfirmation(true);
@@ -45,124 +46,45 @@ const Modal: React.FC<ModalProps> = ({
 
   const handleConfirmClose = () => {
     setShowConfirmation(false);
+    setListName("");
+    setSpellList([]);
     onClose();
   };
 
-  useEffect(() => {
-    if (aiResponse?.OriginalWords) {
-      setSpellList(
-        aiResponse.OriginalWords.map((word, index) => ({ id: index + 1, word }))
-      );
-    }
-  }, [aiResponse]);
-
   const handleSaveEdit = (id: number) => {
     if (!editedWord.trim()) {
-      alert("Spell cannot be empty!");
+      alert("Word cannot be empty!");
       return;
     }
-    setSpellList((prevList) =>
-      prevList.map((spell) =>
-        spell.id === id ? { ...spell, word: editedWord } : spell
-      )
+    setSpellList((prev) =>
+      prev.map((spell) => (spell.id === id ? { ...spell, word: editedWord } : spell))
     );
-
     setEditingSpellId(null);
     setEditedWord("");
   };
 
-  const saveWordsList = async (finalAiResponse: any) => {
-    try {
-      const response = await fetch("/api/save-words", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          listName,
-          words: spellList.map((spell) => spell.word),
-          extractedWords: finalAiResponse,
-          userId: userId,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save the list");
-      }
-
-      // Re-fetch the spelling lists after saving
-      await refreshSpellingLists();
-
-      setListName("");
-      setShowSuccessModal(true);
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Error saving the list:", error);
-      setErrorMessage("An error occurred while saving the list. Please try again.");
-      setShowErrorModal(true);
-    }
-  };
-
-  const handleSave = async () => {
+  const handleSave = () => {
     if (spellList.some((spell) => !spell.word.trim()) || !listName.trim()) {
-      alert(
-        "Please ensure all spells are valid and the list name is provided."
-      );
+      alert("Please ensure all words are valid and the list name is provided.");
       return;
     }
-    const normalizedOriginalWords = [...(aiResponse?.OriginalWords || [])]
-    .map((word) => word.trim().toLowerCase())
-    .sort();
-  const normalizedSpellList = [...spellList]
-    .map((spell) => spell.word.trim().toLowerCase())
-    .sort();
-
-  const isEdited = !normalizedOriginalWords.every(
-    (word, index) => word === normalizedSpellList[index]
-  );
-    const spellContent = spellList.map((spell) => spell.word)
-    const content = spellContent.join(", "); // Join elements with a comma and a space
-    setLoading(true)
-    try {
-      if (isEdited) {
-        const response = await processFileWithAI(content);
-        if (!response.success) {
-          alert(`${response.error}`);
-          return
-        }
-        saveWordsList(response.data);
-        return;
-      } else {
-        saveWordsList(aiResponse)
-      }
-    } catch (error) {
-      setLoading(false)
-      console.error("Error saving the list:", error);
-      alert("An unexpected error occurred while processing the file. Please try again.");
-    }
+    onSave(spellList.map((spell) => spell.word), listName);
   };
 
-  //for validation
-  const debouncedValidation = useMemo(() => 
+  const debouncedValidation = useMemo(() =>
     debounce((inputName: string) => {
-      if (
+      setIsInvalid(
         spellingLists.some(
           (list) => list.listName.toLowerCase() === inputName.toLowerCase()
         )
-      ) {
-        setIsInvalid(true);
-      } else {
-        setIsInvalid(false);
-      }
+      );
     }, 300),
-    [spellingLists, setIsInvalid] // Include all dependencies
+    [spellingLists]
   );
-  
+
   const handleListNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputName = e.target.value;
-    setListName(inputName);
-    debouncedValidation(inputName); // Call the debounced validation function
+    setListName(e.target.value);
+    debouncedValidation(e.target.value);
   };
 
   if (!isOpen) return null;
@@ -193,7 +115,7 @@ const Modal: React.FC<ModalProps> = ({
             className="w-96 mx-auto"
           />
 
-          {/* Input Field */}
+          {/* List Name Input */}
           <input
             type="text"
             placeholder="Enter the list name here..."
@@ -201,20 +123,16 @@ const Modal: React.FC<ModalProps> = ({
             value={listName}
             className={`w-3/4 mx-auto bg-sky-100 rounded-lg border ${
               isInvalid ? "border-red-500 border-2" : "border-[#7898D2]"
-            } text-[#4A6FA5] text-lg placeholder-[#A0B6D8] px-4 py-3 mt-4 focus:outline-none 
-              
-            }`}
+            } text-[#4A6FA5] text-lg placeholder-[#A0B6D8] px-4 py-3 mt-4 focus:outline-none`}
           />
           {isInvalid && (
             <p className="text-red-500 text-sm mt-1 text-center">
-              A list with this name already exists. Please enter unique name.
+              A list with this name already exists. Please enter a unique name.
             </p>
           )}
+
           <div className="text-center text-base mt-2">
-            <p>
-              Please review your list carefully, edit if needed, and then save
-              it.
-            </p>
+            <p>Please review your list carefully, edit if needed, and then save it.</p>
           </div>
 
           <div className="m-3 rounded-md">
@@ -237,9 +155,7 @@ const Modal: React.FC<ModalProps> = ({
                       className="text-gray-700 font-semibold w-[80%] border-b-2 bg-transparent border-gray-200 p-1 focus:outline-none focus:border-blue-500"
                     />
                   ) : (
-                    <span className="text-gray-700 font-semibold">
-                      {spell.word}
-                    </span>
+                    <span className="text-gray-700 font-semibold">{spell.word}</span>
                   )}
                   <span
                     className="cursor-pointer ml-auto"
@@ -253,11 +169,7 @@ const Modal: React.FC<ModalProps> = ({
                     }}
                   >
                     <Image
-                      src={
-                        editingSpellId === spell.id
-                          ? "/images/check-icon.png"
-                          : "/images/Pencilicon.svg"
-                      }
+                      src={editingSpellId === spell.id ? "/images/check-icon.png" : "/images/Pencilicon.svg"}
                       alt="Edit Icon"
                       width={30}
                       height={30}
@@ -268,13 +180,14 @@ const Modal: React.FC<ModalProps> = ({
               ))}
             </div>
           </div>
+
           <div className="flex justify-center mt-4">
             <CustomButton
               label="Save & Start Learning"
               fullWidth={false}
               onClick={handleSave}
               size="large"
-              disabled={isInvalid || loading}
+              disabled={isInvalid || !listName.trim()}
             />
           </div>
         </div>
@@ -285,31 +198,7 @@ const Modal: React.FC<ModalProps> = ({
         onClose={() => setShowConfirmation(false)}
         onConfirm={handleConfirmClose}
         title="Close Confirmation"
-        message="Are you sure you want to close? All processed words will be lost."
-      />
-
-      <ConfirmationModal
-        isOpen={showSuccessModal}
-        onClose={() => {
-          setShowSuccessModal(false);
-          onClose();
-        }}
-        onConfirm={() => {
-          setShowSuccessModal(false);
-          onClose();
-        }}
-        title="Success!"
-        message="Your list has been saved successfully!"
-        showCancelButton={false}
-      />
-
-      <ConfirmationModal
-        isOpen={showErrorModal}
-        onClose={() => setShowErrorModal(false)}
-        onConfirm={() => setShowErrorModal(false)}
-        title="Error"
-        message={errorMessage}
-        showCancelButton={false}
+        message="Are you sure you want to close? Your extracted words will be lost."
       />
     </div>
   );

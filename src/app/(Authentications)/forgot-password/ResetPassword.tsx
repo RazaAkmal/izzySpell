@@ -3,8 +3,9 @@ import CustomButton from "@/components/HeadlessButton";
 import InputField from "@/components/Input";
 import { SignupFormValues } from "@/lib/defination";
 import { useRouter } from "next/navigation";
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
+import PasswordToggleButton from "@/components/PasswordToggleButton";
 
 const ResetPassword = () => {
   const {
@@ -13,6 +14,8 @@ const ResetPassword = () => {
     formState: { errors },
   } = useForm<SignupFormValues>();
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const submitForm = async (data: SignupFormValues) => {
     try {
@@ -48,24 +51,32 @@ const ResetPassword = () => {
         requiredValue={true}
         placeholder="User Name"
       />
-      <InputField
-        id="password"
-        register={register}
-        errors={errors}
-        fieldName="password"
-        type="password"
-        requiredValue={true}
-        placeholder="Password"
-      />
-      <InputField
-        id="confirmPassword"
-        register={register}
-        errors={errors}
-        fieldName="confirmPassword"
-        type="password"
-        requiredValue={true}
-        placeholder="Confirm Password"
-      />
+      <div className="relative w-full max-w-md">
+        <InputField
+          id="password"
+          register={register}
+          errors={errors}
+          fieldName="password"
+          type={showPassword ? "text" : "password"}
+          requiredValue={true}
+          placeholder="Password"
+          className="pr-10"
+        />
+        <PasswordToggleButton show={showPassword} onClick={() => setShowPassword((v) => !v)} />
+      </div>
+      <div className="relative w-full max-w-md">
+        <InputField
+          id="confirmPassword"
+          register={register}
+          errors={errors}
+          fieldName="confirmPassword"
+          type={showConfirmPassword ? "text" : "password"}
+          requiredValue={true}
+          placeholder="Confirm Password"
+          className="pr-10"
+        />
+        <PasswordToggleButton show={showConfirmPassword} onClick={() => setShowConfirmPassword((v) => !v)} />
+      </div>
       <div className="w-full max-w-md px-4">
         <CustomButton type="submit" label="Reset Password" fullWidth />
       </div>

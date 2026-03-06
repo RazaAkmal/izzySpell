@@ -32,6 +32,7 @@ interface CustomButtonProps
   radius?: keyof typeof radiusStyle;
   fullWidth?: boolean;
   disabled?: boolean;
+  loading?: boolean;
   arrow?: string;
   img?: string;
   imageClassName?: string;
@@ -46,6 +47,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({
   className = "",
   onClick,
   disabled = false,
+  loading = false,
   arrow,
   img,
   imageClassName,
@@ -53,35 +55,50 @@ const CustomButton: React.FC<CustomButtonProps> = ({
 }) => {
   return (
     <Button
-      onClick={disabled ? undefined : onClick}
-      aria-disabled={disabled}
-      disabled={disabled}
-      className={`font-Pally shadow-[2px_2px_0px_rgba(0,0,250,0.4)] 
+      onClick={disabled || loading ? undefined : onClick}
+      aria-disabled={disabled || loading}
+      disabled={disabled || loading}
+      className={`font-Pally shadow-[2px_2px_0px_rgba(0,0,250,0.4)]
       flex items-center justify-center gap-1.5 sm:gap-2 hover-scale
       min-h-[44px] touch-manipulation
       ${variantStyles[variant]} ${sizeStyles[size]} ${radiusStyle[radius]} ${
         fullWidth ? "w-full" : "w-auto"
-      } ${disabled ? "opacity-50 cursor-not-allowed pointer-events-none" : ""} ${className}`}
+      } ${disabled && !loading ? "opacity-50 cursor-not-allowed pointer-events-none" : ""} ${loading ? "pointer-events-none" : ""} ${className}`}
       {...props}
     >
-      {img && (
-        <Image
-          width={40}
-          height={40}
-          src={img}
-          alt="Arrow"
-          className={imageClassName || "w-8 h-8 sm:w-10 sm:h-10"}
-        />
-      )}
-      <span className="whitespace-nowrap">{label}</span>
-      {arrow && (
-        <Image
-          width={40}
-          height={40}
-          src={arrow}
-          alt="Arrow"
-          className="w-4 h-4 sm:w-5 sm:h-5"
-        />
+      {loading ? (
+        <svg
+          className="animate-spin h-5 w-5 text-white"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+      ) : (
+        <>
+          {img && (
+            <Image
+              width={40}
+              height={40}
+              src={img}
+              alt="Arrow"
+              className={imageClassName || "w-8 h-8 sm:w-10 sm:h-10"}
+            />
+          )}
+          <span className="whitespace-nowrap">{label}</span>
+          {arrow && (
+            <Image
+              width={40}
+              height={40}
+              src={arrow}
+              alt="Arrow"
+              className="w-4 h-4 sm:w-5 sm:h-5"
+            />
+          )}
+        </>
       )}
     </Button>
   );

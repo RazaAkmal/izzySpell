@@ -1,6 +1,6 @@
 import { handleSignOut } from "@/app/actions/handleSignout";
 
-export function SignOut() {
+export function SignOut({ focusStyle }: { focusStyle?: boolean }) {
   return (
     <form
       action={async () => {
@@ -9,9 +9,10 @@ export function SignOut() {
     >
       <button
         type="submit"
-        className="block px-4 py-1 w-full text-left text-gray-700 hover:bg-gray-100 hover:text-black"
+        className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl text-left font-bold transition-colors ${focusStyle ? "bg-red-50 text-red-500" : "text-red-400 hover:bg-red-50 hover:text-red-500"}`}
       >
-        Sign Out
+        <span className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-base flex-shrink-0">🚪</span>
+        <span className="text-sm">Sign Out</span>
       </button>
     </form>
   );

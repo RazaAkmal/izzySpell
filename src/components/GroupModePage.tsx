@@ -236,8 +236,8 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
   }, [currentGroupName, currentGroup, validationStates, currentPage, validGroups.length, handlePageChange]);
 
   return (
-    <div className="bg-skyBlue h-[75vh] m-7 mt-1 p-6 rounded-lg shadow-lg">
-      <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4 sm:gap-0 items-center">
+    <div className="bg-skyBlue h-[75vh] m-7 mt-1 p-6 rounded-lg shadow-lg flex flex-col overflow-hidden">
+      <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4 sm:gap-0 items-center flex-shrink-0">
         <div className="order-2 sm:order-1 flex justify-start">
           <CustomButton
             label={`List name: ${listName}`}
@@ -269,7 +269,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
       </div>
 
       {/* Pagination */}
-      <div className="mt-6">
+      <div className="mt-6 flex-shrink-0">
         <CustomPagination
           currentPage={currentPage}
           totalPages={validGroups.length}
@@ -278,11 +278,11 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
         />
       </div>
 
-      <p className="text-xl text-darkBlue mb-6 text-center mt-7">
+      <p className="text-xl text-darkBlue mb-4 text-center mt-4 flex-shrink-0">
         Tap the speaker to hear the word, then type it below.
       </p>
 
-      <div className="space-y-6 text-darkBlue">
+      <div className="flex-1 overflow-y-auto space-y-6 text-darkBlue pr-1">
         {/* Render current group of words */}
         {currentGroup.map((word, rowIndex) => (
           <div
