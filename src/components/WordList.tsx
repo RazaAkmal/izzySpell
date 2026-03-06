@@ -4,8 +4,8 @@ import CustomButton from "./HeadlessButton";
 import Image from "next/image";
 import ToggleButton from "./CustomToggleButton";
 import { Textarea } from "@headlessui/react";
-import Modal from "@/components/WordListModal"; 
-import Progress from "./Progress"; 
+import Modal from "@/components/WordListModal";
+import Progress from "./Progress";
 import { processFileWithAI } from "@/app/actions/AiService";
 import { SpellingListItem, responseSchema } from "@/lib/defination";
 import ConfirmationModal from "@/components/ConfirmationModal";
@@ -14,9 +14,9 @@ import { z } from "zod";
 // Define type for AI response based on the zod schema
 type AIResponse = z.infer<typeof responseSchema>;
 
-const WordList = ({ spellingLists, user, refreshSpellingLists }: { 
-  spellingLists: SpellingListItem[], 
-  user: any,   
+const WordList = ({ spellingLists, user, refreshSpellingLists }: {
+  spellingLists: SpellingListItem[],
+  user: any,
   refreshSpellingLists: () => Promise<void>;
 }) => {
   const [isTextAreaMode, setIsTextAreaMode] = useState(false);
@@ -41,6 +41,28 @@ const WordList = ({ spellingLists, user, refreshSpellingLists }: {
     const updatedFields = [...inputField];
     updatedFields[index] = value;
     setInputField(updatedFields);
+  };
+
+  const handleModalSave = async (words: string[], listName: string) => {
+    if (!aiResponse) return;
+    try {
+      const saveResponse = await fetch("/api/save-words", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          listName,
+          words,
+          extractedWords: aiResponse,
+          userId: user.id,
+        }),
+      });
+      if (!saveResponse.ok) throw new Error("Failed to save the list");
+      await refreshSpellingLists();
+      setInputField(["", "", ""]);
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Save error:", error);
+    }
   };
 
   // Save data to API and handle modal
@@ -250,15 +272,15 @@ const WordList = ({ spellingLists, user, refreshSpellingLists }: {
       {/* Existing Modal */}
       {aiResponse && (
         <Modal
-          refreshSpellingLists={refreshSpellingLists}
-          spellingLists={spellingLists}
-          aiResponse={aiResponse}
           isOpen={isModalOpen}
+          words={aiResponse.OriginalWords}
+          suggestedListName={aiResponse.ListName}
+          onSave={handleModalSave}
           onClose={() => {
             setInputField(["", "", ""]);
             setIsModalOpen(false);
           }}
-          userId={user.id}
+          spellingLists={spellingLists}
         />
       )}
     </div>
