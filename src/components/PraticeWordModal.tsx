@@ -31,7 +31,9 @@ interface PracticeWordModalProps {
   studiedGroupCount: number;
   totalStudiedGroups: number;
   totalGroups: number;
-  words: string[]; // Array of word strings for flash card generation
+  words: string[];
+  initialRecentAttempts: QuizAttempt[];
+  initialMistakesCount: number;
 }
 
 const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
@@ -41,23 +43,36 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
   studiedGroupCount,
   totalGroups,
   totalStudiedGroups,
-  words
+  words,
+  initialRecentAttempts,
+  initialMistakesCount,
 }) => {
   const router = useRouter();
   const { listId } = useParams();
   const [isPending, startTransition] = useTransition();
   const [selectedTab, setSelectedTab] = React.useState<"study" | "quiz" | "extra">("study");
   const [selectedMode, setSelectedMode] = React.useState<ModeType>("DefualtModePratice");
-  const [recentAttempts, setRecentAttempts] = React.useState<QuizAttempt[]>([]);
-  const [mistakesCount, setMistakesCount] = React.useState(0);
+  const [recentAttempts, setRecentAttempts] = React.useState<QuizAttempt[]>(initialRecentAttempts);
+  const [mistakesCount, setMistakesCount] = React.useState(initialMistakesCount);
+  const [isLoadingQuizData, setIsLoadingQuizData] = React.useState(false);
+  // Track whether we've already shown the pre-fetched data so we don't
+  // re-fetch (and show a loading spinner) on the very first quiz tab click
+  const hasShownInitialQuizData = React.useRef(false);
   const [isGeneratingFlashCards, setIsGeneratingFlashCards] = useState(false);
   const [isGeneratingScrambleWords, setIsGeneratingScrambleWords] = useState(false);
   const [flashCardsExist, setFlashCardsExist] = useState<boolean | null>(null); // null = checking, true = exist, false = don't exist
   const [scrambleWordsExist, setScrambleWordsExist] = useState<boolean | null>(null); // null = checking, true = exist, false = don't exist
   
-  // Fetch recent quiz attempts and mistakes count when quiz tab is selected
+  // Fetch recent quiz attempts when quiz tab is selected.
+  // First click: skip (server pre-fetched). Subsequent clicks: refresh silently
+  // in the background — show existing data immediately, update when done.
   useEffect(() => {
     if (selectedTab === "quiz" && listId) {
+      if (!hasShownInitialQuizData.current) {
+        hasShownInitialQuizData.current = true;
+        return;
+      }
+      // No loading spinner — stale-while-revalidate pattern
       getRecentQuizAttempts(parseInt(listId as string, 10))
         .then((data) => {
           setRecentAttempts(data.attempts);
@@ -65,8 +80,6 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         })
         .catch((error: Error) => {
           console.error("Failed to fetch quiz data:", error);
-          setRecentAttempts([]);
-          setMistakesCount(0);
         });
     }
   }, [selectedTab, listId]);
@@ -421,6 +434,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
               isRecentAttempts={mode.isRecentAttempts}
               recentAttempts={mode.recentAttempts}
               isMistakesPractice={mode.isMistakesPractice}
+              isLoading={isLoadingQuizData && (mode.isRecentAttempts || mode.isMistakesPractice)}
             />
           ))}
         </div>
@@ -436,7 +450,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                     <div className="text-xs sm:text-sm">Select a quiz option to continue</div>
                   </div>
                 </div>
-              ) : selectedMode === "MistakesPractice" && mistakesCount === 0 ? (
+              ) : selectedMode === "MistakesPractice" && !isLoadingQuizData && mistakesCount === 0 ? (
                 <div className="w-full flex justify-center px-2">
                   <div className="text-center text-gray-500">
                     <div className="text-xs sm:text-sm">No mistakes to practice. Take a quiz first!</div>
@@ -508,7 +522,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                     onClick={() =>
                       selectedMode && navigateTo(selectedMode + "?start=0")
                     }
-                    disabled={!selectedMode || (selectedMode === "MistakesPractice" && mistakesCount === 0) || isPending}
+                    disabled={!selectedMode || (selectedMode === "MistakesPractice" && (isLoadingQuizData || mistakesCount === 0)) || isPending}
                     className="w-full sm:w-auto sm:min-w-[240px] !h-auto flex items-center justify-center"
                   />
                 </div>

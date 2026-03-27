@@ -1,6 +1,7 @@
 "use server";
 
 import { getWordCountForEachExercise, getWordsByListId } from "@/app/actions/prismaActions";
+import { getRecentQuizAttempts } from "@/app/actions/getRecentQuizAttempts";
 import PracticeWordModal from "@/components/PraticeWordModal";
 import GoToHomeButton from "@/components/GoToHomeButton";
 import CustomButton from "@/components/HeadlessButton";
@@ -10,8 +11,15 @@ export default async function WordsPage({
 }: {
   listId: string;
 }) {
-  const { total, studiedWordCount, studiedSyllableWord, studiedGroupCount, totalGroups } = await getWordCountForEachExercise(parseInt(listId));
-  const { words } = await getWordsByListId(parseInt(listId));
+  // Fetch all data in parallel — quiz data pre-loaded so quiz tab is instant
+  const [exerciseData, wordsData, quizData] = await Promise.all([
+    getWordCountForEachExercise(parseInt(listId)),
+    getWordsByListId(parseInt(listId)),
+    getRecentQuizAttempts(parseInt(listId)).catch(() => ({ attempts: [], uniqueMistakesCount: 0 })),
+  ]);
+
+  const { total, studiedWordCount, studiedSyllableWord, studiedGroupCount, totalGroups } = exerciseData;
+  const { words } = wordsData;
   const wordStrings = words.map(word => word.word);
   const validTotalGroups = totalGroups.filter(group => group._count.word > 1);
   const validStudiedGroups = studiedGroupCount.filter(group => group._count.word > 1);
@@ -34,14 +42,16 @@ export default async function WordsPage({
           />
         </div>
         <div className="w-full lg:flex-1">
-          <PracticeWordModal 
-            totalGroups={totalGroupsCount} 
-            totalStudiedGroups={totalStudiedGroups} 
-            totalWords={total} 
-            studiedCount={studiedWordCount} 
-            studiedSyllableCount={studiedSyllableWord} 
+          <PracticeWordModal
+            totalGroups={totalGroupsCount}
+            totalStudiedGroups={totalStudiedGroups}
+            totalWords={total}
+            studiedCount={studiedWordCount}
+            studiedSyllableCount={studiedSyllableWord}
             studiedGroupCount={Math.round(groupedProgress)}
             words={wordStrings}
+            initialRecentAttempts={quizData.attempts}
+            initialMistakesCount={quizData.uniqueMistakesCount}
           />
         </div>
         <div className="w-full lg:w-auto flex justify-center lg:justify-end">

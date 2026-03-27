@@ -35,6 +35,7 @@ export type ModeCardProps = {
   isRecentAttempts?: boolean;
   recentAttempts?: QuizAttempt[];
   isMistakesPractice?: boolean;
+  isLoading?: boolean;
 };
 
 const ModeCard: React.FC<ModeCardProps> = ({
@@ -49,6 +50,7 @@ const ModeCard: React.FC<ModeCardProps> = ({
   isRecentAttempts = false,
   recentAttempts = [],
   isMistakesPractice = false,
+  isLoading = false,
 }) => {
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-US", {
@@ -71,7 +73,13 @@ const ModeCard: React.FC<ModeCardProps> = ({
           {label}
         </span>
 
-        {recentAttempts.length > 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col gap-2 flex-1">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-gray-100 rounded-lg h-10 animate-pulse" />
+            ))}
+          </div>
+        ) : recentAttempts.length > 0 ? (
           <div className="flex flex-col gap-2 flex-1">
             <div className="text-center text-sm text-gray-600 mb-2">
               {recentAttempts.length} Recent Attempt
@@ -142,7 +150,9 @@ const ModeCard: React.FC<ModeCardProps> = ({
       {/* Bottom section - consistent height whether content exists or not */}
       <div className="h-[40px] flex items-center justify-center">
         {/* For mistake practice, show count badge */}
-        {isMistakesPractice && total > 0 ? (
+        {isMistakesPractice && isLoading ? (
+          <div className="h-7 w-40 bg-gray-200 rounded-full animate-pulse" />
+        ) : isMistakesPractice && total > 0 ? (
           <div className="bg-red-100 text-red-800 text-sm font-semibold px-3 py-1 rounded-full">
             {total} {total === 1 ? 'mistake' : 'mistakes'} to practice
           </div>

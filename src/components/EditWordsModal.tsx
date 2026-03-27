@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+"use client";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import { Button } from "@headlessui/react";
 import CustomButton from "./HeadlessButton";
@@ -6,6 +7,113 @@ import { SpellingListWithWords } from "@/lib/defination";
 import { revalidateRoute } from "@/app/actions/revalidate";
 import { processFileWithAI } from "@/app/actions/AiService";
 import ConfirmationModal from "./ConfirmationModal";
+import DragDropProvider from "./WordBuilder/DragDropProvider";
+import { useDrag, useDrop } from "react-dnd";
+
+const ITEM_TYPE = "EDIT_WORD_ITEM";
+
+// Each item is either an existing DB word (dbId set) or a newly added one (dbId null)
+interface WordItem {
+  dbId: number | null;
+  localId: number;
+  word: string;
+}
+
+interface DraggableWordProps {
+  item: WordItem;
+  index: number;
+  moveWord: (from: number, to: number) => void;
+  isEditing: boolean;
+  editedWord: string;
+  onStartEdit: (localId: number, word: string) => void;
+  onSaveEdit: (localId: number) => void;
+  onEditChange: (word: string) => void;
+  onDelete: (item: WordItem) => void;
+}
+
+const DraggableWord: React.FC<DraggableWordProps> = ({
+  item,
+  index,
+  moveWord,
+  isEditing,
+  editedWord,
+  onStartEdit,
+  onSaveEdit,
+  onEditChange,
+  onDelete,
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
+
+  const [{ isDragging }, drag] = useDrag({
+    type: ITEM_TYPE,
+    item: { index },
+    collect: (monitor) => ({ isDragging: monitor.isDragging() }),
+  });
+
+  const [, drop] = useDrop({
+    accept: ITEM_TYPE,
+    hover: (dragged: { index: number }) => {
+      if (dragged.index !== index) {
+        moveWord(dragged.index, index);
+        dragged.index = index;
+      }
+    },
+  });
+
+  drag(drop(ref));
+
+  return (
+    <div
+      ref={ref}
+      className="flex items-center bg-white rounded-2xl shadow-md p-3 cursor-grab active:cursor-grabbing min-w-0"
+      style={{ opacity: isDragging ? 0.4 : 1 }}
+    >
+      {/* Drag handle */}
+      <svg className="w-4 h-4 text-gray-300 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z" />
+      </svg>
+
+      <span className="text-green bg-green bg-opacity-25 opacity-45 p-1 rounded-full text-center h-8 w-8 border-2 border-green font-bold mr-2 flex-shrink-0 flex items-center justify-center">
+        {index + 1}
+      </span>
+
+      <div className="flex-1 min-w-0 mr-1">
+        {isEditing ? (
+          <input
+            value={editedWord}
+            onChange={(e) => onEditChange(e.target.value)}
+            className="text-gray-700 font-semibold w-full border-b-2 bg-transparent border-gray-200 p-1 focus:outline-none focus:border-blue-500"
+            autoFocus
+          />
+        ) : (
+          <span className="text-gray-700 font-semibold block truncate">{item.word}</span>
+        )}
+      </div>
+
+      <span
+        className="cursor-pointer flex-shrink-0"
+        onClick={() => {
+          if (isEditing) {
+            onSaveEdit(item.localId);
+          } else {
+            onStartEdit(item.localId, item.word);
+          }
+        }}
+      >
+        <Image
+          src={isEditing ? "/images/check-icon.png" : "/images/Pencilicon.svg"}
+          alt="Edit"
+          width={26}
+          height={26}
+        />
+      </span>
+
+      <span className="cursor-pointer ml-1 flex-shrink-0" onClick={() => onDelete(item)}>
+        <Image src="/images/deleteIcon.svg" alt="Delete" width={26} height={26} />
+      </span>
+    </div>
+  );
+};
 
 interface ModalProps {
   isOpen: boolean;
@@ -14,106 +122,117 @@ interface ModalProps {
   userId?: string;
 }
 
-const EditWordModal: React.FC<ModalProps> = ({
-  isOpen,
-  listWithWords,
-  onClose,
-  userId,
-}) => {
+const EditWordModal: React.FC<ModalProps> = ({ isOpen, listWithWords, onClose, userId }) => {
   const [listName, setListName] = useState<string>(listWithWords.listName);
   const [loading, setLoading] = useState<boolean>(false);
-  const [spellList, setSpellList] = useState(listWithWords.words);
-  const [modifiedWords, setModifiedWords] = useState<
-    { id: number; word: string }[]
-  >([]);
-  const [newWords, setNewWords] = useState<string[]>([]);
+  const [wordList, setWordList] = useState<WordItem[]>([]);
+  const [nextLocalId, setNextLocalId] = useState<number>(1);
+  const [editingLocalId, setEditingLocalId] = useState<number | null>(null);
+  const [editedWord, setEditedWord] = useState<string>("");
+
+  // Modals
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [validationModal, setValidationModal] = useState<{ isOpen: boolean; message: string }>({ isOpen: false, message: "" });
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [pendingDeleteWordId, setPendingDeleteWordId] = useState<number | null>(
-    null
-  );
+  const [pendingDeleteItem, setPendingDeleteItem] = useState<WordItem | null>(null);
 
-  const handleWordChange = (id: number, newWord: string) => {
-    setSpellList((prevList) =>
-      prevList.map((spell) =>
-        spell.id === id ? { ...spell, word: newWord } : spell
-      )
-    );
-
-    setModifiedWords((prevModifiedWords) => {
-      const isAlreadyModified = prevModifiedWords.some(
-        (word) => word.id === id
-      );
-      if (isAlreadyModified) {
-        return prevModifiedWords.map((word) =>
-          word.id === id ? { ...word, word: newWord } : word
-        );
-      } else {
-        return [...prevModifiedWords, { id, word: newWord }];
-      }
-    });
-  };
-
-  const handleNewWordChange = (index: number, newWord: string) => {
-    setNewWords((prevNewWords) =>
-      prevNewWords.map((word, i) => (i === index ? newWord : word))
-    );
-  };
-
-  const addNewWordField = () => {
-    setNewWords((prevNewWords) => [...prevNewWords, ""]);
-  };
+  const showValidationError = (message: string) => setValidationModal({ isOpen: true, message });
 
   useEffect(() => {
-    setSpellList(listWithWords.words);
+    const items: WordItem[] = listWithWords.words.map((w) => ({
+      dbId: w.id,
+      localId: w.id,
+      word: w.word,
+    }));
+    setWordList(items);
     setListName(listWithWords.listName);
+    // next local id starts after all existing db ids
+    const maxId = listWithWords.words.reduce((m, w) => Math.max(m, w.id), 0);
+    setNextLocalId(maxId + 1);
   }, [listWithWords]);
 
-  const initiateDelete = (wordId: number) => {
-    setPendingDeleteWordId(wordId);
+  const handleSaveEdit = (localId: number) => {
+    if (!editedWord.trim()) {
+      showValidationError("Word cannot be empty.");
+      return;
+    }
+    const isDuplicate = wordList.some(
+      (w) => w.localId !== localId && w.word.toLowerCase() === editedWord.trim().toLowerCase()
+    );
+    if (isDuplicate) {
+      showValidationError(`"${editedWord.trim()}" is already in the list.`);
+      return;
+    }
+    setWordList((prev) =>
+      prev.map((w) => (w.localId === localId ? { ...w, word: editedWord.trim() } : w))
+    );
+    setEditingLocalId(null);
+    setEditedWord("");
+  };
+
+  const handleAddWord = () => {
+    const newLocalId = nextLocalId;
+    setNextLocalId((prev) => prev + 1);
+    setWordList((prev) => [...prev, { dbId: null, localId: newLocalId, word: "" }]);
+    setEditingLocalId(newLocalId);
+    setEditedWord("");
+  };
+
+  const initiateDelete = (item: WordItem) => {
+    setPendingDeleteItem(item);
     setShowDeleteConfirmation(true);
   };
 
-  const handleDelete = async (wordId: number) => {
-    setLoading(true);
-    try {
-      await fetch(
-        `/api/delete-word?wordId=${wordId}&&listId=${listWithWords.id}`,
-        {
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteItem) return;
+    setShowDeleteConfirmation(false);
+
+    if (pendingDeleteItem.dbId !== null) {
+      // Existing DB word — call delete API
+      setLoading(true);
+      try {
+        await fetch(`/api/delete-word?wordId=${pendingDeleteItem.dbId}&&listId=${listWithWords.id}`, {
           method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      setSpellList(spellList.filter((word) => word.id !== wordId));
+          headers: { "Content-Type": "application/json" },
+        });
+        await revalidateRoute("/lists");
+      } catch {
+        setErrorMessage("Failed to delete the word. Please try again.");
+        setShowErrorModal(true);
+        setLoading(false);
+        setPendingDeleteItem(null);
+        return;
+      }
       setLoading(false);
-      await revalidateRoute("/lists");
-    } catch (error) {
-      setLoading(false);
-      console.error("Error deleting word:", error);
-      setErrorMessage("Failed to delete the word. Please try again.");
-      setShowErrorModal(true);
     }
+
+    setWordList((prev) => prev.filter((w) => w.localId !== pendingDeleteItem.localId));
+    if (editingLocalId === pendingDeleteItem.localId) {
+      setEditingLocalId(null);
+      setEditedWord("");
+    }
+    setPendingDeleteItem(null);
   };
 
-  const handleConfirmDelete = async () => {
-    if (pendingDeleteWordId !== null) {
-      await handleDelete(pendingDeleteWordId);
-      setPendingDeleteWordId(null);
-    }
-    setShowDeleteConfirmation(false);
-  };
+  const moveWord = useCallback((fromIndex: number, toIndex: number) => {
+    setWordList((prev) => {
+      const updated = [...prev];
+      const [removed] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, removed);
+      return updated;
+    });
+  }, []);
 
   const initiateClose = () => {
+    const originalWords = listWithWords.words.map((w) => w.word);
+    const currentWords = wordList.map((w) => w.word);
     const hasChanges =
-      modifiedWords.length > 0 ||
-      newWords.length > 0 ||
-      listName !== listWithWords.listName;
+      listName !== listWithWords.listName ||
+      JSON.stringify(originalWords) !== JSON.stringify(currentWords) ||
+      wordList.length !== listWithWords.words.length;
     if (hasChanges) {
       setShowCloseConfirmation(true);
     } else {
@@ -122,43 +241,40 @@ const EditWordModal: React.FC<ModalProps> = ({
   };
 
   const handleSave = async () => {
-    setLoading(true);
-
-    if (
-      modifiedWords.some((word) => !word.word.trim()) ||
-      !listName.trim() ||
-      newWords.some((word) => !word.trim())
-    ) {
-      setErrorMessage(
-        "Please ensure all words are valid and the list name is provided."
-      );
-      setShowValidationModal(true);
-      setLoading(false);
+    if (!listName.trim()) {
+      showValidationError("Please enter a name for your list.");
+      return;
+    }
+    if (wordList.some((w) => !w.word.trim())) {
+      showValidationError("Please ensure all words are filled in before saving.");
       return;
     }
 
-    const originalWordsString = JSON.stringify(
-      listWithWords.words.map((word) => word.word)
-    );
-    const currentWordsArray = spellList.map((word) => word.word);
-    const mergedWordsArray = [...currentWordsArray, ...newWords];
-    const mergedWordsString = JSON.stringify(mergedWordsArray);
-
-    const hasWordsChanged =
-      originalWordsString !== JSON.stringify(currentWordsArray) ||
-      newWords.length > 0;
-
+    const originalWords = listWithWords.words.map((w) => w.word);
+    const currentWords = wordList.map((w) => w.word);
+    const hasWordsChanged = JSON.stringify(originalWords) !== JSON.stringify(currentWords) || wordList.length !== listWithWords.words.length;
     const hasListNameChanged = listName !== listWithWords.listName;
 
     if (!hasWordsChanged && !hasListNameChanged) {
-      setErrorMessage("There is no change to save");
-      setShowValidationModal(true);
-      setLoading(false);
+      showValidationError("There are no changes to save.");
       return;
     }
 
+    setLoading(true);
+
     try {
-      const requestData = {
+      const modifiedWords = wordList
+        .filter((w) => w.dbId !== null)
+        .filter((w) => {
+          const original = listWithWords.words.find((o) => o.id === w.dbId);
+          return original && original.word !== w.word;
+        })
+        .map((w) => ({ id: w.dbId!, word: w.word }));
+
+      const newWords = wordList.filter((w) => w.dbId === null).map((w) => w.word);
+      const allWords = wordList.map((w) => w.word);
+
+      const requestData: any = {
         userId,
         listId: listWithWords.id,
         listName,
@@ -170,66 +286,52 @@ const EditWordModal: React.FC<ModalProps> = ({
       };
 
       if (hasWordsChanged) {
-        const response = await processFileWithAI(mergedWordsString);
-        
+        const response = await processFileWithAI(allWords.join(", "));
         if (!response.success || !response.data) {
-          setErrorMessage(response.error || 'Failed to process the list');
+          setErrorMessage(response.error || "Failed to process the list.");
           setShowErrorModal(true);
           setLoading(false);
           return;
         }
-
         requestData.extractedWords = response.data;
       }
 
       const response = await fetch("/api/update-words", {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestData),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to save the list");
-      }
+      if (!response.ok) throw new Error("Failed to save the list");
 
       await revalidateRoute("/lists");
-      setModifiedWords([]);
-      setNewWords([]);
       setShowSuccessModal(true);
       setLoading(false);
     } catch (error) {
-      console.error("Error saving the list:", error);
-      setLoading(false);
-      setErrorMessage(
-        "An error occurred while saving the list. Please try again."
-      );
+      console.error("Error saving:", error);
+      setErrorMessage("An error occurred while saving. Please try again.");
       setShowErrorModal(true);
+      setLoading(false);
     }
   };
+
+  const numRows = Math.max(1, Math.ceil(wordList.length / 3));
 
   if (!isOpen) return null;
 
   return (
-    <div>
+    <DragDropProvider>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-lightBlue border-2 border-sky-300 flex flex-col rounded-md shadow-lg p-4 max-w-screen-lg w-full z-10">
           <div className="flex justify-end">
             <Button onClick={initiateClose} className="focus:outline-none">
-              <Image
-                src="/images/Vector.svg"
-                alt="Cancel Button"
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
+              <Image src="/images/Vector.svg" alt="Cancel Button" width={24} height={24} className="w-6 h-6" />
             </Button>
           </div>
 
           <Image
             src="/images/titles/WordListTitle.svg"
-            alt="Add Spelling List"
+            alt="Edit Spelling List"
             width={40}
             height={40}
             className="w-96 mx-auto"
@@ -240,71 +342,51 @@ const EditWordModal: React.FC<ModalProps> = ({
             placeholder="Enter the list name here..."
             onChange={(e) => setListName(e.target.value)}
             value={listName}
-            className="w-3/4 mx-auto bg-sky-100 rounded-lg border border-[#7898D2] text-[#4A6FA5] text-lg placeholder-[#A0B6D8] px-4 py-3 mt-4 focus:outline-none focus:ring-2 focus:ring-[#7898D2]"
+            className="w-3/4 mx-auto bg-sky-100 rounded-lg border border-[#7898D2] text-[#4A6FA5] text-lg placeholder-[#A0B6D8] px-4 py-3 mt-4 focus:outline-none"
           />
+
           <div className="text-center text-base mt-2">
-            <p>
-              Please review your list carefully, edit if needed, and then save
-              it.
-            </p>
+            <p>Please review your list carefully, edit if needed, and then save it.</p>
           </div>
 
-          <div className="m-3 rounded-md ">
-            <h2 className="text-center text-xl font-bold text-purple mb-4">
-              View and Edit Your List
-            </h2>
-            <div className="grid grid-cols-3 gap-3 overflow-auto h-auto max-h-80 p-4">
-              {spellList.map((spell, index) => (
-                <div
-                  key={spell.id}
-                  className="flex items-center gap-3 justify-start bg-white rounded-2xl shadow-md p-3"
-                >
-                  <span className="text-green bg-green bg-opacity-25 opacity-45 p-1 rounded-full text-center  h-8 w-8 border-2 border-green font-bold">
-                    {index + 1}
-                  </span>
-                  <input
-                    value={spell.word}
-                    onChange={(e) =>
-                      handleWordChange(spell.id, e.target.value)
-                    }
-                    className="text-gray-700 font-semibold border-b-2 bg-transparent border-gray-200 p-1 focus:outline-none focus:border-blue-500"
-                  />
-                  <Image
-                    src="/images/deleteIcon.svg"
-                    alt="deleteIcon"
-                    width={30}
-                    height={30}
-                    className="cursor-pointer"
-                    onClick={() => initiateDelete(spell.id)}
-                  />
-                </div>
-              ))}
+          <div className="m-3 rounded-md">
+            <h2 className="text-center text-xl font-bold text-purple mb-4">View and Edit Your List</h2>
 
-              {newWords.map((word, index) => (
-                <div
-                  key={`new-word-${index}`}
-                  className="flex items-center justify-start bg-white rounded-2xl shadow-md p-3"
-                >
-                  <span className="text-gray-500 bg-gray-200 p-1 rounded-full text-center h-8 w-8 font-bold mr-3">
-                    {spellList.length + index + 1}
-                  </span>
-                  <input
-                    value={word}
-                    onChange={(e) =>
-                      handleNewWordChange(index, e.target.value)
-                    }
-                    className="text-gray-700 font-semibold border-b-2 bg-transparent border-gray-200 p-1 focus:outline-none focus:border-blue-500"
-                  />
-                </div>
+            {/* Column-major grid — numbers run down each column */}
+            <div
+              className="grid grid-cols-3 gap-3 overflow-auto max-h-80 p-4"
+              style={{
+                gridAutoFlow: "column",
+                gridTemplateRows: `repeat(${numRows}, auto)`,
+              }}
+            >
+              {wordList.map((item, index) => (
+                <DraggableWord
+                  key={item.localId}
+                  item={item}
+                  index={index}
+                  moveWord={moveWord}
+                  isEditing={editingLocalId === item.localId}
+                  editedWord={editedWord}
+                  onStartEdit={(localId, word) => {
+                    setEditingLocalId(localId);
+                    setEditedWord(word);
+                  }}
+                  onSaveEdit={handleSaveEdit}
+                  onEditChange={setEditedWord}
+                  onDelete={initiateDelete}
+                />
               ))}
             </div>
-            <div className="flex justify-center mt-2">
-              <CustomButton
-                label="Add New Word"
-                fullWidth={false}
-                onClick={addNewWordField}
-                size="small"
-              />
+
+            <div className="flex justify-center mt-3">
+              <button
+                onClick={handleAddWord}
+                className="flex items-center gap-2 text-purple border-2 border-purple rounded-full px-4 py-2 hover:bg-purple hover:text-white transition-colors font-semibold"
+              >
+                <span className="text-xl leading-none">+</span>
+                <span>Add Word</span>
+              </button>
             </div>
           </div>
 
@@ -322,10 +404,7 @@ const EditWordModal: React.FC<ModalProps> = ({
 
       <ConfirmationModal
         isOpen={showDeleteConfirmation}
-        onClose={() => {
-          setShowDeleteConfirmation(false);
-          setPendingDeleteWordId(null);
-        }}
+        onClose={() => { setShowDeleteConfirmation(false); setPendingDeleteItem(null); }}
         onConfirm={handleConfirmDelete}
         title="Delete Word"
         message="Are you sure you want to delete this word?"
@@ -334,35 +413,26 @@ const EditWordModal: React.FC<ModalProps> = ({
       <ConfirmationModal
         isOpen={showCloseConfirmation}
         onClose={() => setShowCloseConfirmation(false)}
-        onConfirm={() => {
-          setShowCloseConfirmation(false);
-          onClose();
-        }}
+        onConfirm={() => { setShowCloseConfirmation(false); onClose(); }}
         title="Unsaved Changes"
         message="You have unsaved changes. Are you sure you want to close?"
       />
 
       <ConfirmationModal
         isOpen={showSuccessModal}
-        onClose={() => {
-          setShowSuccessModal(false);
-          onClose();
-        }}
-        onConfirm={() => {
-          setShowSuccessModal(false);
-          onClose();
-        }}
+        onClose={() => { setShowSuccessModal(false); onClose(); }}
+        onConfirm={() => { setShowSuccessModal(false); onClose(); }}
         title="Success!"
         message="Your changes have been saved successfully!"
         showCancelButton={false}
       />
 
       <ConfirmationModal
-        isOpen={showValidationModal}
-        onClose={() => setShowValidationModal(false)}
-        onConfirm={() => setShowValidationModal(false)}
+        isOpen={validationModal.isOpen}
+        onClose={() => setValidationModal({ isOpen: false, message: "" })}
+        onConfirm={() => setValidationModal({ isOpen: false, message: "" })}
         title="Validation Error"
-        message={errorMessage}
+        message={validationModal.message}
         showCancelButton={false}
       />
 
@@ -374,7 +444,7 @@ const EditWordModal: React.FC<ModalProps> = ({
         message={errorMessage}
         showCancelButton={false}
       />
-    </div>
+    </DragDropProvider>
   );
 };
 

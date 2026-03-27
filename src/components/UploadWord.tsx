@@ -1,5 +1,6 @@
 "use client";
 import React, { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
 import CustomButton from "./HeadlessButton";
 import Image from "next/image";
@@ -18,6 +19,7 @@ function UploadWord({ user, refreshSpellingLists }: {
   user: any;
   refreshSpellingLists: () => Promise<void>;
 }) {
+  const router = useRouter();
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedData, setExtractedData] = useState<{ ListName: string; OriginalWords: string[] } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -112,15 +114,11 @@ function UploadWord({ user, refreshSpellingLists }: {
       setProcessingProgress(100);
       setIsDone(true);
 
-      // Show success for 3s, then fade out before resetting to avoid blink
+      // Show success for 3s, then redirect to /lists
       setTimeout(() => {
         setIsFadingOut(true);
         setTimeout(() => {
-          setIsProcessing(false);
-          setIsDone(false);
-          setIsFadingOut(false);
-          setProcessingProgress(0);
-          setExtractedData(null);
+          router.push("/lists");
         }, 500);
       }, 3000);
 
