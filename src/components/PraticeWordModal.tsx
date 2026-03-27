@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useEffect, useState, useTransition} from "react";
+import React, {useEffect, useRef, useState, useTransition} from "react";
 import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import CustomButton from "./HeadlessButton";
@@ -50,14 +50,14 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
   const router = useRouter();
   const { listId } = useParams();
   const [isPending, startTransition] = useTransition();
-  const [selectedTab, setSelectedTab] = React.useState<"study" | "quiz" | "extra">("study");
-  const [selectedMode, setSelectedMode] = React.useState<ModeType>("DefualtModePratice");
-  const [recentAttempts, setRecentAttempts] = React.useState<QuizAttempt[]>(initialRecentAttempts);
-  const [mistakesCount, setMistakesCount] = React.useState(initialMistakesCount);
-  const [isLoadingQuizData, setIsLoadingQuizData] = React.useState(false);
+  const [selectedTab, setSelectedTab] = useState<"study" | "quiz" | "extra">("study");
+  const [selectedMode, setSelectedMode] = useState<ModeType>("DefualtModePratice");
+  const [recentAttempts, setRecentAttempts] = useState<QuizAttempt[]>(initialRecentAttempts);
+  const [mistakesCount, setMistakesCount] = useState(initialMistakesCount);
+  const [isLoadingQuizData] = useState(false);
   // Track whether we've already shown the pre-fetched data so we don't
   // re-fetch (and show a loading spinner) on the very first quiz tab click
-  const hasShownInitialQuizData = React.useRef(false);
+  const hasShownInitialQuizData = useRef(false);
   const [isGeneratingFlashCards, setIsGeneratingFlashCards] = useState(false);
   const [isGeneratingScrambleWords, setIsGeneratingScrambleWords] = useState(false);
   const [flashCardsExist, setFlashCardsExist] = useState<boolean | null>(null); // null = checking, true = exist, false = don't exist

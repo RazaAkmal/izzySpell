@@ -130,7 +130,7 @@ function UploadWord({ user, refreshSpellingLists }: {
       setIsProcessing(false);
       setProcessingProgress(0);
     }
-  }, [user.id, refreshSpellingLists]);
+  }, [user.id, refreshSpellingLists, router]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
