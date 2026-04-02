@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import UploadWord from "@/components/UploadWord";
 import WordList from "@/components/WordList";
 import RecenetList from "@/components/RecentList";
@@ -16,6 +16,17 @@ const DashboardClient: React.FC<DashboardClientProps> = ({
   initialSpellingLists,
 }) => {
   const [spellingLists, setSpellingLists] = useState(initialSpellingLists);
+  const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    if (!isUploading) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isUploading]);
 
   const refreshSpellingLists = async () => {
     if (user?.id) {
@@ -24,13 +35,17 @@ const DashboardClient: React.FC<DashboardClientProps> = ({
     }
   };
   return (
-    <div>
+    <div className="relative">
+      {isUploading && (
+        <div className="fixed inset-0 z-50 cursor-wait" />
+      )}
       <div className="flex flex-col md:flex-row justify-around gap-2 m-2">
-        <UploadWord user={user} refreshSpellingLists={refreshSpellingLists} />
+        <UploadWord user={user} refreshSpellingLists={refreshSpellingLists} onProcessingChange={setIsUploading} />
         <WordList
           user={user}
           spellingLists={spellingLists}
-          refreshSpellingLists={refreshSpellingLists} // Pass the callback
+          refreshSpellingLists={refreshSpellingLists}
+          onProcessingChange={setIsUploading}
         />
       </div>
       <div className="p-4 bg-skyBlue rounded-2xl shadow-md m-2 md:m-5 mt-3">

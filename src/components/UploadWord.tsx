@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
 import CustomButton from "./HeadlessButton";
@@ -15,9 +15,10 @@ type AIResponse = {
   error?: string;
 };
 
-function UploadWord({ user, refreshSpellingLists }: {
+function UploadWord({ user, refreshSpellingLists, onProcessingChange }: {
   user: any;
   refreshSpellingLists: () => Promise<void>;
+  onProcessingChange: (processing: boolean) => void;
 }) {
   const router = useRouter();
   const [isExtracting, setIsExtracting] = useState(false);
@@ -131,6 +132,10 @@ function UploadWord({ user, refreshSpellingLists }: {
       setProcessingProgress(0);
     }
   }, [user.id, refreshSpellingLists, router]);
+
+  useEffect(() => {
+    onProcessingChange(isExtracting || isProcessing || isDone);
+  }, [isExtracting, isProcessing, isDone, onProcessingChange]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

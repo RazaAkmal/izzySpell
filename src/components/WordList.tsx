@@ -14,10 +14,11 @@ import { z } from "zod";
 // Define type for AI response based on the zod schema
 type AIResponse = z.infer<typeof responseSchema>;
 
-const WordList = ({ spellingLists, user, refreshSpellingLists }: {
+const WordList = ({ spellingLists, user, refreshSpellingLists, onProcessingChange }: {
   spellingLists: SpellingListItem[],
   user: any,
   refreshSpellingLists: () => Promise<void>;
+  onProcessingChange: (processing: boolean) => void;
 }) => {
   const [isTextAreaMode, setIsTextAreaMode] = useState(false);
   const [inputField, setInputField] = useState<string[]>(["", "", ""]);
@@ -133,6 +134,10 @@ const WordList = ({ spellingLists, user, refreshSpellingLists }: {
       setIsTextAreaMode(mode);
     }
   };
+
+  useEffect(() => {
+    onProcessingChange(loading);
+  }, [loading, onProcessingChange]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
