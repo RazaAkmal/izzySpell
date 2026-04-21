@@ -8,7 +8,7 @@ export default function HowItWorksSection() {
       className="relative overflow-hidden bg-[#4ABFFC] px-4 py-16 sm:px-8 sm:py-20 md:py-24"
     >
       <Image
-        src="/images/landingpage/how-it-works-bg.svg"
+        src="/images/LandingPage/how-it-works-bg.svg"
         alt=""
         fill
         className="object-cover"
@@ -17,7 +17,7 @@ export default function HowItWorksSection() {
       />
       <div className="relative mx-auto max-w-[1200px]">
         <Image
-          src="/images/landingpage/how-it-works-title.png"
+          src="/images/LandingPage/how-it-works-title.png"
           alt="How It Works"
           width={400}
           height={100}
@@ -40,7 +40,7 @@ export default function HowItWorksSection() {
           >
             <div className="relative z-10 flex h-full flex-col p-8 lg:p-10">
               <Image
-                src="/images/landingpage/Choose-Level.png"
+                src="/images/LandingPage/Choose-Level.png"
                 alt="Choose a Level"
                 width={300}
                 height={60}
@@ -68,7 +68,7 @@ export default function HowItWorksSection() {
                 </div>
                 <div className="relative min-h-[150px] w-[40%] flex-shrink-0 sm:h-full">
                   <Image
-                    src="/images/landingpage/choose-card-img1.png"
+                    src="/images/LandingPage/choose-card-img1.png"
                     alt="Choose a Level"
                     fill
                     className="object-contain mt-6"
@@ -93,7 +93,7 @@ export default function HowItWorksSection() {
           >
             <div className="relative z-10 flex h-full flex-col p-8 lg:p-10">
               <Image
-                src="/images/landingpage/Start-Learning.png"
+                src="/images/LandingPage/Start-Learning.png"
                 alt="Start Learning with Fun Words"
                 width={300}
                 height={60}
@@ -107,7 +107,7 @@ export default function HowItWorksSection() {
                 </div>
                 <div className="relative min-h-[150px] w-[40%] flex-shrink-0 sm:h-full">
                   <Image
-                    src="/images/landingpage/choose-card-img2.png"
+                    src="/images/LandingPage/choose-card-img2.png"
                     alt="Fun Words"
                     fill
                     className="object-contain mt-6"
@@ -134,7 +134,7 @@ export default function HowItWorksSection() {
           >
             <div className="relative z-10 flex h-full flex-col p-8 lg:p-10">
               <Image
-                src="/images/landingpage/Choose-Mode.png"
+                src="/images/LandingPage/Choose-Mode.png"
                 alt="Choose Mode of Learning"
                 width={300}
                 height={60}
@@ -162,7 +162,7 @@ export default function HowItWorksSection() {
                 </div>
                 <div className="relative min-h-[150px] w-[35%] flex-shrink-0 sm:h-full">
                   <Image
-                    src="/images/landingpage/choose-card-img3.png"
+                    src="/images/LandingPage/choose-card-img3.png"
                     alt="Mode of Learning"
                     fill
                     className="object-contain mt-6"
@@ -174,7 +174,7 @@ export default function HowItWorksSection() {
 
           <div className="relative block aspect-square flex-1">
             <Image
-              src="/images/landingpage/choose-card-4.png"
+              src="/images/LandingPage/choose-card-4.png"
               alt=""
               fill
               className="object-cover mt-16 mr-10"

@@ -8,7 +8,7 @@ const SeeAppActions = () => {
       className="relative overflow-hidden bg-[#EBF9FF]"
     >
       <Image
-        src="/images/landingpage/see-app-action-mobile-bg.svg"
+        src="/images/LandingPage/see-app-action-mobile-bg.svg"
         alt=""
         fill
         className="object-fill !relative md:hidden"
@@ -16,7 +16,7 @@ const SeeAppActions = () => {
         priority
       />
       <Image
-        src="/images/landingpage/see-app-actions.svg"
+        src="/images/LandingPage/see-app-actions.svg"
         alt=""
         fill
         className="object-fill !relative hidden md:block"

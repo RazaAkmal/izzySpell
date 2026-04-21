@@ -18,7 +18,7 @@ const testimonials = [
     quote: "This app made my daughter fall in love with learning again!",
     description:
       "She's picking up new words every week and even teaching them to her little brother",
-    image: "/images/landingpage/profile.png",
+    image: "/images/LandingPage/profile.png",
     color: "pink" as const,
   },
   {
@@ -28,7 +28,7 @@ const testimonials = [
     quote: "The best educational app we've ever used!",
     description:
       "My son asks to learn every single day. The interactive lessons keep him engaged for hours",
-    image: "/images/landingpage/profile.png",
+    image: "/images/LandingPage/profile.png",
     color: "yellow" as const,
   },
   {
@@ -38,7 +38,7 @@ const testimonials = [
     quote: "I recommend this to all my students' parents!",
     description:
       "The progress tracking helps me see exactly where each child needs more support",
-    image: "/images/landingpage/profile.png",
+    image: "/images/LandingPage/profile.png",
     color: "blue" as const,
   },
   {
@@ -48,7 +48,7 @@ const testimonials = [
     quote: "Screen time I actually feel good about!",
     description:
       "Finally an app that entertains and educates at the same time. Worth every penny",
-    image: "/images/landingpage/profile.png",
+    image: "/images/LandingPage/profile.png",
     color: "pink" as const,
   },
 ];
@@ -230,14 +230,14 @@ export function TestimonialsSection() {
     <section className="relative py-12 sm:py-16 md:py-20 overflow-hidden">
       {/* Decorative Quote Marks */}
       <Image
-        src="/images/landingpage/open-quote.svg"
+        src="/images/LandingPage/open-quote.svg"
         alt=""
         fill
         className="object-contain opacity-50 absolute !top-8 !left-4 sm:!top-12 sm:!left-8 md:!top-16 md:!left-16 !w-24 !h-24 sm:!w-32 sm:!h-32 md:!w-44 md:!h-44"
         aria-hidden="true"
       />
       <Image
-        src="/images/landingpage/close-quote.svg"
+        src="/images/LandingPage/close-quote.svg"
         alt=""
         fill
         className="object-contain opacity-50 absolute !top-auto !left-auto !bottom-8 !right-4 sm:!right-8 md:!bottom-16 md:!right-16 !w-24 !h-24 sm:!w-32 sm:!h-32 md:!w-44 md:!h-44"
