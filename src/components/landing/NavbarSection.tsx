@@ -19,8 +19,10 @@ export default function Navbar() {
             src="/images/LandingPage/logo.png"
             alt="IzzySpell Logo"
             fill
-            className="object-fill"
+            className="object-contain"
             priority
+            quality={100}
+            sizes="(max-width: 640px) 9rem, 12rem"
           />
         </Link>
 
@@ -30,8 +32,9 @@ export default function Navbar() {
             <Image
               src="/images/LandingPage/about-us.svg"
               alt="About Us"
-              fill
-              className="object-fit !w-20 !relative"
+              width={80}
+              height={24}
+              className="w-20 h-auto"
               priority
             />
           </Link>
@@ -39,8 +42,9 @@ export default function Navbar() {
             <Image
               src="/images/LandingPage/features.svg"
               alt="Features"
-              fill
-              className="object-fit !w-20 !relative"
+              width={80}
+              height={24}
+              className="w-20 h-auto"
               priority
             />
           </Link>
@@ -48,8 +52,9 @@ export default function Navbar() {
             <Image
               src="/images/LandingPage/play-games.svg"
               alt="Play Games"
-              fill
-              className="object-fit !w-24 !relative"
+              width={96}
+              height={24}
+              className="w-24 h-auto"
               priority
             />
           </Link>
@@ -57,8 +62,9 @@ export default function Navbar() {
             <Image
               src="/images/LandingPage/contact-us.svg"
               alt="Contact Us"
-              fill
-              className="object-fit !w-24 !relative"
+              width={96}
+              height={24}
+              className="w-24 h-auto"
               priority
             />
           </Link>
@@ -95,8 +101,8 @@ export default function Navbar() {
             <Image
               src="/images/LandingPage/about-us.svg"
               alt="About Us"
-              width={0}
-              height={0}
+              width={80}
+              height={24}
               className="w-auto h-6 object-contain"
             />
           </Link>
@@ -104,8 +110,8 @@ export default function Navbar() {
             <Image
               src="/images/LandingPage/features.svg"
               alt="Features"
-              width={0}
-              height={0}
+              width={80}
+              height={24}
               className="w-auto h-6 object-contain"
             />
           </Link>
@@ -113,8 +119,8 @@ export default function Navbar() {
             <Image
               src="/images/LandingPage/play-games.svg"
               alt="Play Games"
-              width={0}
-              height={0}
+              width={96}
+              height={24}
               className="w-auto h-6 object-contain"
             />
           </Link>
@@ -122,8 +128,8 @@ export default function Navbar() {
             <Image
               src="/images/LandingPage/contact-us.svg"
               alt="Contact Us"
-              width={0}
-              height={0}
+              width={96}
+              height={24}
               className="w-auto h-6 object-contain"
             />
           </Link>

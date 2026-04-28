@@ -10,18 +10,22 @@ const SeeAppActions = () => {
       <Image
         src="/images/LandingPage/see-app-action-mobile-bg.svg"
         alt=""
-        fill
-        className="object-fill !relative md:hidden"
+        width={1920}
+        height={1200}
+        className="w-full h-auto md:hidden"
         aria-hidden="true"
         priority
+        sizes="100vw"
       />
       <Image
         src="/images/LandingPage/see-app-actions.svg"
         alt=""
-        fill
-        className="object-fill !relative hidden md:block"
+        width={1920}
+        height={900}
+        className="w-full h-auto hidden md:block"
         aria-hidden="true"
         priority
+        sizes="100vw"
       />
     </section>
   );

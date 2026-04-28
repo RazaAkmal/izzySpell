@@ -67,6 +67,7 @@ function Card({ card }: { card: (typeof leftCards)[0] }) {
         width={600}
         height={300}
         className="w-full h-auto"
+        sizes="(max-width: 768px) 90vw, 40vw"
       />
 
       {/* Content overlaid on top */}
@@ -78,6 +79,7 @@ function Card({ card }: { card: (typeof leftCards)[0] }) {
             alt={card.title}
             fill
             className="object-contain px-10"
+            sizes="(max-width: 768px) 80vw, 30vw"
           />
         </div>
 
@@ -113,6 +115,7 @@ export default function WhyChooseSection() {
         height={1080}
         className="relative w-full h-auto md:hidden"
         priority
+        sizes="100vw"
       />
       <Image
         src="/images/LandingPage/why-choose-bg.svg"
@@ -121,6 +124,7 @@ export default function WhyChooseSection() {
         height={980}
         className="object-cover relative w-full h-auto hidden md:block"
         priority
+        sizes="100vw"
       />
 
       <div className="absolute inset-0 z-10 max-w-5xl mx-auto flex flex-col justify-center items-center gap-4 md:gap-10 py-16 px-4 sm:px-8">

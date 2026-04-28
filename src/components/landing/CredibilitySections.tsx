@@ -45,13 +45,16 @@ export default function CredibilityFeatures() {
             width={400}
             height={100}
             className="mx-auto w-[320px] md:hidden"
+            sizes="320px"
           />
           <Image
             src="/images/LandingPage/credibility-title.png"
             alt="Why Choose Us?"
-            width={400}
-            height={100}
+            width={929}
+            height={87}
             className="mx-auto w-[320px] md:w-[500px] hidden md:block"
+            quality={100}
+            sizes="(max-width: 768px) 320px, 500px"
           />
         </div>
 
@@ -67,6 +70,8 @@ export default function CredibilityFeatures() {
                   alt=""
                   fill
                   className="object-fill rounded-4xl"
+                  quality={100}
+                  sizes="(max-width: 768px) 90vw, 33vw"
                 />
 
                 {/* Icon container - positioned absolutely at top */}
@@ -74,9 +79,11 @@ export default function CredibilityFeatures() {
                   <Image
                     src={feature.icon}
                     alt=""
-                    width={96}
-                    height={96}
+                    width={299}
+                    height={299}
                     className="object-contain w-40 h-40"
+                    quality={100}
+                    sizes="160px"
                   />
                 </div>
 
@@ -86,9 +93,11 @@ export default function CredibilityFeatures() {
                     <Image
                       src={feature.title}
                       alt=""
-                      width={240}
-                      height={60}
+                      width={449}
+                      height={97}
                       className="object-contain"
+                      quality={100}
+                      sizes="240px"
                     />
                   </div>
                   <p className="text-white text-2xl leading-relaxed font-bold drop-shadow-lg">

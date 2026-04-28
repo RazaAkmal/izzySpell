@@ -14,14 +14,17 @@ export default function HowItWorksSection() {
         className="object-cover"
         aria-hidden="true"
         priority
+        sizes="100vw"
       />
       <div className="relative mx-auto max-w-[1200px]">
         <Image
           src="/images/LandingPage/how-it-works-title.png"
           alt="How It Works"
-          width={400}
-          height={100}
+          width={437}
+          height={73}
           className="mx-auto mb-14 w-[320px] md:w-[400px]"
+          quality={100}
+          sizes="(max-width: 768px) 320px, 400px"
         />
 
         <div className="flex flex-col gap-6 sm:flex-row sm:gap-8">
@@ -42,9 +45,11 @@ export default function HowItWorksSection() {
               <Image
                 src="/images/LandingPage/Choose-Level.png"
                 alt="Choose a Level"
-                width={300}
-                height={60}
+                width={284}
+                height={43}
                 className="mb-3 h-auto w-[220px] lg:w-[240px]"
+                quality={100}
+                sizes="(max-width: 1024px) 220px, 240px"
               />
               <div className="flex flex-1 items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -72,6 +77,8 @@ export default function HowItWorksSection() {
                     alt="Choose a Level"
                     fill
                     className="object-contain mt-6"
+                    quality={100}
+                    sizes="(max-width: 640px) 40vw, 240px"
                   />
                 </div>
               </div>
@@ -95,9 +102,11 @@ export default function HowItWorksSection() {
               <Image
                 src="/images/LandingPage/Start-Learning.png"
                 alt="Start Learning with Fun Words"
-                width={300}
-                height={60}
+                width={380}
+                height={96}
                 className="mb-3 h-auto w-[280px] lg:w-[320px]"
+                quality={100}
+                sizes="(max-width: 1024px) 280px, 320px"
               />
               <div className="flex flex-1 items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -111,6 +120,8 @@ export default function HowItWorksSection() {
                     alt="Fun Words"
                     fill
                     className="object-contain mt-6"
+                    quality={100}
+                    sizes="(max-width: 640px) 40vw, 280px"
                   />
                 </div>
               </div>
@@ -136,9 +147,11 @@ export default function HowItWorksSection() {
               <Image
                 src="/images/LandingPage/Choose-Mode.png"
                 alt="Choose Mode of Learning"
-                width={300}
-                height={60}
+                width={485}
+                height={52}
                 className="mb-3 h-auto w-[360px] lg:w-[400px]"
+                quality={100}
+                sizes="(max-width: 1024px) 360px, 400px"
               />
               <div className="flex flex-1 items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -166,6 +179,8 @@ export default function HowItWorksSection() {
                     alt="Mode of Learning"
                     fill
                     className="object-contain mt-6"
+                    quality={100}
+                    sizes="(max-width: 640px) 40vw, 280px"
                   />
                 </div>
               </div>
@@ -177,8 +192,10 @@ export default function HowItWorksSection() {
               src="/images/LandingPage/choose-card-4.png"
               alt=""
               fill
-              className="object-cover mt-16 mr-10"
+              className="object-contain mt-16 mr-10"
               aria-hidden="true"
+              quality={100}
+              sizes="(max-width: 640px) 100vw, 30vw"
             />
           </div>
         </div>
@@ -192,8 +209,8 @@ export default function HowItWorksSection() {
             <Image
               src="/images/LandingPage/start-training-button.svg"
               alt="Start Training"
-              width={0}
-              height={0}
+              width={288}
+              height={72}
               className="w-60 md:w-72 h-auto"
             />
           </Link>

@@ -49,12 +49,15 @@ export default function VocabularySection() {
             alt=""
             fill
             className="object-fill pointer-events-none sm:hidden"
+            sizes="100vw"
           />
           <Image
             src="/images/LandingPage/ready-to-start.png"
             alt=""
             fill
-            className="object-fill pointer-events-none hidden sm:block"
+            className="object-cover pointer-events-none hidden sm:block"
+            quality={100}
+            sizes="(max-width: 1280px) 100vw, 1280px"
           />
           {/* Title */}
           <div className="relative z-10 text-center justify-items-center">
@@ -64,6 +67,7 @@ export default function VocabularySection() {
               width={400}
               height={80}
               className="object-contain w-44 md:w-96"
+              sizes="(max-width: 768px) 11rem, 24rem"
             />
             <p className="text-white text-sm sm:text-lg max-w-[16.5rem] md:max-w-lg mx-auto leading-relaxed font-semibold drop-shadow-lg">
               Unlock the full vocabulary learning experience — stories, lessons,
@@ -105,8 +109,8 @@ export default function VocabularySection() {
               <Image
                 src="/images/LandingPage/start-trial-now-button.svg"
                 alt="START FREE TRIAL NOW"
-                width={0}
-                height={0}
+                width={320}
+                height={80}
                 className="w-44 sm:w-80 h-auto"
               />
             </Link>

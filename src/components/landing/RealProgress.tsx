@@ -22,13 +22,16 @@ export default function RealProgress() {
                   width={660}
                   height={100}
                   className="w-full h-auto md:hidden"
+                  sizes="(max-width: 640px) 16rem, 30rem"
                 />
                 <Image
                   src="/images/LandingPage/real-progress-title.png"
                   alt="See Real Progress in Just Weeks!"
                   width={660}
-                  height={100}
+                  height={65}
                   className="w-full h-auto hidden md:block"
+                  quality={100}
+                  sizes="(max-width: 1024px) 30rem, 660px"
                 />
               </div>
 
@@ -51,8 +54,8 @@ export default function RealProgress() {
                   <Image
                     src="/images/LandingPage/see-live-demo-button.svg"
                     alt="SEE LIVE DEMO"
-                    width={0}
-                    height={0}
+                    width={224}
+                    height={64}
                     className="w-56 h-auto"
                   />
                 </button>
@@ -67,6 +70,7 @@ export default function RealProgress() {
                   width={560}
                   height={400}
                   className="object-contain lg:absolute -top-64 left-10 w-full h-auto"
+                  sizes="(max-width: 640px) 28rem, (max-width: 1024px) 32rem, 560px"
                 />
               </div>
             </div>
@@ -78,8 +82,8 @@ export default function RealProgress() {
                 <Image
                   src="/images/LandingPage/see-live-demo-button.svg"
                   alt="SEE LIVE DEMO"
-                  width={0}
-                  height={0}
+                  width={176}
+                  height={56}
                   className="w-44 h-auto"
                 />
               </button>

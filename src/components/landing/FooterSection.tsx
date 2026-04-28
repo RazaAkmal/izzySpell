@@ -77,9 +77,11 @@ export default function Footer() {
         <Image
           src="/images/LandingPage/logo.png"
           alt="IzzySpell"
-          width={140}
-          height={50}
-          className="object-contain"
+          width={1003}
+          height={410}
+          className="object-contain w-[140px] h-auto"
+          quality={100}
+          sizes="140px"
         />
 
         {/* Tagline */}
@@ -99,9 +101,9 @@ export default function Footer() {
                 <Image
                   src={link.img}
                   alt={link.label}
-                  width={0}
+                  width={120}
                   height={28}
-                  className="w-auto object-contain"
+                  className="w-auto h-7 object-contain"
                 />
               </a>
             ) : (
@@ -129,9 +131,11 @@ export default function Footer() {
               <Image
                 src={s.icon}
                 alt={s.label}
-                width={44}
-                height={44}
-                className={`object-contain w-16 h-16`}
+                width={100}
+                height={100}
+                className="object-contain w-16 h-16"
+                quality={100}
+                sizes="64px"
               />
             </a>
           ))}

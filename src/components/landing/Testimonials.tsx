@@ -184,9 +184,11 @@ function TestimonialCard({
           <Image
             src={testimonial.image}
             alt={testimonial.name}
-            width={80}
-            height={80}
+            width={155}
+            height={155}
             className="relative rounded-full border-3 border-white object-cover w-full h-full"
+            quality={100}
+            sizes="80px"
           />
         </div>
 
@@ -235,6 +237,7 @@ export function TestimonialsSection() {
         fill
         className="object-contain opacity-50 absolute !top-8 !left-4 sm:!top-12 sm:!left-8 md:!top-16 md:!left-16 !w-24 !h-24 sm:!w-32 sm:!h-32 md:!w-44 md:!h-44"
         aria-hidden="true"
+        sizes="(max-width: 640px) 6rem, (max-width: 768px) 8rem, 11rem"
       />
       <Image
         src="/images/LandingPage/close-quote.svg"
@@ -242,6 +245,7 @@ export function TestimonialsSection() {
         fill
         className="object-contain opacity-50 absolute !top-auto !left-auto !bottom-8 !right-4 sm:!right-8 md:!bottom-16 md:!right-16 !w-24 !h-24 sm:!w-32 sm:!h-32 md:!w-44 md:!h-44"
         aria-hidden="true"
+        sizes="(max-width: 640px) 6rem, (max-width: 768px) 8rem, 11rem"
       />
       <div className="px-4 relative z-10">
         {/* Title */}
@@ -249,9 +253,11 @@ export function TestimonialsSection() {
           <Image
             src="/images/LandingPage/testimonial-title.png"
             alt="Loved by Parents & Teachers"
-            width={600}
-            height={100}
+            width={910}
+            height={87}
             className="object-contain w-[280px] sm:w-[400px] md:w-[520px] lg:w-[600px]"
+            quality={100}
+            sizes="(max-width: 640px) 280px, (max-width: 768px) 400px, (max-width: 1024px) 520px, 600px"
           />
         </div>
 
