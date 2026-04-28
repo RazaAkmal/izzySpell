@@ -52,6 +52,28 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData 
   const [lastSelectedWord, setLastSelectedWord] = useState<string>("");
   const [totalAttempts, setTotalAttempts] = useState(0); // Track total attempts across all questions
 
+  // Synchronous re-entrance lock — state updates are async, so a fast double-click
+  // can fire two handlers before React commits the "answered" state. This ref
+  // blocks the second click immediately.
+  const isProcessingClickRef = useRef(false);
+  // Track pending timeouts so we can cancel them on question change / unmount,
+  // preventing late flips that cause back-and-forth flicker.
+  const pendingTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const scheduleTimeout = (fn: () => void, delay: number) => {
+    const id = setTimeout(() => {
+      pendingTimeoutsRef.current = pendingTimeoutsRef.current.filter((t) => t !== id);
+      fn();
+    }, delay);
+    pendingTimeoutsRef.current.push(id);
+    return id;
+  };
+
+  const clearPendingTimeouts = () => {
+    pendingTimeoutsRef.current.forEach(clearTimeout);
+    pendingTimeoutsRef.current = [];
+  };
+
   const currentFlashCard = flashCards[currentQuestionIndex];
   const totalQuestions = flashCards.length;
 
@@ -112,6 +134,22 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData 
     confettiRef.current = new JSConfetti();
   }, []);
 
+  // Cancel any pending timeouts on unmount so late callbacks can't fire
+  // setState on an unmounted (or navigated-away) component.
+  useEffect(() => {
+    return () => {
+      clearPendingTimeouts();
+      isProcessingClickRef.current = false;
+    };
+  }, []);
+
+  // When the current question changes, cancel any timers from the previous one
+  // and release the click lock so the new question is interactive.
+  useEffect(() => {
+    clearPendingTimeouts();
+    isProcessingClickRef.current = false;
+  }, [currentQuestionIndex]);
+
   const generateHint = (correctWord: string, selectedWord: string) => {
     // More sophisticated hint generation based on word analysis
     const correct = correctWord.toLowerCase();
@@ -140,30 +178,28 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData 
   };
 
   const handleCardClick = (cardId: number) => {
+    // Synchronous lock — beats the React state update race a closure check on
+    // gameState would lose. Also short-circuits hover/touch ghost events.
+    if (isProcessingClickRef.current) return;
     if (gameState !== "playing") return;
 
     const clickedCard = gameCards.find(card => card.id === cardId);
     if (!clickedCard) return;
+    if (clickedCard.isFlipped || clickedCard.isSelected) return;
+
+    isProcessingClickRef.current = true;
 
     // Store the selected word for hint generation
     setLastSelectedWord(clickedCard.text);
-    
-    // Calculate new attempts count for this question
+
     const newAttempts = attempts + 1;
-    console.log(`Question ${currentQuestionIndex + 1}: Click #${newAttempts}, isCorrect: ${clickedCard.isCorrect}`);
     setAttempts(newAttempts);
-    
-    // Always increment total attempts for every click
-    setTotalAttempts(prev => {
-      const newTotal = prev + 1;
-      console.log(`Total attempts incremented to: ${newTotal}`);
-      return newTotal;
-    });
+    setTotalAttempts(prev => prev + 1);
 
     // Mark the clicked card as selected and flip it
-    setGameCards(prevCards => 
-      prevCards.map(card => 
-        card.id === cardId 
+    setGameCards(prevCards =>
+      prevCards.map(card =>
+        card.id === cardId
           ? { ...card, isSelected: true, isFlipped: true }
           : card
       )
@@ -171,96 +207,89 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData 
 
     setGameState("answered");
 
-    // If correct answer, show confetti and increase score
     if (clickedCard.isCorrect) {
-      // Hide hint immediately when correct answer is selected
       setShowHint(false);
-      
+
       if (confettiRef.current) {
         confettiRef.current.addConfetti();
       }
       setScore(prevScore => prevScore + 1);
-      
+
       // After a delay, flip all cards to show correct answer
-      setTimeout(() => {
-        setGameCards(prevCards => 
+      scheduleTimeout(() => {
+        setGameCards(prevCards =>
           prevCards.map(card => ({ ...card, isFlipped: true }))
         );
-        
-        // Scroll down to show the success reveal content and next button
-        setTimeout(() => {
-          // First scroll to success element, then to bottom to ensure next button is visible
+
+        scheduleTimeout(() => {
           const successElement = document.querySelector('.success-reveal');
           if (successElement) {
-            successElement.scrollIntoView({ 
-              behavior: 'smooth', 
+            successElement.scrollIntoView({
+              behavior: 'smooth',
               block: 'center',
               inline: 'nearest'
             });
-            
-            // Then scroll to bottom after a brief delay to show next button
-            setTimeout(() => {
+
+            scheduleTimeout(() => {
               window.scrollTo({
                 top: document.documentElement.scrollHeight,
                 behavior: 'smooth'
               });
             }, 300);
           } else {
-            // Fallback: just scroll to bottom
             window.scrollTo({
               top: document.documentElement.scrollHeight,
               behavior: 'smooth'
             });
           }
-        }, 500); // Small delay to ensure the success content has rendered
+        }, 500);
       }, 1000);
 
       // Auto-advance to next question only on the last question
       if (currentQuestionIndex >= totalQuestions - 1) {
-        setTimeout(() => {
+        scheduleTimeout(() => {
           handleNextQuestion();
         }, 5000);
       }
+      // Lock stays held until handleNextQuestion / unmount clears it.
     } else {
-      // For incorrect answers, show hint and shake animation
-      // Note: attempts are already incremented at the beginning of handleCardClick
-      
-      // Show shake animation
-      setGameCards(prevCards => 
-        prevCards.map(card => 
-          card.id === cardId 
+      setGameCards(prevCards =>
+        prevCards.map(card =>
+          card.id === cardId
             ? { ...card, hasShake: true }
             : card
         )
       );
 
-      // Remove shake animation after 600ms
-      setTimeout(() => {
-        setGameCards(prevCards => 
+      scheduleTimeout(() => {
+        setGameCards(prevCards =>
           prevCards.map(card => ({ ...card, hasShake: false }))
         );
       }, 600);
 
-      // Show hint after first wrong attempt
-      if (newAttempts === 1) { // Show hint on first wrong attempt
+      if (newAttempts === 1) {
         setShowHint(true);
       }
 
-      // Reset game state for retry (hint will persist)
-      setTimeout(() => {
-        setGameCards(prevCards => 
-          prevCards.map(card => ({ 
-            ...card, 
-            isSelected: false, 
-            isFlipped: false 
+      // Reset for retry, then release the lock so the user can try again.
+      scheduleTimeout(() => {
+        setGameCards(prevCards =>
+          prevCards.map(card => ({
+            ...card,
+            isSelected: false,
+            isFlipped: false
           }))
         );
         setGameState("playing");
+        isProcessingClickRef.current = false;
       }, 1000);
     }
   };
 
   const handleNextQuestion = () => {
+    clearPendingTimeouts();
+    isProcessingClickRef.current = false;
+
     if (currentQuestionIndex >= totalQuestions - 1) {
       setGameState("completed");
       return;
@@ -276,6 +305,8 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData 
   };
 
   const handleRestartGame = () => {
+    clearPendingTimeouts();
+    isProcessingClickRef.current = false;
     setCurrentQuestionIndex(0);
     setScore(0);
     setGameState("playing");

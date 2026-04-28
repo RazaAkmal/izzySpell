@@ -126,7 +126,7 @@ interface ModalProps {
   words: string[];
   suggestedListName?: string;
   onClose: () => void;
-  onSave: (words: string[], listName: string) => void;
+  onSave: (words: string[], listName: string) => void | Promise<void>;
   spellingLists: SpellingListItem[];
 }
 
@@ -146,6 +146,7 @@ const Modal: React.FC<ModalProps> = ({
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [validationModal, setValidationModal] = useState<{ isOpen: boolean; message: string }>({ isOpen: false, message: "" });
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const showValidationError = (message: string) => setValidationModal({ isOpen: true, message });
 
@@ -216,7 +217,8 @@ const Modal: React.FC<ModalProps> = ({
     });
   }, []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (isSaving) return;
     if (!listName.trim()) {
       showValidationError("Please enter a name for your list.");
       return;
@@ -225,7 +227,12 @@ const Modal: React.FC<ModalProps> = ({
       showValidationError("Please ensure all words are filled in before saving.");
       return;
     }
-    onSave(spellList.map((spell) => spell.word), listName);
+    try {
+      setIsSaving(true);
+      await onSave(spellList.map((spell) => spell.word), listName);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const debouncedValidation = useMemo(() =>
@@ -254,7 +261,11 @@ const Modal: React.FC<ModalProps> = ({
         <div className="bg-lightBlue border-2 border-sky-300 flex flex-col rounded-md shadow-lg p-4 max-w-screen-lg w-full z-10">
           {/* Close Button */}
           <div className="flex justify-end">
-            <Button onClick={handleClose} className="focus:outline-none">
+            <Button
+              onClick={handleClose}
+              disabled={isSaving}
+              className="focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <Image src="/images/Vector.svg" alt="Cancel Button" width={24} height={24} className="w-6 h-6" />
             </Button>
           </div>
@@ -339,7 +350,8 @@ const Modal: React.FC<ModalProps> = ({
               fullWidth={false}
               onClick={handleSave}
               size="large"
-              disabled={isInvalid || !listName.trim()}
+              disabled={isInvalid || !listName.trim() || isSaving}
+              loading={isSaving}
             />
           </div>
         </div>
