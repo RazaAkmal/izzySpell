@@ -162,3 +162,7 @@ body {
   transform: scale(0.985);
 }
 
+.carousel-container > div {
+  overflow: visible !important;
+}
+
