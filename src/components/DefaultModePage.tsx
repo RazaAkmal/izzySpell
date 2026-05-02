@@ -44,11 +44,19 @@ const LetterComponent = ({
     () => ({
       type: ItemTypes.LETTER,
       item: { letter, index, fromScrambled: true } as Letter,
+      end: (_item, monitor) => {
+        // A drag-start that ends without a drop is effectively a click — but
+        // the browser has already suppressed the real `click` event, so the
+        // onClick on the div never fires. Trigger it manually here.
+        if (!monitor.didDrop()) {
+          onClick(letter, index);
+        }
+      },
       collect: (monitor) => ({
         isDragging: !!monitor.isDragging(),
       }),
     }),
-    [letter, index]
+    [letter, index, onClick]
   );
 
   const ref = React.useRef<HTMLDivElement>(null);

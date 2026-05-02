@@ -18,6 +18,7 @@ interface ModeConfigItem {
   total: number;
   progress: number;
   showContinue: boolean;
+  showBeginAgain: boolean;
   continueFrom: number;
   isRecentAttempts: boolean;
   recentAttempts?: QuizAttempt[];
@@ -138,6 +139,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
           total: 0,
           progress: 0,
           showContinue: false,
+          showBeginAgain: false,
           continueFrom: 0,
           isRecentAttempts: true,
           recentAttempts: recentAttempts,
@@ -152,6 +154,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
           total: 0,
           progress: 0,
           showContinue: false,
+          showBeginAgain: false,
           continueFrom: 0,
           isRecentAttempts: false,
           isMistakesPractice: false
@@ -165,6 +168,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
           total: mistakesCount,
           progress: 0,
           showContinue: false,
+          showBeginAgain: false,
           continueFrom: 0,
           isRecentAttempts: false,
           isMistakesPractice: true
@@ -183,6 +187,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
           total: 0,
           progress: 0,
           showContinue: false,
+          showBeginAgain: false,
           continueFrom: 0,
           isRecentAttempts: false,
           isMistakesPractice: false
@@ -196,6 +201,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
           total: 0,
           progress: 0,
           showContinue: false,
+          showBeginAgain: false,
           continueFrom: 0,
           isRecentAttempts: false,
           isMistakesPractice: false
@@ -209,6 +215,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
           total: 0,
           progress: 0,
           showContinue: false,
+          showBeginAgain: false,
           continueFrom: 0,
           isRecentAttempts: false,
           isMistakesPractice: false
@@ -225,7 +232,8 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         completed: studiedCount,
         total: totalWords,
         progress: totalWords > 0 ? Math.round((studiedCount / totalWords) * 100) : 0,
-        showContinue: studiedCount > 0,
+        showContinue: studiedCount > 0 && studiedCount < totalWords,
+        showBeginAgain: studiedCount > 0,
         continueFrom: studiedCount,
         isRecentAttempts: false,
         recentAttempts: [],
@@ -239,7 +247,8 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         completed: studiedSyllableCount,
         total: totalWords,
         progress: totalWords > 0 ? Math.round((studiedSyllableCount / totalWords) * 100) : 0,
-        showContinue: studiedSyllableCount > 0,
+        showContinue: studiedSyllableCount > 0 && studiedSyllableCount < totalWords,
+        showBeginAgain: studiedSyllableCount > 0,
         continueFrom: studiedSyllableCount,
         isRecentAttempts: false,
         recentAttempts: [],
@@ -253,7 +262,8 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         completed: totalStudiedGroups,
         total: totalGroups,
         progress: studiedGroupCount,
-        showContinue: totalStudiedGroups > 0,
+        showContinue: totalStudiedGroups > 0 && totalStudiedGroups < totalGroups,
+        showBeginAgain: totalStudiedGroups > 0,
         continueFrom: totalStudiedGroups,
         isRecentAttempts: false,
         recentAttempts: [],
@@ -457,15 +467,50 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                   </div>
                 </div>
               ) : selectedTab === "extra" ? (
-                <div className="w-full flex justify-center">
+                <div className="w-full flex flex-col items-center gap-3">
+                  {(isGeneratingFlashCards || isGeneratingScrambleWords) && (
+                    <div className="bg-gradient-to-r from-purple/10 via-blue/10 to-green/10 border-2 border-dashed border-purple/50 rounded-2xl px-4 sm:px-6 py-3 max-w-lg w-full shadow-sm">
+                      <div className="flex items-center justify-center gap-3 text-center">
+                        <span className="text-2xl sm:text-3xl animate-bounce">
+                          {isGeneratingFlashCards ? "🎴" : "🎲"}
+                        </span>
+                        <div>
+                          <p className="text-sm sm:text-base font-bold text-purple">
+                            {isGeneratingFlashCards
+                              ? "Making your Flash Cards!"
+                              : "Mixing up your words!"}
+                          </p>
+                          <p className="text-xs text-gray-600 mt-0.5">
+                            Hang tight, this will only take a moment ✨
+                          </p>
+                        </div>
+                        <span
+                          className="text-2xl sm:text-3xl animate-bounce"
+                          style={{ animationDelay: "200ms" }}
+                        >
+                          {isGeneratingFlashCards ? "✨" : "🔀"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   <CustomButton
                     label={
-                      selectedMode === "FlashCards" && isGeneratingFlashCards ? "Generating..." :
-                      selectedMode === "ScrambleWords" && isGeneratingScrambleWords ? "Generating..." :
-                      selectedMode === "FlashCards" ? "Flash Cards" :
-                      selectedMode === "ScrambleWords" ? "Scramble Words" :
-                      selectedMode === "WordMatch" ? "Word Builder" :
-                      "Play Game"
+                      (selectedMode === "FlashCards" && isGeneratingFlashCards) ||
+                      (selectedMode === "ScrambleWords" && isGeneratingScrambleWords) ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                          <span>
+                            {selectedMode === "FlashCards"
+                              ? "Creating your Flash Cards..."
+                              : "Scrambling your Words..."}
+                          </span>
+                        </span>
+                      ) : (
+                        selectedMode === "FlashCards" ? "Flash Cards" :
+                        selectedMode === "ScrambleWords" ? "Scramble Words" :
+                        selectedMode === "WordMatch" ? "Word Builder" :
+                        "Play Game"
+                      )
                     }
                     size="small"
                     variant="primary"
@@ -485,32 +530,35 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
                     className="w-full sm:w-auto sm:min-w-[240px] !h-auto flex items-center justify-center"
                   />
                 </div>
-              ) : currentModeData?.showContinue ? (
-                // When two buttons are shown, display them side by side with equal width
+              ) : currentModeData?.showContinue || currentModeData?.showBeginAgain ? (
                 <>
-                  <CustomButton
-                    label={isPending ? "Loading..." : "Continue Learning"}
-                    size="small"
-                    variant="success"
-                    radius="rounded"
-                    onClick={() => navigateTo(selectedMode + `?start=${currentModeData.continueFrom}`)}
-                    img="/images/bookIcon.svg"
-                    disabled={!selectedMode || isPending}
-                    className="w-full sm:w-auto sm:min-w-[200px] !h-auto flex items-center justify-center"
-                  />
-                  
-                  <CustomButton
-                    label={isPending ? "Loading..." : "Begin Again"}
-                    size="small"
-                    variant="primary"
-                    radius="rounded"
-                    onClick={() =>
-                      selectedMode && navigateTo(selectedMode + "?start=0")
-                    }
-                    img="/images/resetIcon.svg"
-                    disabled={!selectedMode || isPending}
-                    className="w-full sm:w-auto sm:min-w-[200px] !h-auto flex items-center justify-center"
-                  />
+                  {currentModeData?.showContinue && (
+                    <CustomButton
+                      label={isPending ? "Loading..." : "Continue Learning"}
+                      size="small"
+                      variant="success"
+                      radius="rounded"
+                      onClick={() => navigateTo(selectedMode + `?start=${currentModeData.continueFrom}`)}
+                      img="/images/bookIcon.svg"
+                      disabled={!selectedMode || isPending}
+                      className="w-full sm:w-auto sm:min-w-[200px] !h-auto flex items-center justify-center"
+                    />
+                  )}
+
+                  {currentModeData?.showBeginAgain && (
+                    <CustomButton
+                      label={isPending ? "Loading..." : "Begin Again"}
+                      size="small"
+                      variant="primary"
+                      radius="rounded"
+                      onClick={() =>
+                        selectedMode && navigateTo(selectedMode + "?start=0")
+                      }
+                      img="/images/resetIcon.svg"
+                      disabled={!selectedMode || isPending}
+                      className="w-full sm:w-auto sm:min-w-[200px] !h-auto flex items-center justify-center"
+                    />
+                  )}
                 </>
               ) : (
                 <div className="w-full flex justify-center">

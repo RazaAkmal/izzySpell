@@ -266,22 +266,22 @@ export async function markSyllableWordsAsStudied(wordIds: number[], listId: numb
 
 export async function markGroupAsStudied(groupName: string, listId: number) {
   try {
-    // Update all words in the specified group
     await prisma.groupedWord.updateMany({
-      where: { 
+      where: {
         groupName,
         listId,
-        studied: false 
+        studied: false
       },
       data: { studied: true },
     });
 
     await updateListProgress(listId);
 
-    return { success: true };
+    return { success: true as const };
   } catch (error) {
-    console.error("Error marking group as studied:", error);
-    return { success: false, error: "Error marking group as studied" };
+    const message = error instanceof Error ? error.message : String(error);
+    console.log("[markGroupAsStudied] failed:", { groupName, listId, message });
+    return { success: false as const, error: message };
   }
 }
 

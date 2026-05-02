@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import CustomButton from "./HeadlessButton";
 import Image from "next/image";
 import ToggleButton from "./CustomToggleButton";
@@ -20,6 +21,7 @@ const WordList = ({ spellingLists, user, refreshSpellingLists, onProcessingChang
   refreshSpellingLists: () => Promise<void>;
   onProcessingChange: (processing: boolean) => void;
 }) => {
+  const router = useRouter();
   const [isTextAreaMode, setIsTextAreaMode] = useState(false);
   const [inputField, setInputField] = useState<string[]>(["", "", ""]);
   const [textAreaContent, setTextAreaContent] = useState<string>("");
@@ -61,8 +63,13 @@ const WordList = ({ spellingLists, user, refreshSpellingLists, onProcessingChang
       await refreshSpellingLists();
       setInputField(["", "", ""]);
       setIsModalOpen(false);
+      router.push("/lists");
     } catch (error) {
-      console.error("Save error:", error);
+      console.log("Save error:", error);
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to save the list. Please try again."
+      );
+      setShowErrorModal(true);
     }
   };
 

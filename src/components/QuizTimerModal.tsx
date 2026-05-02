@@ -322,7 +322,7 @@ const QuizTimerModal: React.FC<QuizTimerModalProps> = ({
                     className="py-2 px-4 bg-darkBlue  text-white rounded-lg text-sm"
                   >
                     {generatingAiSuggestions
-                      ? "Generating..."
+                      ? "Picking the right pace..."
                       : "Generate AI Suggestions"}
                   </button>
                 </div>

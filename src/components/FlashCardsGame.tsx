@@ -51,6 +51,7 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData 
   const [showHint, setShowHint] = useState(false);
   const [lastSelectedWord, setLastSelectedWord] = useState<string>("");
   const [totalAttempts, setTotalAttempts] = useState(0); // Track total attempts across all questions
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Synchronous re-entrance lock — state updates are async, so a fast double-click
   // can fire two handlers before React commits the "answered" state. This ref
@@ -286,18 +287,49 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData 
     }
   };
 
+  const FLIP_DURATION_MS = 600;
+
   const handleNextQuestion = () => {
-    clearPendingTimeouts();
-    isProcessingClickRef.current = false;
+    if (isTransitioning) return;
 
     if (currentQuestionIndex >= totalQuestions - 1) {
+      clearPendingTimeouts();
+      isProcessingClickRef.current = false;
       setGameState("completed");
       return;
     }
 
-    // Move to next question
-    setCurrentQuestionIndex(prev => prev + 1);
-    setGameState("playing");
+    setIsTransitioning(true);
+
+    // Step 1: flip the current cards back to the question side, keeping their
+    // existing text so the animation reads as the OLD options closing.
+    setGameCards((prev) => prev.map((card) => ({ ...card, isFlipped: false })));
+
+    // Step 2: once the flip-back finishes, swap to the next question's cards.
+    // The card key includes currentQuestionIndex, so the new cards mount
+    // fresh — no animation, no flicker.
+    scheduleTimeout(() => {
+      const nextIndex = currentQuestionIndex + 1;
+      const nextCard = flashCards[nextIndex];
+
+      if (nextCard) {
+        setGameCards(
+          nextCard.options.map((option, index) => ({
+            id: index,
+            text: option,
+            isCorrect: index === nextCard.correctIndex,
+            isFlipped: false,
+            isSelected: false,
+            hasShake: false,
+          }))
+        );
+      }
+
+      setCurrentQuestionIndex(nextIndex);
+      setGameState("playing");
+      setIsTransitioning(false);
+      isProcessingClickRef.current = false;
+    }, FLIP_DURATION_MS);
   };
 
   const handleExit = () => {
@@ -444,7 +476,7 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData 
             <div className="grid grid-cols-2 gap-4 md:gap-6 max-w-2xl w-full">
               {gameCards.map((card) => (
                 <div
-                  key={card.id}
+                  key={`${currentQuestionIndex}-${card.id}`}
                   className={`relative h-28 sm:h-32 md:h-40 cursor-pointer transition-all duration-500 transform hover:scale-105 ${
                     gameState === "playing" ? "hover:shadow-xl" : ""
                   } ${card.hasShake ? "animate-wiggle" : ""}`}
@@ -513,6 +545,7 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData 
                   variant="primary"
                   size="small"
                   onClick={handleNextQuestion}
+                  disabled={isTransitioning}
                   className="px-6 md:px-8 py-3 text-base md:text-lg"
                 />
               </div>

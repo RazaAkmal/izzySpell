@@ -3,19 +3,19 @@
 import Image from "next/image";
 import { useState, useEffect } from "react";
 
-// Priority list — best quality US English voices first (Chrome, Edge, Safari/macOS)
+// Priority list — warmest / most kid-friendly US English voices first
 const PREFERRED_VOICES = [
+  "Microsoft Ana Online (Natural) - English (United States)",   // young, warm
+  "Microsoft Jenny Online (Natural) - English (United States)", // friendly female
+  "Microsoft Aria Online (Natural) - English (United States)",  // friendly female
   "Google US English",
-  "Microsoft Aria Online (Natural) - English (United States)",
+  "Samantha", // macOS/iOS — warm, clear
   "Microsoft Guy Online (Natural) - English (United States)",
-  "Microsoft Jenny Online (Natural) - English (United States)",
   "Microsoft Davis Online (Natural) - English (United States)",
   "Microsoft Eric Online (Natural) - English (United States)",
-  "Microsoft Ana Online (Natural) - English (United States)",
-  "Microsoft David - English (United States)",
   "Microsoft Zira - English (United States)",
-  "Samantha", // macOS/iOS
-  "Alex",     // macOS
+  "Microsoft David - English (United States)",
+  "Alex", // macOS
 ];
 
 // Module-level cache so voice is selected once across all instances
@@ -76,8 +76,8 @@ function TextToSpeech({ spell, heightWidth }: { spell: string; heightWidth: numb
 
     if (voice) utterance.voice = voice;
     utterance.lang = "en-US";
-    utterance.rate = 0.9;  // Slightly slower — easier for kids to follow
-    utterance.pitch = 1.0;
+    utterance.rate = 0.7;   // Slow enough for grade 1 to catch each sound
+    utterance.pitch = 1.15; // Slightly higher — friendlier, less monotone
     utterance.volume = 1.0;
 
     utterance.onstart = () => setIsSpeaking(true);

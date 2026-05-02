@@ -26,6 +26,7 @@ interface DraggableWordProps {
   onSaveEdit: (id: number) => void;
   onEditChange: (word: string) => void;
   onDelete: (id: number) => void;
+  disabled?: boolean;
 }
 
 const DraggableWord: React.FC<DraggableWordProps> = ({
@@ -38,18 +39,22 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
   onSaveEdit,
   onEditChange,
   onDelete,
+  disabled = false,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
 
   const [{ isDragging }, drag] = useDrag({
     type: ITEM_TYPE,
     item: { index },
+    canDrag: () => !disabled,
     collect: (monitor) => ({ isDragging: monitor.isDragging() }),
   });
 
   const [, drop] = useDrop({
     accept: ITEM_TYPE,
+    canDrop: () => !disabled,
     hover: (item: { index: number }) => {
+      if (disabled) return;
       if (item.index !== index) {
         moveWord(item.index, index);
         item.index = index;
@@ -62,8 +67,10 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
   return (
     <div
       ref={ref}
-      className="flex items-center bg-white rounded-2xl shadow-md p-3 cursor-grab active:cursor-grabbing min-w-0"
-      style={{ opacity: isDragging ? 0.4 : 1 }}
+      className={`flex items-center bg-white rounded-2xl shadow-md p-3 min-w-0 ${
+        disabled ? "cursor-not-allowed opacity-60" : "cursor-grab active:cursor-grabbing"
+      }`}
+      style={{ opacity: isDragging ? 0.4 : disabled ? 0.6 : 1 }}
     >
       {/* Drag handle */}
       <svg className="w-4 h-4 text-gray-300 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -80,7 +87,8 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
           <input
             value={editedWord}
             onChange={(e) => onEditChange(e.target.value)}
-            className="text-gray-700 font-semibold w-full border-b-2 bg-transparent border-gray-200 p-1 focus:outline-none focus:border-blue-500"
+            disabled={disabled}
+            className="text-gray-700 font-semibold w-full border-b-2 bg-transparent border-gray-200 p-1 focus:outline-none focus:border-blue-500 disabled:cursor-not-allowed"
             autoFocus
           />
         ) : (
@@ -88,8 +96,10 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
         )}
       </div>
 
-      <span
-        className="cursor-pointer flex-shrink-0"
+      <button
+        type="button"
+        disabled={disabled}
+        className="flex-shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
         onClick={() => {
           if (isEditing) {
             onSaveEdit(spell.id);
@@ -104,10 +114,12 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
           width={26}
           height={26}
         />
-      </span>
+      </button>
 
-      <span
-        className="cursor-pointer ml-1 flex-shrink-0"
+      <button
+        type="button"
+        disabled={disabled}
+        className="ml-1 flex-shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
         onClick={() => onDelete(spell.id)}
       >
         <Image
@@ -116,7 +128,7 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
           width={26}
           height={26}
         />
-      </span>
+      </button>
     </div>
   );
 };
@@ -158,7 +170,10 @@ const Modal: React.FC<ModalProps> = ({
     }
   }, [words]);
 
-  const handleClose = () => setShowConfirmation(true);
+  const handleClose = () => {
+    if (isSaving) return;
+    setShowConfirmation(true);
+  };
 
   const handleConfirmClose = () => {
     setShowConfirmation(false);
@@ -286,9 +301,10 @@ const Modal: React.FC<ModalProps> = ({
             onChange={handleListNameChange}
             value={listName}
             required
+            disabled={isSaving}
             className={`w-3/4 mx-auto bg-sky-100 rounded-lg border ${
               isInvalid ? "border-red-500 border-2" : "border-[#7898D2]"
-            } text-[#4A6FA5] text-lg placeholder-[#A0B6D8] px-4 py-3 mt-4 focus:outline-none`}
+            } text-[#4A6FA5] text-lg placeholder-[#A0B6D8] px-4 py-3 mt-4 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60`}
           />
           {isInvalid && (
             <p className="text-red-500 text-sm mt-1 text-center">
@@ -328,6 +344,7 @@ const Modal: React.FC<ModalProps> = ({
                   onSaveEdit={handleSaveEdit}
                   onEditChange={setEditedWord}
                   onDelete={handleDeleteWord}
+                  disabled={isSaving}
                 />
               ))}
             </div>
@@ -336,7 +353,8 @@ const Modal: React.FC<ModalProps> = ({
             <div className="flex justify-center mt-3">
               <button
                 onClick={handleAddWord}
-                className="flex items-center gap-2 text-purple border-2 border-purple rounded-full px-4 py-2 hover:bg-purple hover:text-white transition-colors font-semibold"
+                disabled={isSaving}
+                className="flex items-center gap-2 text-purple border-2 border-purple rounded-full px-4 py-2 hover:bg-purple hover:text-white transition-colors font-semibold disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-purple"
               >
                 <span className="text-xl leading-none">+</span>
                 <span>Add Word</span>

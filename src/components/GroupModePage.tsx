@@ -395,7 +395,10 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
               );
 
               if (allWordsInGroupCorrect) {
-                await markGroupAsStudied(groupName, Number(listId));
+                const result = await markGroupAsStudied(groupName, Number(listId));
+                if (!result.success) {
+                  throw new Error(result.error || "Failed to save group");
+                }
               }
             }
 
@@ -406,8 +409,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
                 err instanceof Error ? err.message : "Unknown error"
               }`
             );
-            console.error("Error marking groups as studied:", err);
-          } finally {
+            console.log("Error marking groups as studied:", err);
             setIsConfirmLoading(false);
           }
         }}
@@ -453,7 +455,10 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
               pageIndex++
             ) {
               const groupName = validGroups[pageIndex];
-              await markGroupAsStudied(groupName, Number(listId));
+              const result = await markGroupAsStudied(groupName, Number(listId));
+              if (!result.success) {
+                throw new Error(result.error || "Failed to save group");
+              }
             }
             router.push(`/spellPractice/${listId}`);
           } catch (err) {
@@ -462,11 +467,11 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
                 err instanceof Error ? err.message : "Unknown error"
               }`
             );
-            console.error("Error marking groups as studied:", err);
-          } finally {
+            console.log("Error marking groups as studied:", err);
             setIsConfirmLoading(false);
           }
         }}
+        isLoading={isConfirmLoading}
         mode="Group Mode"
       />
     </div>
