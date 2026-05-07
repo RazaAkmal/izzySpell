@@ -3,10 +3,13 @@ import Image from "next/image";
 
 const SeeAppActions = () => {
   return (
-    <section
-      id="see-app-actions"
-      className="relative overflow-hidden bg-[#EBF9FF]"
-    >
+    <section id="see-app-actions" className="relative w-full overflow-hidden bg-[#EBF9FF]">
+      {/*
+        The SVGs contain all visual content (title, tablets, characters).
+        Document-flow lets the SVG determine the section height naturally
+        so nothing gets cropped. object-cover on an SVG with embedded
+        content would crop and hide important elements.
+      */}
       <Image
         src="/images/LandingPage/see-app-action-mobile-bg.svg"
         alt=""

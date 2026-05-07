@@ -12,13 +12,11 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  scroll-padding-top: 80px;
+  background-color: #EBF9FF;
 }
 
 @font-face {
@@ -37,8 +35,11 @@ html {
 
 body {
   color: var(--foreground);
-  background: var(--background);
+  background-color: #EBF9FF;
   font-family: "Pally", sans-serif;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 
 @layer base {

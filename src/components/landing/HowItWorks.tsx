@@ -5,18 +5,19 @@ export default function HowItWorksSection() {
   return (
     <section
       id="how-it-works"
-      className="relative overflow-hidden bg-[#4ABFFC] px-4 py-16 sm:px-8 sm:py-20 md:py-24"
+      className="relative w-full overflow-hidden bg-[#E8F5FF]"
     >
       <Image
         src="/images/LandingPage/how-it-works-bg.svg"
         alt=""
         fill
-        className="object-cover"
+        className="absolute inset-0 w-full h-full object-cover"
         aria-hidden="true"
         priority
         sizes="100vw"
       />
-      <div className="relative mx-auto max-w-[1200px]">
+
+      <div className="relative mx-auto max-w-[1200px] px-4 sm:px-8 py-16 sm:py-20 md:py-24">
         <Image
           src="/images/LandingPage/how-it-works-title.png"
           alt="How It Works"
@@ -57,18 +58,12 @@ export default function HowItWorksSection() {
                     Select your difficulty
                   </p>
                   <ul className="space-y-2 pl-1 text-2xl font-bold leading-tight text-[#3AB0FA]">
-                    <li className="flex items-center gap-2">
-                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#3AB0FA]" />
-                      Beginner
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#3AB0FA]" />
-                      Intermediate
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#3AB0FA]" />
-                      Advanced
-                    </li>
+                    {["Beginner", "Intermediate", "Advanced"].map((item) => (
+                      <li key={item} className="flex items-center gap-2">
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#3AB0FA]" />
+                        {item}
+                      </li>
+                    ))}
                   </ul>
                 </div>
                 <div className="relative min-h-[150px] w-[40%] flex-shrink-0 sm:h-full">
@@ -159,18 +154,12 @@ export default function HowItWorksSection() {
                     Three different learning Mode
                   </p>
                   <ul className="space-y-2 pl-1 text-2xl font-bold leading-tight text-[#3AB0FA]">
-                    <li className="flex items-center gap-2">
-                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#3AB0FA]" />
-                      Default
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#3AB0FA]" />
-                      Syllabus Mode
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#3AB0FA]" />
-                      Word Groups Mode
-                    </li>
+                    {["Default", "Syllabus Mode", "Word Groups Mode"].map((item) => (
+                      <li key={item} className="flex items-center gap-2">
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#3AB0FA]" />
+                        {item}
+                      </li>
+                    ))}
                   </ul>
                 </div>
                 <div className="relative min-h-[150px] w-[35%] flex-shrink-0 sm:h-full">

@@ -8,7 +8,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="fixed top-4 left-1/2 z-50 w-[calc(100%-5rem)] md:w-[calc(100%-7rem)] -translate-x-1/2 sm:top-6">
+    <header className="fixed top-4 left-1/2 z-50 w-[calc(100%_-_2rem)] max-w-[1320px] -translate-x-1/2 sm:top-6 sm:w-[calc(100%_-_3rem)] md:w-[calc(100%_-_7rem)]">
       <nav className="flex items-center justify-between rounded-2xl bg-skyBlue px-4 py-3 shadow-md sm:px-8 sm:py-4">
         {/* Logo */}
         <Link

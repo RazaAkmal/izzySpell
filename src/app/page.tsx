@@ -11,7 +11,7 @@ import WhyChooseSection from "@/components/landing/WhyChooseSection";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#EBF9FF] font-sans overflow-x-hidden">
+    <div className="w-full min-h-screen bg-[#EBF9FF] font-sans overflow-x-hidden">
       <Navbar />
       <HeroSection />
       <WhyChooseSection />

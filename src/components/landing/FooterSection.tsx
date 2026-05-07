@@ -50,7 +50,7 @@ export default function Footer() {
   return (
     <footer className="relative w-full bg-[#F9F9F9] overflow-hidden py-10 px-6">
       {/* Left decorative mountains */}
-      <div className="absolute left-0 bottom-0 w-[280px] md:w-[450px] pointer-events-none select-none">
+      <div className="absolute left-0 bottom-0 w-[120px] sm:w-[220px] md:w-[450px] pointer-events-none select-none">
         <Image
           src="/images/LandingPage/footer-img-1.svg"
           alt=""
@@ -61,7 +61,7 @@ export default function Footer() {
       </div>
 
       {/* Right decorative heart/cloud */}
-      <div className="absolute right-0 bottom-24 md:bottom-0 w-[200px] md:w-[350px] pointer-events-none select-none">
+      <div className="absolute right-0 bottom-24 md:bottom-0 w-[120px] sm:w-[180px] md:w-[350px] pointer-events-none select-none">
         <Image
           src="/images/LandingPage/footer-img-2.svg"
           alt=""
@@ -90,7 +90,7 @@ export default function Footer() {
         </p>
 
         {/* Nav links */}
-        <nav className="flex flex-col md:flex-row flex-wrap items-center justify-center gap-4 sm:gap-6">
+        <nav className="flex flex-col md:flex-row flex-wrap items-center justify-center gap-x-4 gap-y-4 sm:gap-x-6">
           {NAV_LINKS.map((link) =>
             link.img ? (
               <a
