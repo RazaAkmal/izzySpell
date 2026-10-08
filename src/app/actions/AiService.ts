@@ -2,6 +2,7 @@
 import OpenAI from "openai";
 import { responseSchema } from "@/lib/defination";
 import prisma from '@/lib/prisma';
+import { getBaseUrl } from '@/lib/baseUrl';
 
 
 const openai = new OpenAI({
@@ -65,7 +66,7 @@ Raw tokens: ${content}`,
 export const processFileWithAI = async (content: any) => {
   try {
     // Read the system prompt from the file
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/prompts/systempromt.txt`);
+    const res = await fetch(`${await getBaseUrl()}/prompts/systempromt.txt`);
     const systemPrompt = await res.text();
 
 

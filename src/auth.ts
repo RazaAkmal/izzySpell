@@ -9,7 +9,7 @@ function filterSensitiveInfo(user: any) {
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   pages: {
-    signIn: '/login',
+    signIn: '/sign-in',
   },
   session: {
     strategy: "jwt",

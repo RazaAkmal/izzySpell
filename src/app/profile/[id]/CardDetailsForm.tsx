@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import CustomButton from "@/components/HeadlessButton";
 import InputField from "@/components/Input";
@@ -22,7 +22,12 @@ const CardDetailsForm = ({ onComplete, userId }: Props) => {
     defaultValues: { expireYear: expiryYearOptions[0] },
   });
 
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   const submitForm = async (data: CardDetailsFormValues) => {
+    setSaving(true);
+    setSaveError(null);
     try {
       if (typeof userId === "string") {
         const response = await fetch("/api/auth/updateProfile", {
@@ -34,18 +39,32 @@ const CardDetailsForm = ({ onComplete, userId }: Props) => {
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Profile update failed");
+          throw new Error(
+            response.status === 401
+              ? "Your session has expired. Please log in again."
+              : "We couldn't save your details. Please try again."
+          );
         }
 
         const user = await response.json();
 
         if (user.profileUpdated) {
           onComplete();
+        } else {
+          setSaveError("Please fill in all the card details to continue.");
         }
       }
     } catch (error) {
       console.error("Profile update failed:", error);
+      setSaveError(
+        error instanceof TypeError
+          ? "Couldn't reach the server. Please check your connection and try again."
+          : error instanceof Error
+          ? error.message
+          : "We couldn't save your details. Please try again."
+      );
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -136,8 +155,12 @@ const CardDetailsForm = ({ onComplete, userId }: Props) => {
             </div>
           </div>
         </div>
+        {saveError && (
+          <p className="text-red-500 text-sm text-center mb-3">{saveError}</p>
+        )}
         <CustomButton
           type="submit"
+          loading={saving}
           label="Let's Go"
           fullWidth
           className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"

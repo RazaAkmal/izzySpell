@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import prisma from '@/lib/prisma';
+import { auth } from '@/auth';
 
 type UpdateProfile = {
   firstName: string;
@@ -15,7 +16,14 @@ type UpdateProfile = {
 };
 
 export async function PUT(req: Request) {
-  const { data, userId } = await req.json() as { data: UpdateProfile; userId: string };
+  // Always update the signed-in user; never trust a userId sent by the client
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
+    return new Response(JSON.stringify({ error: 'Not authenticated' }), { status: 401 });
+  }
+
+  const { data } = await req.json() as { data: UpdateProfile };
   const allCardDetailsProvided =
     data.cardCVC &&
     data.cardName &&

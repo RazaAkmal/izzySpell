@@ -3,6 +3,7 @@ import React from "react";
 import { auth } from "@/auth";
 import { Session } from "next-auth";
 import ShowWords from "@/components/ShowWords";
+import { getBaseUrl } from "@/lib/baseUrl";
 const WordsPage = async ({
   params,
 }: {
@@ -15,7 +16,7 @@ const WordsPage = async ({
   if (!user) {
     return <div>Loading...</div>;
   }
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  const baseUrl = await getBaseUrl();
   const response = await fetch(
     `${baseUrl}/api/fetch-words?userId=${user.id}&&spellingListId=${listID}`,
     {

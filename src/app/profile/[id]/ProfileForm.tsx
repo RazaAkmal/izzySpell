@@ -10,6 +10,9 @@ import CustomButton from "@/components/HeadlessButton";
 import { supabase } from "@/app/utils/supabaseClient";
 import { v4 as uuidv4 } from 'uuid';
 
+const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg"];
+const MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024;
+
 const ageOptions = ["6-7", "7-8", "8-9", "9-10", "10-11", "11-12"];
 const gradeOptions = [
   "1st Grade",
@@ -46,7 +49,11 @@ const ProfileForm = ({onComplete, userId, userData}: Props) => {
     }
   }, [userData, setValue]);
   const profileImage = watch("profileImage");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const submitForm = async (data: ProfileFormValues) => {
+    setSaving(true);
+    setSaveError(null);
     try {
       if (typeof userId === "string") {
         const response = await fetch("/api/auth/updateProfile", {
@@ -58,39 +65,68 @@ const ProfileForm = ({onComplete, userId, userData}: Props) => {
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Profile update failed");
+          throw new Error(
+            response.status === 401
+              ? "Your session has expired. Please log in again."
+              : "We couldn't save your profile. Please try again."
+          );
         }
           onComplete()
       }
     } catch (error) {
       console.error("Profile update failed:", error);
+      setSaveError(
+        error instanceof TypeError
+          ? "Couldn't reach the server. Please check your connection and try again."
+          : error instanceof Error
+          ? error.message
+          : "We couldn't save your profile. Please try again."
+      );
+    } finally {
+      setSaving(false);
     }
   };
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    // Clear the input so picking the same file again still triggers onChange
+    event.target.value = "";
     if (!file) return;
+
+    setUploadError(null);
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setUploadError("Please choose a .png or .jpeg image.");
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      setUploadError("Image is too large. Please choose one up to 8 MB.");
+      return;
+    }
 
     const localPreview = URL.createObjectURL(file);
     setLocalImage(localPreview);
 
     startTransition(async () => {
-      const uniqueFileName = `profile/${userId}_${uuidv4()}_${file.name}`;
-      const { data, error } = await supabase.storage
-        .from("izzyspell-bucket")
-        .upload(uniqueFileName, file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
+      try {
+        const uniqueFileName = `profile/${userId}_${uuidv4()}_${file.name}`;
+        const { data, error } = await supabase.storage
+          .from("izzyspell-bucket")
+          .upload(uniqueFileName, file, {
+            cacheControl: "3600",
+            upsert: false,
+          });
 
-      if (error) {
+        if (error) throw error;
+
+        const uploadedImageUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/${data.fullPath}`;
+        setValue("profileImage", uploadedImageUrl);
+        setLocalImage(null);
+      } catch (error) {
+        // Covers both storage errors and network failures (e.g. storage unreachable)
         console.error("File upload failed:", error);
-        return;
+        setLocalImage(null);
+        setUploadError("Image upload failed. Please try again.");
       }
-
-      const uploadedImageUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/${data.fullPath}`;
-      setValue("profileImage", uploadedImageUrl);
-      setLocalImage(null);
     });
   };
 
@@ -138,10 +174,14 @@ const ProfileForm = ({onComplete, userId, userData}: Props) => {
           <input
             id="file-upload"
             type="file"
+            accept={ALLOWED_IMAGE_TYPES.join(",")}
             className="hidden"
             onChange={handleFileUpload}
           />
           <p className="text-xs text-gray-500">.png, .jpeg files up to 8 MB</p>
+          {uploadError && (
+            <p className="text-xs text-red-500 mt-1">{uploadError}</p>
+          )}
         </div>
       </div>
       <div className="flex gap-4 mb-4">
@@ -242,10 +282,14 @@ const ProfileForm = ({onComplete, userId, userData}: Props) => {
           )}
         />
       </div>
+      {saveError && (
+        <p className="text-red-500 text-sm text-center mb-3">{saveError}</p>
+      )}
       <div className="flex w-full justify-center">
         <div className="w-full max-w-md px-4">
           <CustomButton
             disabled={isPending}
+            loading={saving}
             className="border-white"
             type="submit"
             label="Next"

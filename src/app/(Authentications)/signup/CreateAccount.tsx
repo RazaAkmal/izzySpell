@@ -7,6 +7,7 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import SuccessSignUpModal from "./SuccessSignUpModal";
 import PasswordToggleButton from "@/components/PasswordToggleButton";
+import { authenticate } from "@/app/actions/authenticate";
 
 const SignupForm = () => {
   const {
@@ -41,16 +42,34 @@ const SignupForm = () => {
 
       // Check if the request was successful
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Signup failed");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Signup failed. Please try again.");
       }
-      setLoading(false);
-      setSuccessModal(true);
       const user = await response.json();
       setData(user);
+
+      // Sign the new user in straight away and send them to profile setup.
+      // On success the server action redirects; if it fails, fall back to
+      // the success modal so the user can log in manually.
+      const formData = new FormData();
+      formData.append("name", data.name);
+      formData.append("password", data.password);
+      formData.append("redirectTo", `/profile/${user.id}`);
+      const signInError = await authenticate(undefined, formData).catch(
+        () => "Automatic sign-in failed"
+      );
+      if (signInError) {
+        setLoading(false);
+        setSuccessModal(true);
+      }
     } catch (error: any) {
       setLoading(false);
-      setErrorMessage(error.message);
+      // fetch throws a TypeError when the server can't be reached
+      setErrorMessage(
+        error instanceof TypeError
+          ? "Couldn't reach the server. Please check your connection and try again."
+          : error.message
+      );
     }
   };
   const handleNavigate = () => {

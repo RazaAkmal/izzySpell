@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma";
 import { getColorForProgress } from "../utils/colors";
 import { SpellingList } from "@prisma/client";
+import { getBaseUrl } from "@/lib/baseUrl";
 
 export const deleteList = async (listId: number | string, userId: string) => {
   try {
@@ -67,7 +68,7 @@ export const deleteList = async (listId: number | string, userId: string) => {
 
 
 export async function fetchWordsForList(userId: string, listId: number) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  const baseUrl = await getBaseUrl();
   const response = await fetch(
     `${baseUrl}/api/fetch-words?userId=${userId}&&spellingListId=${listId}`,
     {

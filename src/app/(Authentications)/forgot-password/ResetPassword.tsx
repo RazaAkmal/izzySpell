@@ -16,8 +16,14 @@ const ResetPassword = () => {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const submitForm = async (data: SignupFormValues) => {
+    setLoading(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
     try {
       const response = await fetch("/api/auth/resetPassword", {
         method: "POST",
@@ -32,9 +38,12 @@ const ResetPassword = () => {
         throw new Error(errorData.error || "Password reset failed");
       }
 
-      router.push(`/sign-in`);
+      const result = await response.json();
+      setSuccessMessage(`${result.message} Redirecting to login...`);
+      setTimeout(() => router.push(`/sign-in`), 2500);
     } catch (error) {
-      alert(error);
+      setErrorMessage(error instanceof Error ? error.message : "Password reset failed");
+      setLoading(false);
     }
   };
   return (
@@ -77,8 +86,10 @@ const ResetPassword = () => {
         />
         <PasswordToggleButton show={showConfirmPassword} onClick={() => setShowConfirmPassword((v) => !v)} />
       </div>
+      {errorMessage && <p className="text-red-500 mt-2">{errorMessage}</p>}
+      {successMessage && <p className="text-green mt-2 text-center">{successMessage}</p>}
       <div className="w-full max-w-md px-4">
-        <CustomButton type="submit" label="Reset Password" fullWidth />
+        <CustomButton type="submit" label="Reset Password" fullWidth loading={loading} />
       </div>
     </form>
   );
