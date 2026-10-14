@@ -3,7 +3,7 @@ import React from "react";
 import { auth } from "@/auth";
 import { Session } from "next-auth";
 import ShowWords from "@/components/ShowWords";
-import { getBaseUrl } from "@/lib/baseUrl";
+import { fetchWordsForList } from "@/app/actions/prismaActions";
 const WordsPage = async ({
   params,
 }: {
@@ -16,14 +16,8 @@ const WordsPage = async ({
   if (!user) {
     return <div>Loading...</div>;
   }
-  const baseUrl = await getBaseUrl();
-  const response = await fetch(
-    `${baseUrl}/api/fetch-words?userId=${user.id}&&spellingListId=${listID}`,
-    {
-      cache: "no-store",
-    }
-  );
-  const { spellingListWithWords } = await response.json();
+  // Read the list directly instead of calling this app's own /api/fetch-words over HTTP
+  const spellingListWithWords = await fetchWordsForList(user.id as string, parseInt(listID));
 
 
   return (

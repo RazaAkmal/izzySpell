@@ -158,8 +158,8 @@ function UploadWord({ user, refreshSpellingLists, onProcessingChange }: {
         <Image
           src="/images/titles/AddSpellingListTitle.svg"
           alt="Add Spelling List"
-          width={40}
-          height={40}
+          width={554}
+          height={90}
           className="w-72 mx-auto"
         />
 
@@ -227,8 +227,8 @@ function UploadWord({ user, refreshSpellingLists, onProcessingChange }: {
               <Image
                 src="/images/titles/Drag&DropWord.svg"
                 alt="Drag & Drop Words"
-                width={40}
-                height={40}
+                width={648}
+                height={90}
                 className="w-80 mb-2"
               />
               {isDragActive ? (

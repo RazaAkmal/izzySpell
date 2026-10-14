@@ -8,11 +8,19 @@ import { Button } from "@headlessui/react";
 
 export type TimerType = "none" | "word" | "list";
 
+export type AiPaceSuggestions = {
+  shortPaceDuration: number | null;
+  mediumPaceDuration: number | null;
+  generousPaceDuration: number | null;
+};
+
 interface QuizTimerModalProps {
   isOpen: boolean;
   onStart: (timerType: TimerType, timeAmount: number) => void;
   totalWords: number;
   listId?: number; // Add listId to fetch AI suggestions
+  // Loaded with the page on the server; when missing the modal fetches them itself
+  initialAiSuggestions?: AiPaceSuggestions | null;
 }
 
 const QuizTimerModal: React.FC<QuizTimerModalProps> = ({
@@ -20,15 +28,12 @@ const QuizTimerModal: React.FC<QuizTimerModalProps> = ({
   onStart,
   totalWords,
   listId,
+  initialAiSuggestions = null,
 }) => {
   const [timerType, setTimerType] = useState<TimerType>("none");
   const [timeAmount, setTimeAmount] = useState<number>(30); // Default 30 seconds
   const [timeUnit, setTimeUnit] = useState<'sec' | 'min'>('sec'); // Default to seconds
-  const [aiSuggestions, setAiSuggestions] = useState<{
-    shortPaceDuration: number | null;
-    mediumPaceDuration: number | null;
-    generousPaceDuration: number | null;
-  } | null>(null);
+  const [aiSuggestions, setAiSuggestions] = useState<AiPaceSuggestions | null>(initialAiSuggestions);
   const [loadingAiSuggestions, setLoadingAiSuggestions] = useState(false);
   const [generatingAiSuggestions, setGeneratingAiSuggestions] = useState(false);
   const router = useRouter();
