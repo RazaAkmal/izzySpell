@@ -4,12 +4,12 @@ const NAV_LINKS = [
   {
     label: "About Us",
     img: "/images/LandingPage/about-us.svg",
-    href: "#about",
+    href: "#see-app-actions",
   },
   {
     label: "Features",
     img: "/images/LandingPage/features.svg",
-    href: "#features",
+    href: "#why-choose",
   },
   {
     label: "Privacy Policy",
@@ -19,7 +19,7 @@ const NAV_LINKS = [
   {
     label: "Play Games",
     img: "/images/LandingPage/play-games.svg",
-    href: "#games",
+    href: "#how-it-works",
   },
   {
     label: "Contact Us",
@@ -48,9 +48,9 @@ const SOCIAL = [
 
 export default function Footer() {
   return (
-    <footer className="relative w-full bg-[#F9F9F9] overflow-hidden py-10 px-6">
+    <footer id="contact" className="relative w-full bg-[#F9F9F9] overflow-hidden pt-10 pb-28 px-6 sm:pb-16 md:py-12">
       {/* Left decorative mountains */}
-      <div className="absolute left-0 bottom-0 w-[120px] sm:w-[220px] md:w-[450px] pointer-events-none select-none">
+      <div className="absolute left-0 bottom-0 w-[90px] sm:w-[140px] md:w-[180px] xl:w-[260px] pointer-events-none select-none" aria-hidden="true">
         <Image
           src="/images/LandingPage/footer-img-1.svg"
           alt=""
@@ -61,7 +61,7 @@ export default function Footer() {
       </div>
 
       {/* Right decorative heart/cloud */}
-      <div className="absolute right-0 bottom-24 md:bottom-0 w-[120px] sm:w-[180px] md:w-[350px] pointer-events-none select-none">
+      <div className="absolute right-0 bottom-0 w-[80px] sm:w-[120px] md:w-[150px] xl:w-[210px] pointer-events-none select-none" aria-hidden="true">
         <Image
           src="/images/LandingPage/footer-img-2.svg"
           alt=""
@@ -90,7 +90,7 @@ export default function Footer() {
         </p>
 
         {/* Nav links */}
-        <nav className="flex flex-col md:flex-row flex-wrap items-center justify-center gap-x-4 gap-y-4 sm:gap-x-6">
+        <nav aria-label="Footer" className="flex max-w-xs flex-wrap items-center justify-center gap-x-5 gap-y-3 sm:max-w-none sm:gap-x-6">
           {NAV_LINKS.map((link) =>
             link.img ? (
               <a
@@ -103,7 +103,7 @@ export default function Footer() {
                   alt={link.label}
                   width={120}
                   height={28}
-                  className="w-auto h-7 object-contain"
+                  className="w-auto h-5 sm:h-6 object-contain"
                 />
               </a>
             ) : (
@@ -126,16 +126,16 @@ export default function Footer() {
               key={s.label}
               href={s.href}
               aria-label={s.label}
-              className={`w-16 h-16 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity`}
+              className="w-11 h-11 rounded-full flex items-center justify-center transition-transform hover:-translate-y-0.5"
             >
               <Image
                 src={s.icon}
-                alt={s.label}
+                alt=""
                 width={100}
                 height={100}
-                className="object-contain w-16 h-16"
+                className="object-contain w-10 h-10"
                 quality={100}
-                sizes="64px"
+                sizes="40px"
               />
             </a>
           ))}

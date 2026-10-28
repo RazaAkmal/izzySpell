@@ -109,7 +109,7 @@ function TestimonialCard({
         <h3 className="font-bold text-white text-lg sm:text-xl leading-tight">{testimonial.name}</h3>
         <p className="text-white/80 text-sm">{testimonial.role}</p>
 
-        <blockquote className="text-white text-xl sm:text-2xl md:text-3xl font-bold leading-tight italic drop-shadow mt-1">
+        <blockquote className="text-white text-xl sm:text-2xl font-bold leading-snug italic drop-shadow mt-1">
           &ldquo;{testimonial.quote}&rdquo;
         </blockquote>
 
@@ -138,17 +138,17 @@ export function TestimonialsSection() {
       {/* Content drives height */}
       <div className="flex flex-col py-12 md:py-16">
         {/* Title */}
-        <div className="flex justify-center mb-8 md:mb-10 px-4">
+        <h2 className="flex justify-center mb-8 md:mb-10 px-4">
           <Image
             src="/images/LandingPage/testimonial-title.png"
             alt="Loved by Parents & Teachers"
             width={910}
             height={87}
-            className="object-contain w-[260px] sm:w-[380px] md:w-[500px] lg:w-[580px]"
+            className="object-contain w-[260px] sm:w-[360px] md:w-[440px] lg:w-[480px]"
             quality={100}
             sizes="(max-width: 640px) 260px, (max-width: 768px) 380px, (max-width: 1024px) 500px, 580px"
           />
-        </div>
+        </h2>
 
         {/* Carousel */}
         <Carousel
@@ -175,22 +175,27 @@ export function TestimonialsSection() {
             className="w-10 h-10 flex items-center justify-center transition-opacity hover:opacity-70"
             aria-label="Previous"
           >
-            <Image src="/images/LandingPage/prev.svg" alt="Previous" width={32} height={32} className="w-8 h-8 object-contain" />
+            <Image src="/images/LandingPage/prev.svg" alt="" width={32} height={32} className="w-8 h-8 object-contain" />
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
             {Array.from({ length: count }).map((_, index) => (
               <button
                 key={index}
                 onClick={() => api?.scrollTo(index)}
-                className={cn(
-                  "rounded-full transition-all duration-300",
-                  index === current
-                    ? "w-3.5 h-3.5 bg-white ring-4 ring-[#4ABFFC]"
-                    : "w-2.5 h-2.5 bg-[#4ABFFC] ring-3 ring-white",
-                )}
+                className="flex h-8 w-6 items-center justify-center"
                 aria-label={`Go to testimonial ${index + 1}`}
-              />
+                aria-current={index === current}
+              >
+                <span
+                  className={cn(
+                    "rounded-full transition-all duration-300",
+                    index === current
+                      ? "w-3.5 h-3.5 bg-white ring-4 ring-[#4ABFFC]"
+                      : "w-2.5 h-2.5 bg-[#4ABFFC] ring-2 ring-white",
+                  )}
+                />
+              </button>
             ))}
           </div>
 
@@ -199,7 +204,7 @@ export function TestimonialsSection() {
             className="w-10 h-10 flex items-center justify-center transition-opacity hover:opacity-70"
             aria-label="Next"
           >
-            <Image src="/images/LandingPage/next.svg" alt="Next" width={32} height={32} className="w-8 h-8 object-contain" />
+            <Image src="/images/LandingPage/next.svg" alt="" width={32} height={32} className="w-8 h-8 object-contain" />
           </button>
         </div>
       </div>

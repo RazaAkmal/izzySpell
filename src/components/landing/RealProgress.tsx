@@ -14,13 +14,13 @@ export default function RealProgress() {
     <section className="relative w-full overflow-hidden py-8 md:py-12 bg-[#EBF9FF]">
       <div className="max-w-[1600px] mx-auto px-6 md:px-12 xl:px-16">
         <div
-          className="relative rounded-[2.5rem] overflow-hidden p-8 md:p-12 bg-[#F97755]"
+          className="relative rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden p-6 sm:p-8 md:p-10 lg:p-12 bg-[#F97755]"
           style={{ boxShadow: "inset 0 0 0 8px rgba(255,255,255,0.22)" }}
         >
-          <div className="relative z-10 grid w-full gap-6 lg:grid-cols-[1.3fr_1fr] items-center">
+          <div className="relative z-10 grid w-full gap-6 md:grid-cols-[1.3fr_1fr] items-center">
             {/* Left: text */}
             <div className="space-y-5">
-              <div className="max-w-[18rem] sm:max-w-[34rem]">
+              <h2 className="max-w-[18rem] sm:max-w-[34rem]">
                 <Image
                   src="/images/LandingPage/progress-mobile-title.svg"
                   alt="See Real Progress in Just Weeks!"
@@ -38,7 +38,7 @@ export default function RealProgress() {
                   quality={100}
                   sizes="(max-width: 1024px) 34rem, 600px"
                 />
-              </div>
+              </h2>
 
               <ul className="space-y-3">
                 {bullets.map((item, i) => (
@@ -53,7 +53,7 @@ export default function RealProgress() {
 
               <Link
                 href="/sign-in"
-                className="hover:opacity-90 active:scale-95 transition-all inline-block"
+                className="inline-block rounded-full transition-all hover:opacity-90 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white active:scale-95"
               >
                 <Image
                   src="/images/LandingPage/see-live-demo-button.svg"
@@ -66,15 +66,15 @@ export default function RealProgress() {
             </div>
 
             {/* Right: illustration */}
-            <div className="flex justify-center lg:justify-end">
-              <div className="relative w-full max-w-[26rem]">
+            <div className="flex justify-center md:justify-end">
+              <div className="relative w-full max-w-[17rem] md:max-w-[20rem] lg:max-w-[22rem]">
                 <Image
                   src="/images/LandingPage/real-progress.svg"
-                  alt="Real progress illustration"
+                  alt="A child learning on a tablet with a 150+ words badge"
                   width={560}
                   height={400}
-                  className="w-full h-auto lg:absolute lg:-top-52 lg:left-4"
-                  sizes="(max-width: 1024px) 26rem, 560px"
+                  className="w-full h-auto lg:absolute lg:-top-44 lg:left-4"
+                  sizes="(max-width: 768px) 20rem, (max-width: 1024px) 26rem, 560px"
                 />
               </div>
             </div>
