@@ -7,7 +7,7 @@ import LegalPage, { Placeholder, Section } from "@/components/legal/LegalPage";
 
 export const metadata: Metadata = {
   title: "Terms of Service - IzzySpell",
-  description: "The terms for using IzzySpell, a spelling practice app for children, set up by a parent or legal guardian.",
+  description: "The terms for using IzzySpell, a spelling practice app.",
 };
 
 export default function TermsPage() {
@@ -15,9 +15,8 @@ export default function TermsPage() {
     <LegalPage title="Terms of Service">
       <Section title="About these terms">
         <p>
-          These terms apply to IzzySpell, a spelling practice app for children, operated by{" "}
-          <Placeholder>[COMPANY LEGAL NAME]</Placeholder>. By creating an account, the parent or legal guardian agrees to these
-          terms and to our{" "}
+          These terms apply to IzzySpell, a spelling practice app, operated by{" "}
+          <Placeholder>[COMPANY LEGAL NAME]</Placeholder>. By creating an account, you agree to these terms and to our{" "}
           <Link href="/privacy" className="font-bold underline">
             Privacy Policy
           </Link>
@@ -27,19 +26,18 @@ export default function TermsPage() {
 
       <Section title="Who may create an account">
         <p>
-          Accounts must be created by a parent or legal guardian of the child who will use them. The parent or guardian is
-          responsible for the account and for the child&apos;s use of IzzySpell. <Placeholder>[AGE RANGE OF CHILDREN THE SERVICE IS FOR]</Placeholder>
+          The account holder is responsible for the account and for how IzzySpell is used with it.{" "}
+          <Placeholder>[AGE RANGE THE SERVICE IS FOR]</Placeholder>
         </p>
         <p>
-          The parent or guardian must provide a working email address for themselves. Password reset links are sent only to
-          that address.
+          The account holder must provide a working email address. Password reset links are sent only to that address.
         </p>
       </Section>
 
       <Section title="Your account">
         <ul className="list-disc pl-6 space-y-1">
           <li>Keep the password private and choose one that is not used elsewhere.</li>
-          <li>Keep the parent email up to date so a password can be reset if it is forgotten.</li>
+          <li>Keep the email up to date so a password can be reset if it is forgotten.</li>
           <li>Tell us at <Placeholder>[CONTACT EMAIL]</Placeholder> if you think someone else has accessed the account.</li>
         </ul>
       </Section>
@@ -88,7 +86,7 @@ export default function TermsPage() {
       <Section title="Changes to these terms">
         <p>
           The date at the top shows when these terms were last updated.{" "}
-          <Placeholder>[HOW PARENTS WILL BE TOLD ABOUT CHANGES]</Placeholder>
+          <Placeholder>[HOW USERS WILL BE TOLD ABOUT CHANGES]</Placeholder>
         </p>
       </Section>
 

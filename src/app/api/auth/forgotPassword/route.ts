@@ -12,7 +12,7 @@ import {
 
 // POST /api/auth/forgotPassword  { name }
 //
-// The response is IDENTICAL (status + body) whether the account exists, has a parent
+// The response is IDENTICAL (status + body) whether the account exists, has an
 // email, or is rate-limited, and every response takes at least MIN_RESPONSE_MS, so it
 // can't be used to discover usernames or which accounts have an email on file.
 //
@@ -26,7 +26,7 @@ import {
 // slower than others - a small timing difference.
 
 const FORGOT_PASSWORD_MESSAGE =
-  "If that account has a parent email on file, we have sent a reset link. Check your inbox.";
+  "If that account has an email on file, we have sent a reset link. Check your inbox.";
 const MIN_RESPONSE_MS = 3500;
 const HOUR_MS = 60 * 60 * 1000;
 const KEEP_OLD_TOKENS_MS = 24 * HOUR_MS;

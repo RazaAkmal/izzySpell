@@ -29,7 +29,7 @@ export function buildPasswordResetEmail({ username, resetLink, expiresInMinutes 
   const text = [
     "Hello,",
     "",
-    `Someone asked to reset the IzzySpell password for your child's account "${username}".`,
+    `Someone asked to reset the IzzySpell password for the account "${username}".`,
     "",
     "To choose a new password, open this link:",
     resetLink,
@@ -46,7 +46,7 @@ export function buildPasswordResetEmail({ username, resetLink, expiresInMinutes 
   const html = `<!doctype html>
 <html><body style="font-family: Arial, sans-serif; color: #426096; line-height: 1.5;">
   <p>Hello,</p>
-  <p>Someone asked to reset the IzzySpell password for your child's account <strong>${safeUser}</strong>.</p>
+  <p>Someone asked to reset the IzzySpell password for the account <strong>${safeUser}</strong>.</p>
   <p><a href="${safeLink}" style="display:inline-block;background:#4793FE;color:#ffffff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold;">Choose a new password</a></p>
   <p style="font-size: 13px;">Or copy this link into your browser:<br><span style="word-break: break-all;">${safeLink}</span></p>
   <p>The link works once and expires in ${expiresInMinutes} minutes.</p>

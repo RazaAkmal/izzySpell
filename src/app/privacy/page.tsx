@@ -7,7 +7,7 @@ import LegalPage, { Placeholder, Section } from "@/components/legal/LegalPage";
 
 export const metadata: Metadata = {
   title: "Privacy Policy - IzzySpell",
-  description: "How IzzySpell collects, uses and shares information about children and their parents or guardians.",
+  description: "How IzzySpell collects, uses and shares information about its users.",
 };
 
 export default function PrivacyPage() {
@@ -15,17 +15,16 @@ export default function PrivacyPage() {
     <LegalPage title="Privacy Policy">
       <Section title="Who we are">
         <p>
-          IzzySpell is a spelling practice app for children. It is operated by <Placeholder>[COMPANY LEGAL NAME]</Placeholder>,{" "}
+          IzzySpell is a spelling practice app. It is operated by <Placeholder>[COMPANY LEGAL NAME]</Placeholder>,{" "}
           <Placeholder>[COMPANY ADDRESS]</Placeholder>. You can contact us about privacy at{" "}
           <Placeholder>[CONTACT EMAIL]</Placeholder>.
         </p>
       </Section>
 
-      <Section title="Accounts are created by a parent or legal guardian">
+      <Section title="Creating an account">
         <p>
-          An IzzySpell account is created by a parent or legal guardian for a child. When creating the account, the parent or
-          guardian confirms that they are the child&apos;s parent or legal guardian and agrees to these terms and this policy.
-          We record when that consent was given and which version of the texts it applied to.
+          When creating an IzzySpell account, the account holder agrees to the Terms of Service and this policy. We record
+          when that consent was given and which version of the texts it applied to.
         </p>
         <p>We do not collect payment card details.</p>
       </Section>
@@ -33,13 +32,13 @@ export default function PrivacyPage() {
       <Section title="What information we collect">
         <p className="font-semibold">Account information</p>
         <ul className="list-disc pl-6 space-y-1">
-          <li>A username chosen for the child.</li>
+          <li>A username.</li>
           <li>A password. We store only a one-way hash of it, never the password itself.</li>
-          <li>The parent or guardian&apos;s email address (stored in lower case).</li>
-          <li>When parental consent was given and the version of the consent texts.</li>
+          <li>The account&apos;s email address (stored in lower case).</li>
+          <li>When consent was given and the version of the consent texts.</li>
           <li>When the password was last changed (used to sign out other devices after a password reset).</li>
         </ul>
-        <p className="font-semibold">The child&apos;s profile</p>
+        <p className="font-semibold">Profile</p>
         <ul className="list-disc pl-6 space-y-1">
           <li>First name and last name.</li>
           <li>Age range (for example &quot;8-9&quot;) and school grade.</li>
@@ -63,14 +62,14 @@ export default function PrivacyPage() {
         <p className="font-semibold">Password reset</p>
         <ul className="list-disc pl-6 space-y-1">
           <li>
-            When a password reset is requested, we email a one-time link to the parent email on file. We store only a hash of
+            When a password reset is requested, we email a one-time link to the email address on file. We store only a hash of
             the code in that link, together with when it was created, when it expires (after 60 minutes) and whether it was used.
           </li>
         </ul>
         <p className="font-semibold">Technical information</p>
         <ul className="list-disc pl-6 space-y-1">
           <li>
-            Our servers keep technical logs. Some log entries can include an account identifier and the child&apos;s age range
+            Our servers keep technical logs. Some log entries can include an account identifier and the user&apos;s age range
             and grade (for example when quiz time limits are suggested).
           </li>
           <li>
@@ -82,11 +81,11 @@ export default function PrivacyPage() {
 
       <Section title="How we use it">
         <ul className="list-disc pl-6 space-y-1">
-          <li>To create and run the account and let the child sign in.</li>
+          <li>To create and run the account and let the user sign in.</li>
           <li>To turn word lists into spelling practice, quizzes and games, and to show progress.</li>
-          <li>To send password reset emails to the parent or guardian.</li>
+          <li>To send password reset emails to the email address on the account.</li>
           <li>To keep accounts secure (for example, ending other sessions after a password change).</li>
-          <li>To record parental consent.</li>
+          <li>To record consent.</li>
         </ul>
         <p>We do not show advertising and we do not sell personal information.</p>
       </Section>
@@ -102,7 +101,7 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>OpenAI</strong> - receives the words of spelling lists (and the text read from uploaded files) to check
-            the words and create practice material, and receives the child&apos;s grade and age range together with list words
+            the words and create practice material, and receives the user&apos;s grade and age range together with list words
             to suggest quiz time limits.
           </li>
           <li>
@@ -112,7 +111,7 @@ export default function PrivacyPage() {
             <strong>Supabase</strong> - stores optional profile pictures.
           </li>
           <li>
-            <strong>Resend</strong> - sends password reset emails; receives the parent email address, the child&apos;s
+            <strong>Resend</strong> - sends password reset emails; receives the account&apos;s email address, the
             username and the reset link.
           </li>
         </ul>
@@ -151,15 +150,15 @@ export default function PrivacyPage() {
         </p>
       </Section>
 
-      <Section title="Rights of parents and guardians">
+      <Section title="Your rights">
         <p>
-          A parent or guardian can ask to see the information we hold about their child, to correct it, or to delete the
-          account and its information, by emailing <Placeholder>[CONTACT EMAIL]</Placeholder>. We may need to confirm that the
-          request comes from the parent or guardian on the account. <Placeholder>[RESPONSE TIME FOR REQUESTS]</Placeholder>
+          You can ask to see the information we hold about your account, to correct it, or to delete the account and its
+          information, by emailing <Placeholder>[CONTACT EMAIL]</Placeholder>. We may need to confirm that the request comes
+          from the account holder. <Placeholder>[RESPONSE TIME FOR REQUESTS]</Placeholder>
         </p>
         <p>
-          Profile details can also be changed in the app under &quot;My Profile&quot;. A parent email can be added there if
-          the account does not have one yet; to change an existing parent email, contact us.
+          Profile details can also be changed in the app under &quot;My Profile&quot;. An email can be added there if the
+          account does not have one yet; to change an existing email, contact us.
         </p>
       </Section>
 
@@ -173,7 +172,7 @@ export default function PrivacyPage() {
 
       <Section title="Changes to this policy">
         <p>
-          The date at the top shows when this policy was last updated. <Placeholder>[HOW PARENTS WILL BE TOLD ABOUT CHANGES]</Placeholder>
+          The date at the top shows when this policy was last updated. <Placeholder>[HOW USERS WILL BE TOLD ABOUT CHANGES]</Placeholder>
         </p>
       </Section>
 

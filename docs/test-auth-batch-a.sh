@@ -2,8 +2,8 @@
 # Login & Sign-Up hardening, Batch A - end-to-end checks against a running app.
 #
 # DB WRITES (shared production Neon DB, via the app):
-#   1. Creates ONE user named  zztest<RUN_ID>  (sign-up, with a fake parent email
-#      zztest-<RUN_ID>@example.com and parental consent)
+#   1. Creates ONE user named  zztest<RUN_ID>  (sign-up, with a fake email
+#      zztest-<RUN_ID>@example.com and consent)
 #   2. Saves a profile for that user (updateProfile; the request also carries FAKE card
 #      fields, which are ignored)
 #   3. Deletes that user at the end (only that exact name; refuses if it owns lists)
@@ -54,7 +54,7 @@ print(json.dumps({k: value(v) for k, v in zip(a[0::2], a[1::2])}, separators=(",
 ' "$@"
 }
 
-# signup_json <fields...> -> sign-up body with valid parent email + consent added
+# signup_json <fields...> -> sign-up body with valid email + consent added
 # (fields given later override these, so a test can break one of them)
 signup_json() { json parentEmail "$PARENT_EMAIL" confirmParentEmail "$PARENT_EMAIL" acceptedTerms bool:true "$@"; }
 
@@ -121,19 +121,19 @@ check "all digits -> 400"         400 "cannot be all numbers"    /api/auth/signu
 check "password 7 chars -> 400"   400 "at least 8 characters"    /api/auth/signup "$(signup_json name "$USER_NAME" password Passwor confirmPassword Passwor)"
 check "password 73 bytes -> 400"  400 "maximum 72 bytes"         /api/auth/signup "$(signup_json name "$USER_NAME" password "$LONG73" confirmPassword "$LONG73")"
 check "confirm mismatch -> 400"   400 "Passwords do not match"   /api/auth/signup "$(signup_json name "$USER_NAME" password Password1 confirmPassword Password2)"
-check "missing parent email -> 400"      400 "Parent email is required"       /api/auth/signup "$(json name "$USER_NAME" confirmParentEmail "$PARENT_EMAIL" password Password1 confirmPassword Password1 acceptedTerms bool:true)"
-check "invalid parent email -> 400"      400 "valid email address"            /api/auth/signup "$(signup_json name "$USER_NAME" password Password1 confirmPassword Password1 parentEmail not-an-email confirmParentEmail not-an-email)"
-check "parent email mismatch -> 400"     400 "Parent emails do not match"     /api/auth/signup "$(signup_json name "$USER_NAME" password Password1 confirmPassword Password1 confirmParentEmail "other-$PARENT_EMAIL")"
-check "acceptedTerms false -> 400"       400 "parent or legal guardian"       /api/auth/signup "$(signup_json name "$USER_NAME" password Password1 confirmPassword Password1 acceptedTerms bool:false)"
-check "acceptedTerms missing -> 400"     400 "parent or legal guardian"       /api/auth/signup "$(json name "$USER_NAME" parentEmail "$PARENT_EMAIL" confirmParentEmail "$PARENT_EMAIL" password Password1 confirmPassword Password1)"
-check "acceptedTerms as string -> 400"   400 "parent or legal guardian"       /api/auth/signup "$(signup_json name "$USER_NAME" password Password1 confirmPassword Password1 acceptedTerms true)"
+check "missing email -> 400"      400 "Email is required"              /api/auth/signup "$(json name "$USER_NAME" confirmParentEmail "$PARENT_EMAIL" password Password1 confirmPassword Password1 acceptedTerms bool:true)"
+check "invalid email -> 400"      400 "valid email address"            /api/auth/signup "$(signup_json name "$USER_NAME" password Password1 confirmPassword Password1 parentEmail not-an-email confirmParentEmail not-an-email)"
+check "email mismatch -> 400"     400 "Emails do not match"           /api/auth/signup "$(signup_json name "$USER_NAME" password Password1 confirmPassword Password1 confirmParentEmail "other-$PARENT_EMAIL")"
+check "acceptedTerms false -> 400"       400 "Please accept the Terms of Service"     /api/auth/signup "$(signup_json name "$USER_NAME" password Password1 confirmPassword Password1 acceptedTerms bool:false)"
+check "acceptedTerms missing -> 400"     400 "Please accept the Terms of Service"     /api/auth/signup "$(json name "$USER_NAME" parentEmail "$PARENT_EMAIL" confirmParentEmail "$PARENT_EMAIL" password Password1 confirmPassword Password1)"
+check "acceptedTerms as string -> 400"   400 "Please accept the Terms of Service"     /api/auth/signup "$(signup_json name "$USER_NAME" password Password1 confirmPassword Password1 acceptedTerms true)"
 
 echo "== Sign-up success (WRITE: creates $USER_NAME, name sent with spaces to check trimming)"
 check "valid sign-up -> 201" 201 "\"name\":\"$USER_NAME\"" /api/auth/signup "$(signup_json name "  $USER_NAME  " password "$PASS1" confirmPassword "$PASS1")"
 KEYS=$(printf '%s' "$LAST_BODY" | python3 -c 'import sys,json;print(",".join(sorted(json.load(sys.stdin).keys())))' 2>/dev/null)
 [ "$KEYS" = "id,name" ] && pass "sign-up response has only id,name" || fail "sign-up response has only id,name" "$KEYS"
 [[ "$LAST_BODY" != *'$2'* ]] && pass "sign-up response has no bcrypt hash" || fail "sign-up response has no bcrypt hash"
-[[ "$LAST_BODY" != *"example.com"* ]] && pass "sign-up response does not echo the parent email" || fail "sign-up response does not echo the parent email"
+[[ "$LAST_BODY" != *"example.com"* ]] && pass "sign-up response does not echo the email" || fail "sign-up response does not echo the email"
 # READ-ONLY: stored consent fields (email compared inside node, never printed)
 CONSENT=$( ( set -a; . ./.env; set +a
   node -e "

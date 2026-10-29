@@ -38,13 +38,13 @@ const fieldMsg = (schema, value) => {
 
 // ---------- email ----------
 test("email: trimmed + lower-cased", () => {
-  assert.equal(emailSchema.parse("  Mum.Smith+kid@Example.CO.UK "), "mum.smith+kid@example.co.uk");
+  assert.equal(emailSchema.parse("  Mum.Smith+tag@Example.CO.UK "), "mum.smith+tag@example.co.uk");
 });
 test("email: required / invalid / too long", () => {
   assert.equal(fieldMsg(emailSchema, ""), AUTH_MESSAGES.parentEmailRequired);
   assert.equal(fieldMsg(emailSchema, "   "), AUTH_MESSAGES.parentEmailRequired);
   assert.equal(fieldMsg(emailSchema, undefined), AUTH_MESSAGES.parentEmailRequired);
-  for (const bad of ["parent", "parent@", "@example.com", "par ent@example.com", "parent@example", "a@b@c.com"]) {
+  for (const bad of ["user", "user@", "@example.com", "us er@example.com", "user@example", "a@b@c.com"]) {
     assert.equal(fieldMsg(emailSchema, bad), AUTH_MESSAGES.parentEmailInvalid, bad);
   }
   const local = "a".repeat(64);
@@ -73,7 +73,7 @@ test("CONSENT_VERSION is the agreed date string", () => {
 
 // ---------- sign-up ----------
 test("signup: email confirmation compares case/space-insensitively", () => {
-  assert.equal(signupSchema.safeParse({ ...SIGNUP, parentEmail: "Parent@Example.com", confirmParentEmail: " parent@EXAMPLE.com " }).success, true);
+  assert.equal(signupSchema.safeParse({ ...SIGNUP, parentEmail: "User@Example.com", confirmParentEmail: " user@EXAMPLE.com " }).success, true);
 });
 test("signup: email mismatch, missing confirm, missing/false terms are rejected", () => {
   assert.equal(msg(signupSchema, { ...SIGNUP, confirmParentEmail: "other@example.com" }), AUTH_MESSAGES.parentEmailsDoNotMatch);
@@ -200,4 +200,22 @@ test("reset email: username, expiry, ignore line, link; HTML is escaped", () => 
   assert.ok(html.includes("&lt;b&gt;raza&lt;/b&gt;"));
   assert.ok(!html.includes("<b>raza</b>"));
   assert.ok(html.includes(link.replace(/&/g, "&amp;")));
+});
+test("reset email: neutral wording", () => {
+  const { subject, text, html } = buildPasswordResetEmail({ username: "raza", resetLink: "https://x.test/r?token=a", expiresInMinutes: 60 });
+  assert.ok(text.startsWith("Hello,"));
+  assert.ok(text.includes('Someone asked to reset the IzzySpell password for the account "raza".'));
+  assert.ok(html.includes("for the account <strong>raza</strong>."));
+  for (const body of [subject, text, html]) assert.ok(!/parent|child|guardian|kid/i.test(body), body);
+});
+
+// ---------- user-facing messages (exact wording) ----------
+test("AUTH_MESSAGES: email + terms wording", () => {
+  assert.equal(AUTH_MESSAGES.parentEmailRequired, "Email is required");
+  assert.equal(AUTH_MESSAGES.parentEmailInvalid, "Please enter a valid email address");
+  assert.equal(AUTH_MESSAGES.parentEmailsDoNotMatch, "Emails do not match");
+  assert.equal(AUTH_MESSAGES.termsRequired, "Please accept the Terms of Service and Privacy Policy");
+  assert.equal(AUTH_MESSAGES.parentEmailIncomplete, "To add an email, enter it twice and tick the box.");
+  assert.equal(AUTH_MESSAGES.parentEmailAlreadySet, "This account already has an email. To change it, contact support.");
+  for (const m of Object.values(AUTH_MESSAGES)) assert.ok(!/parent|child|guardian|kid/i.test(m), m);
 });

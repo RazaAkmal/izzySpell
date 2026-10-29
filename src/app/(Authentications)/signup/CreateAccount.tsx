@@ -118,7 +118,7 @@ const SignupForm = () => {
         fieldName="parentEmail"
         type="text"
         requiredValue={true}
-        placeholder="Parent Email"
+        placeholder="Email"
         rules={{
           // Same rules as the server (src/lib/authValidation.ts)
           validate: zodFieldRule(emailSchema),
@@ -131,7 +131,7 @@ const SignupForm = () => {
         fieldName="confirmParentEmail"
         type="text"
         requiredValue={true}
-        placeholder="Confirm Parent Email"
+        placeholder="Confirm Email"
         rules={{
           validate: (value: any) =>
             normalizeEmail(value) === normalizeEmail(parentEmail) || AUTH_MESSAGES.parentEmailsDoNotMatch,

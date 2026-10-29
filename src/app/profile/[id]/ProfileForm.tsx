@@ -39,7 +39,7 @@ const ProfileForm = ({onComplete, userId, userData}: Props) => {
     getValues,
   } = useForm<ProfileFormValues>();
 
-  // Parent email (add-only): accounts without one can add it here; accounts with one
+  // Email (add-only): accounts without one can add it here; accounts with one
   // only see it masked. userData never contains the full address.
   const hasParentEmail = Boolean(userData?.hasParentEmail);
   const showAddParentEmail = !hasParentEmail;
@@ -62,7 +62,7 @@ const ProfileForm = ({onComplete, userId, userData}: Props) => {
   const profileImage = watch("profileImage");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  // Send the parent email fields only when the section is shown and was filled in
+  // Send the email fields only when the section is shown and was filled in
   const buildPayload = (data: ProfileFormValues) => {
     const { parentEmail, confirmParentEmail, acceptedTerms, ...profile } = data;
     if (!showAddParentEmail || !parentEmailStarted()) return profile;
@@ -306,9 +306,9 @@ const ProfileForm = ({onComplete, userId, userData}: Props) => {
       </div>
       {showAddParentEmail && (
         <div className="mb-6">
-          <p className="text-sm font-medium text-gray-700 mb-1">Parent email</p>
+          <p className="text-sm font-medium text-gray-700 mb-1">Email</p>
           <p className="text-xs text-gray-500 mb-2">
-            Add a parent or guardian email so a password reset link can be sent if the password is ever forgotten.
+            Add an email so a password reset link can be sent if the password is ever forgotten.
           </p>
           <div className="flex flex-col gap-3 items-center">
             <InputField
@@ -318,7 +318,7 @@ const ProfileForm = ({onComplete, userId, userData}: Props) => {
               fieldName="parentEmail"
               type="text"
               requiredValue={false}
-              placeholder="Parent Email"
+              placeholder="Email"
               rules={{
                 validate: (value: string) => !parentEmailStarted() || zodFieldRule(emailSchema)(value),
               }}
@@ -330,7 +330,7 @@ const ProfileForm = ({onComplete, userId, userData}: Props) => {
               fieldName="confirmParentEmail"
               type="text"
               requiredValue={false}
-              placeholder="Confirm Parent Email"
+              placeholder="Confirm Email"
               rules={{
                 validate: (value: string) =>
                   !parentEmailStarted() ||
@@ -350,8 +350,8 @@ const ProfileForm = ({onComplete, userId, userData}: Props) => {
       )}
       {showMaskedParentEmail && (
         <div className="mb-6">
-          <p className="text-sm font-medium text-gray-700 mb-1">Parent email</p>
-          <p className="text-sm text-darkBlue">{userData?.parentEmailMasked}</p>
+          <p className="text-sm font-medium text-gray-700 mb-1">Email</p>
+          <p className="text-sm text-darkBlue">Email: {userData?.parentEmailMasked}</p>
           <p className="text-xs text-gray-500 mt-1">
             To change it, contact support
             {SUPPORT_EMAIL ? (

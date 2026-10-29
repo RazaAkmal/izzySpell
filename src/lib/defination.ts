@@ -34,7 +34,7 @@ export type ProfileFormValues = {
   age: string;
   grade: string;
   profileImage: string;
-  // Only used while the account has no parent email (add-only, see authValidation)
+  // Only used while the account has no email (add-only, see authValidation)
   parentEmail?: string;
   confirmParentEmail?: string;
   acceptedTerms?: boolean;

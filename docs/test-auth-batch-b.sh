@@ -2,8 +2,8 @@
 # Login & Sign-Up hardening, Batch B (card step removed) - end-to-end checks.
 #
 # DB WRITES (shared production Neon DB, via the app unless noted):
-#   1. Creates ONE user named  zztest<RUN_ID>  (sign-up, with a fake parent email
-#      zztest-<RUN_ID>@example.com and parental consent - required since Batch C)
+#   1. Creates ONE user named  zztest<RUN_ID>  (sign-up, with a fake email
+#      zztest-<RUN_ID>@example.com and consent - required since Batch C)
 #   2. Updates that user's profile TWICE via PUT /api/auth/updateProfile
 #      (first name/last name/age/grade/profile image + profileUpdated=true). The
 #      requests also carry FAKE card fields (test card 4111...) which must be ignored.

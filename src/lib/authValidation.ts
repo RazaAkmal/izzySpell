@@ -15,14 +15,13 @@ export const AUTH_MESSAGES = {
   passwordsDoNotMatch: "Passwords do not match",
   userExists: "User with this name already exists",
   invalidRequest: "Invalid request. Please try again.",
-  parentEmailRequired: "Parent email is required",
+  parentEmailRequired: "Email is required",
   parentEmailInvalid: "Please enter a valid email address",
-  parentEmailsDoNotMatch: "Parent emails do not match",
-  termsRequired:
-    "Please confirm you are the parent or legal guardian and accept the Terms of Service and Privacy Policy",
+  parentEmailsDoNotMatch: "Emails do not match",
+  termsRequired: "Please accept the Terms of Service and Privacy Policy",
   resetLinkInvalid: "This link is invalid or has expired. Please request a new one.",
-  parentEmailIncomplete: "To add a parent email, enter it twice and tick the consent box.",
-  parentEmailAlreadySet: "This account already has a parent email. To change it, contact support.",
+  parentEmailIncomplete: "To add an email, enter it twice and tick the box.",
+  parentEmailAlreadySet: "This account already has an email. To change it, contact support.",
 } as const;
 
 export const EMAIL_MAX_LENGTH = 254;
@@ -65,8 +64,8 @@ export const existingUsernameSchema = z
   .trim()
   .min(1, AUTH_MESSAGES.usernameRequired);
 
-// Parent email: trimmed and lower-cased; stored that way. Not unique (one parent can
-// have several child accounts).
+// Account email (stored in users.parent_email): trimmed and lower-cased; stored that
+// way. Not unique (one person can have several accounts).
 export const emailSchema = z
   .string({ required_error: AUTH_MESSAGES.parentEmailRequired, invalid_type_error: AUTH_MESSAGES.parentEmailRequired })
   .trim()
@@ -151,8 +150,8 @@ export const zodFieldRule = (schema: z.ZodTypeAny) => (value: unknown) => {
 };
 
 // ---------------------------------------------------------------------------
-// Adding a parent email to an EXISTING account from "My Profile" (accounts created
-// before sign-up asked for one). Add-only on purpose: once an account has a parent
+// Adding an email to an EXISTING account from "My Profile" (accounts created
+// before sign-up asked for one). Add-only on purpose: once an account has an
 // email it cannot be changed there, so a stolen session can't swap the email and then
 // take the account over through password reset. The "only while none is on file" part
 // is enforced on the server against the database (updateProfile route).

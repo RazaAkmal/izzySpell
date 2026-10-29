@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# "My Profile": adding a parent email to an account that has none (add-only).
+# "My Profile": adding an email to an account that has none (add-only).
 # End-to-end checks against a running app.
 #
 # DB WRITES (shared production Neon DB):
-#   1. Creates ONE user  zztest<RUN_ID>p  via sign-up (fake parent email
+#   1. Creates ONE user  zztest<RUN_ID>p  via sign-up (fake email
 #      zztest-<RUN_ID>@example.com + consent), then sets its parent_email,
 #      parent_consent_at and consent_version to NULL directly with Prisma (to simulate
 #      an account created before sign-up asked for an email).
@@ -12,7 +12,7 @@
 #   3. Deletes that user at the end (only that exact name; refuses if it owns lists).
 # Nothing else is written. Emails are compared inside node and never printed.
 #
-# Usage:  bash docs/test-profile-parent-email.sh [BASE_URL]
+# Usage:  bash docs/test-profile-email.sh [BASE_URL]
 #   BASE_URL defaults to http://localhost:3000 (npm run dev must be running).
 #   Needs: curl, python3, node, .env in the project root.
 
@@ -124,9 +124,9 @@ trap cleanup EXIT
 PROFILE_ARGS=(firstName Zz lastName Test age 8-9 grade "3rd Grade")
 
 echo "Base URL: $BASE   test user: $USER_NAME   shell: ${BASH_VERSION:-not bash}"
-echo "== Setup (WRITE: user created, then its parent email removed)"
+echo "== Setup (WRITE: user created, then its email removed)"
 check "sign-up -> 201" POST /api/auth/signup "$(json name "$USER_NAME" parentEmail "$SIGNUP_EMAIL" confirmParentEmail "$SIGNUP_EMAIL" password "$PASS1" confirmPassword "$PASS1" acceptedTerms bool:true)" 201 "$USER_NAME"
-[ "$(db clear-email "$USER_NAME")" = "1" ] && pass "parent email removed (simulates an old account)" || fail "parent email removed" "-"
+[ "$(db clear-email "$USER_NAME")" = "1" ] && pass "email removed (simulates an old account)" || fail "email removed" "-"
 login "$USER_NAME" "$PASS1" && pass "login" || fail "login" "-"
 
 echo "== Profile page before: add section data, no email"
@@ -135,18 +135,18 @@ PAGE="$(curl -s -b "$JAR" "$BASE/profile/x")"
 
 echo "== Profile-only update still works (WRITE: profile fields)"
 check "profile fields only -> 200" PUT /api/auth/updateProfile "$(profile_body "${PROFILE_ARGS[@]}")" 200 '"profileUpdated":true'
-[[ "$(db state "$USER_NAME")" == "email:absent "* ]] && pass "no parent email was set" || fail "no parent email was set" "$(db state "$USER_NAME")"
+[[ "$(db state "$USER_NAME")" == "email:absent "* ]] && pass "no email was set" || fail "no email was set" "$(db state "$USER_NAME")"
 
-echo "== Rejected parent-email updates (nothing written)"
-check "email + confirm, no acceptedTerms -> 400" PUT /api/auth/updateProfile "$(profile_body "${PROFILE_ARGS[@]}" parentEmail "$NEW_EMAIL" confirmParentEmail "$NEW_EMAIL")" 400 "tick the consent box"
-check "only parentEmail -> 400"                  PUT /api/auth/updateProfile "$(profile_body "${PROFILE_ARGS[@]}" parentEmail "$NEW_EMAIL")" 400 "tick the consent box"
-check "mismatch -> 400"                          PUT /api/auth/updateProfile "$(profile_body "${PROFILE_ARGS[@]}" parentEmail "$NEW_EMAIL" confirmParentEmail "$OTHER_EMAIL" acceptedTerms bool:true)" 400 "Parent emails do not match"
+echo "== Rejected email updates (nothing written)"
+check "email + confirm, no acceptedTerms -> 400" PUT /api/auth/updateProfile "$(profile_body "${PROFILE_ARGS[@]}" parentEmail "$NEW_EMAIL" confirmParentEmail "$NEW_EMAIL")" 400 "tick the box"
+check "only parentEmail -> 400"                  PUT /api/auth/updateProfile "$(profile_body "${PROFILE_ARGS[@]}" parentEmail "$NEW_EMAIL")" 400 "tick the box"
+check "mismatch -> 400"                          PUT /api/auth/updateProfile "$(profile_body "${PROFILE_ARGS[@]}" parentEmail "$NEW_EMAIL" confirmParentEmail "$OTHER_EMAIL" acceptedTerms bool:true)" 400 "Emails do not match"
 check "invalid -> 400"                           PUT /api/auth/updateProfile "$(profile_body "${PROFILE_ARGS[@]}" parentEmail not-an-email confirmParentEmail not-an-email acceptedTerms bool:true)" 400 "valid email address"
-check "acceptedTerms false -> 400"               PUT /api/auth/updateProfile "$(profile_body "${PROFILE_ARGS[@]}" parentEmail "$NEW_EMAIL" confirmParentEmail "$NEW_EMAIL" acceptedTerms bool:false)" 400 "parent or legal guardian"
-[[ "$(db state "$USER_NAME")" == "email:absent "* ]] && pass "still no parent email after the rejected requests" || fail "still no parent email" "$(db state "$USER_NAME")"
+check "acceptedTerms false -> 400"               PUT /api/auth/updateProfile "$(profile_body "${PROFILE_ARGS[@]}" parentEmail "$NEW_EMAIL" confirmParentEmail "$NEW_EMAIL" acceptedTerms bool:false)" 400 "Please accept the Terms of Service"
+[[ "$(db state "$USER_NAME")" == "email:absent "* ]] && pass "still no email after the rejected requests" || fail "still no email" "$(db state "$USER_NAME")"
 
-echo "== Valid trio (WRITE: profile + parent email + consent)"
-check "valid parent email + consent -> 200" PUT /api/auth/updateProfile "$(profile_body firstName Added lastName Test age 8-9 grade '3rd Grade' parentEmail "  $NEW_EMAIL " confirmParentEmail "$NEW_EMAIL" acceptedTerms bool:true)" 200 '"profileUpdated":true'
+echo "== Valid trio (WRITE: profile + email + consent)"
+check "valid email + consent -> 200" PUT /api/auth/updateProfile "$(profile_body firstName Added lastName Test age 8-9 grade '3rd Grade' parentEmail "  $NEW_EMAIL " confirmParentEmail "$NEW_EMAIL" acceptedTerms bool:true)" 200 '"profileUpdated":true'
 RESP="$LAST_BODY"
 KEYS=$(printf '%s' "$RESP" | python3 -c 'import sys,json;print(",".join(sorted(json.load(sys.stdin).keys())))' 2>/dev/null)
 [ "$KEYS" = "age,firstName,grade,id,lastName,name,profileImage,profileUpdated" ] && pass "response has only the usual public fields" || fail "response public fields only" "$KEYS"
@@ -163,7 +163,7 @@ lc_page="$(printf '%s' "$PAGE" | tr '[:upper:]' '[:lower:]')"
 [[ "$PAGE" == *'hasParentEmail\":true'* || "$PAGE" == *'"hasParentEmail":true'* ]] && pass "profile page gets hasParentEmail=true" || fail "hasParentEmail=true on the page" "-"
 
 echo "== Add-only: a second, different email is rejected"
-check "second email -> 400" PUT /api/auth/updateProfile "$(profile_body firstName Changed lastName Test age 8-9 grade '3rd Grade' parentEmail "$OTHER_EMAIL" confirmParentEmail "$OTHER_EMAIL" acceptedTerms bool:true)" 400 "already has a parent email"
+check "second email -> 400" PUT /api/auth/updateProfile "$(profile_body firstName Changed lastName Test age 8-9 grade '3rd Grade' parentEmail "$OTHER_EMAIL" confirmParentEmail "$OTHER_EMAIL" acceptedTerms bool:true)" 400 "already has an email"
 STATE="$(db state "$USER_NAME" "$NEW_EMAIL_LOWER")"
 [[ "$STATE" == "email:present matches:yes "* ]] && pass "stored email unchanged (compared in node: yes)" || fail "stored email unchanged" "$STATE"
 [[ "$STATE" == *"firstName:Added" ]] && pass "rejected request wrote nothing (profile fields unchanged too)" || fail "nothing written by the rejected request" "$STATE"

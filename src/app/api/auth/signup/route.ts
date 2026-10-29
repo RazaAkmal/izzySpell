@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       data: {
         name,
         password: hashedPassword,
-        // Parental consent captured at sign-up (checkbox is required by the schema)
+        // Consent captured at sign-up (checkbox is required by the schema)
         parentEmail,
         parentConsentAt: new Date(),
         consentVersion: CONSENT_VERSION,

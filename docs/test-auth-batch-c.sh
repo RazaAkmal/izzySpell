@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Login & Sign-Up, Batch C - parent email + consent, email password reset, session
+# Login & Sign-Up, Batch C - email + consent, email password reset, session
 # invalidation after a password change. End-to-end checks against a running app.
 #
 # DB WRITES (shared production Neon DB):
 #   1. Creates TWO users via sign-up:
-#        zztest<RUN_ID>a  parent email delivered@resend.dev (Resend's test inbox)
-#        zztest<RUN_ID>b  parent email zztest-<RUN_ID>@example.com, then set to NULL
+#        zztest<RUN_ID>a  email delivered@resend.dev (Resend's test inbox)
+#        zztest<RUN_ID>b  email zztest-<RUN_ID>@example.com, then set to NULL
 #                         directly with Prisma (to get "a user without email")
 #   2. POST /api/auth/forgotPassword creates up to 3 password_reset_tokens rows for
 #      user "a" (only SHA-256 hashes are stored). If RESEND_API_KEY is set on the server
@@ -153,7 +153,7 @@ echo "Base URL: $BASE   users: $USER_A (with email), $USER_B (without)   shell: 
 echo "== Setup (WRITE: 2 users with consent; user b's email removed)"
 check "sign-up user a -> 201" POST /api/auth/signup "$(json name "$USER_A" parentEmail "$EMAIL_A" confirmParentEmail "$EMAIL_A" password "$PASS1" confirmPassword "$PASS1" acceptedTerms bool:true)" 201 "$USER_A"
 check "sign-up user b -> 201" POST /api/auth/signup "$(json name "$USER_B" parentEmail "$EMAIL_B" confirmParentEmail "$EMAIL_B" password "$PASS1" confirmPassword "$PASS1" acceptedTerms bool:true)" 201 "$USER_B"
-[ "$(db unset-email "$USER_B")" = "1" ] && pass "user b now has no parent email" || fail "user b now has no parent email" "-"
+[ "$(db unset-email "$USER_B")" = "1" ] && pass "user b now has no email" || fail "user b now has no email" "-"
 ID_A="$(db user-id "$USER_A")"; ID_B="$(db user-id "$USER_B")"
 
 echo "== Forgot password: identical answer for unknown / no-email / with-email"
@@ -161,7 +161,7 @@ request POST /api/auth/forgotPassword "$(json name "zz_no_such_user_$RUN_ID")"; 
 request POST /api/auth/forgotPassword "$(json name "$USER_B")";               R_NOEMAIL="$LAST_CODE $LAST_BODY"; T_NOEMAIL="$LAST_TIME"
 request POST /api/auth/forgotPassword "$(json name "$USER_A")";               R_EMAIL="$LAST_CODE $LAST_BODY";   T_EMAIL="$LAST_TIME"
 [ "$R_UNKNOWN" = "$R_NOEMAIL" ] && [ "$R_NOEMAIL" = "$R_EMAIL" ] && pass "identical status+body for all three ($R_EMAIL)" || fail "identical responses" "unknown=[$R_UNKNOWN] noemail=[$R_NOEMAIL] email=[$R_EMAIL]"
-[[ "$R_EMAIL" == "200 "*"If that account has a parent email on file"* ]] && pass "response is 200 with the generic message" || fail "generic message" "$R_EMAIL"
+[[ "$R_EMAIL" == "200 "*"If that account has an email on file"* ]] && pass "response is 200 with the generic message" || fail "generic message" "$R_EMAIL"
 python3 -c 'import sys; sys.exit(0 if all(float(t) >= 1.4 for t in sys.argv[1:]) else 1)' "$T_UNKNOWN" "$T_NOEMAIL" "$T_EMAIL" \
   && pass "every response padded to >=1.4s (unknown ${T_UNKNOWN}s, no-email ${T_NOEMAIL}s, email ${T_EMAIL}s)" || fail "response padding" "times: $T_UNKNOWN $T_NOEMAIL $T_EMAIL"
 check "forgotPassword empty name -> 400" POST /api/auth/forgotPassword "$(json name '   ')" 400 "Username is required"

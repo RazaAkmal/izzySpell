@@ -18,8 +18,8 @@ is claimed. Missing facts are shown as visible placeholders.
 |---|---|---|---|
 | Username | Sign-up form | Neon DB `users.name` | — (also shown in reset emails → Resend) |
 | Password | Sign-up, password reset | Neon DB `users.password` — **bcrypt hash only** | — |
-| Parent/guardian email | Sign-up; "My Profile" (add-only, only if none on file) | Neon DB `users.parent_email` (lower-cased) | Resend (reset emails) |
-| Consent time + version | Sign-up checkbox; "My Profile" when adding a parent email | `users.parent_consent_at`, `users.consent_version` | — |
+| Email | Sign-up; "My Profile" (add-only, only if none on file) | Neon DB `users.parent_email` (lower-cased) | Resend (reset emails) |
+| Consent time + version | Sign-up checkbox; "My Profile" when adding an email | `users.parent_consent_at`, `users.consent_version` | — |
 | Password changed at | Password reset | `users.password_changed_at` | — |
 | First name, last name | Profile step / "My Profile" | `users.first_name`, `users.last_name` | — |
 | Age range, school grade | Profile step / "My Profile" | `users.age`, `users.grade` | **OpenAI** (with list words, for quiz-time suggestions); also appear in server logs |
@@ -66,11 +66,11 @@ did not resolve in DNS during earlier testing (profile picture uploads currently
 | `[COMPANY ADDRESS]` | Terms, Privacy |
 | `[CONTACT EMAIL]` | Terms, Privacy |
 | `[GOVERNING LAW / JURISDICTION]` | Terms |
-| `[AGE RANGE OF CHILDREN THE SERVICE IS FOR]` | Terms |
+| `[AGE RANGE THE SERVICE IS FOR]` | Terms |
 | `[PRICING / FEES, IF ANY]` | Terms |
 | `[NOTICE PERIOD / PROCESS FOR SUSPENSION OR CLOSURE]` | Terms |
 | `[LIMITATION OF LIABILITY WORDING]` | Terms |
-| `[HOW PARENTS WILL BE TOLD ABOUT CHANGES]` | Terms, Privacy |
+| `[HOW USERS WILL BE TOLD ABOUT CHANGES]` | Terms, Privacy |
 | `[DATA HOSTING LOCATIONS / COUNTRIES]` | Privacy |
 | `[INFORMATION ABOUT INTERNATIONAL TRANSFERS, IF ANY]` | Privacy |
 | `[ANY OTHER DISCLOSURES]` | Privacy |
@@ -86,18 +86,43 @@ Also consider setting `NEXT_PUBLIC_SUPPORT_EMAIL` (shown on Forgot Password and 
    backups? Today nothing is deleted automatically (reset-token rows older than 24 h are removed only when the same
    user requests a new link).
 2. **Deletion process:** there is no self-service account deletion. Who handles deletion requests sent to the
-   contact email, how is the requester verified as the parent, and within what time?
-3. **Existing users' consent:** accounts created before 2026-10-29 have no recorded consent and no parent email.
+   contact email, how is the requester verified as the account holder, and within what time?
+3. **Existing users' consent:** accounts created before 2026-10-29 have no recorded consent and no email.
    Must they be asked to consent again (for example at next login), or is the add-only form in "My Profile" enough?
-4. **Parent email verification:** the parent email is not verified (no confirmation link). Is verification required
+4. **Email verification:** the account email is not verified (no confirmation link). Is verification required
    before relying on it for consent or password resets?
 5. **Age limits:** which ages is the service for? The profile offers ages 6-7 to 11-12 and grades 1st-6th.
 6. **Hosting location / cross-border transfer:** the app runs in the USA (Vercel `iad1`) and the database in
    Singapore (Neon `ap-southeast-1`); OpenAI, AWS and Supabase process data too. What must the policy say, and are
    agreements needed with these providers?
-7. **AI processing of children's data:** OpenAI receives list words, uploaded file text, and the child's grade and age
+7. **AI processing of user data:** OpenAI receives list words, uploaded file text, and the user's grade and age
    range. Is this acceptable as described, and should grade/age be removed from AI requests?
 8. **Legacy card data:** when will `docs/wipe-card-data.ts --execute` be run, and what should the policy say until then?
 9. **Server logs:** some logs include user id, grade and age. Should these log lines be removed?
 10. **Pricing:** the landing page shows pricing plans and free-trial wording, but the app collects no payment. What
     should the Terms say about fees?
+
+## 5. Wording changes needing legal review
+
+On request, all user-facing auth text and both legal pages were made neutral: they no longer mention parents,
+guardians or children. The flow, the data collected and the stored fields did not change (internally the email is
+still stored in `users.parent_email` and consent in `users.parent_consent_at` / `users.consent_version`).
+`CONSENT_VERSION` was deliberately **not** changed (still `2026-10-29`), so accounts that agreed to the earlier
+wording and accounts that agree to the new wording carry the same version. **Decide whether to bump it.**
+
+These changes may change the legal meaning and need review (old → new):
+
+| Where | Old wording | New wording | Why it may matter |
+|---|---|---|---|
+| Sign-up + "My Profile" consent checkbox | "I am the parent or legal guardian of the child who will use this account, and I agree to the Terms of Service and Privacy Policy" | "I agree to the Terms of Service and Privacy Policy" | No longer records a statement that a parent/guardian created the account or gave consent on a child's behalf. |
+| Error when the box is not ticked | "Please confirm you are the parent or legal guardian and accept the Terms of Service and Privacy Policy" | "Please accept the Terms of Service and Privacy Policy" | Same as above. |
+| Terms + Privacy: product description | "a spelling practice app for children" | "a spelling practice app" | The intended audience is no longer stated; it may matter for which children's privacy rules apply. The age range is still a placeholder. |
+| Terms: "Who may create an account" | "Accounts must be created by a parent or legal guardian of the child who will use them. The parent or guardian is responsible for the account and for the child's use of IzzySpell." | "The account holder is responsible for the account and for how IzzySpell is used with it." | The requirement that an adult (parent/guardian) creates the account was removed. |
+| Terms: email | "The parent or guardian must provide a working email address for themselves." | "The account holder must provide a working email address." | The email is no longer described as the parent's own address. |
+| Terms: acceptance | "By creating an account, the parent or legal guardian agrees to these terms" | "By creating an account, you agree to these terms" | Who accepts the terms is no longer specified. |
+| Privacy: consent section | Title "Accounts are created by a parent or legal guardian"; "...created by a parent or legal guardian for a child. ... the parent or guardian confirms that they are the child's parent or legal guardian and agrees..." | Title "Creating an account"; "...the account holder agrees to the Terms of Service and this policy." | Parental consent is no longer described; the policy now describes ordinary user consent. |
+| Privacy: "When parental consent was given" | "When parental consent was given and the version of the consent texts." / "To record parental consent." | "When consent was given ..." / "To record consent." | Same as above. |
+| Privacy: rights section | Title "Rights of parents and guardians"; "A parent or guardian can ask to see the information we hold about their child ... confirm that the request comes from the parent or guardian on the account." | Title "Your rights"; "You can ask to see the information we hold about your account ... confirm that the request comes from the account holder." | Who may exercise the rights (and on whose behalf) changed. |
+| Privacy: data descriptions | "A username chosen for the child", "The child's profile", "the child's age range / grade", "the parent or guardian's email address" | "A username", "Profile", "the user's age range / grade", "the account's email address" | Facts unchanged (name, age range, grade, email are still disclosed), but it no longer says the data is about a child. |
+| Placeholders | `[AGE RANGE OF CHILDREN THE SERVICE IS FOR]`, `[HOW PARENTS WILL BE TOLD ABOUT CHANGES]` | `[AGE RANGE THE SERVICE IS FOR]`, `[HOW USERS WILL BE TOLD ABOUT CHANGES]` | Placeholder text only. |
+| Password reset email | "...reset the IzzySpell password for your child's account ..." | "...reset the IzzySpell password for the account ..." | Not a legal text; listed for completeness. |

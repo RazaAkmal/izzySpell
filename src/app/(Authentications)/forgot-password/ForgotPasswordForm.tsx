@@ -6,7 +6,7 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 
 // Step 1 of resetting a password: ask for the username, then email a reset link to the
-// parent email on file. The server answers the same way for every username.
+// email on file. The server answers the same way for every username.
 
 const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL;
 
@@ -71,7 +71,7 @@ const ForgotPasswordForm = () => {
           <p className="text-green mt-2">{successMessage}</p>
           {SUPPORT_EMAIL && (
             <p className="text-sm text-darkBlue">
-              No parent email on the account? Contact support at{" "}
+              No email on the account? Contact support at{" "}
               <a href={`mailto:${SUPPORT_EMAIL}`} className="font-bold underline">
                 {SUPPORT_EMAIL}
               </a>

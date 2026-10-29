@@ -1,8 +1,7 @@
 import React from "react";
 import type { UseFormRegisterReturn } from "react-hook-form";
 
-// Parental consent checkbox, shared by sign-up and "My Profile" (adding a parent
-// email). The wording is what users agree to (stored as consent_version), so it lives
+// Consent checkbox, shared by sign-up and "My Profile" (adding an email). The wording is what users agree to (stored as consent_version), so it lives
 // in one place.
 export default function ConsentCheckbox({
   registration,
@@ -23,7 +22,7 @@ export default function ConsentCheckbox({
           {...registration}
         />
         <span>
-          I am the parent or legal guardian of the child who will use this account, and I agree to the{" "}
+          I agree to the{" "}
           <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-bold underline">
             Terms of Service
           </a>{" "}

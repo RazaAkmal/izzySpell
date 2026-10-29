@@ -15,7 +15,7 @@ import {
   PASSWORD_MAX_BYTES,
 } from "../src/lib/authValidation.ts";
 
-// A complete, valid sign-up body (Batch C added the parent email + consent fields)
+// A complete, valid sign-up body (Batch C added the email + consent fields)
 const SIGNUP = {
   name: "raza1",
   parentEmail: "Parent@Example.com",
@@ -104,7 +104,7 @@ test("password: no other complexity rule, spaces kept as typed", () => {
 });
 
 // ---------- sign-up ----------
-test("signup: valid body passes; name trimmed, parent email trimmed + lower-cased", () => {
+test("signup: valid body passes; name trimmed, email trimmed + lower-cased", () => {
   const data = signupSchema.parse({ ...SIGNUP, name: "  raza1 ", parentEmail: "  Parent@Example.COM " });
   assert.equal(data.name, "raza1");
   assert.equal(data.parentEmail, "parent@example.com");

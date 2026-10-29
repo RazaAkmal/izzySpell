@@ -6,7 +6,7 @@ import { maskEmail } from "@/lib/maskEmail";
 // Wrapped in React `cache` so repeated calls in the same request (e.g. a page and
 // DashboardLayout) share one database query.
 //
-// The parent email is read here but only returned as `hasParentEmail` + a masked
+// The account email is read here but only returned as `hasParentEmail` + a masked
 // string (e.g. "m***@example.com"): this result is passed to client components (the
 // profile form), so the full address must never be part of it.
 export const getUserDetails = cache(async (userId: string) => {

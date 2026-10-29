@@ -5,7 +5,7 @@ import { AUTH_MESSAGES, parseParentEmailUpdate } from '@/lib/authValidation';
 import { CONSENT_VERSION } from '@/lib/consent';
 
 // Only non-sensitive fields are sent back (no password hash, no card fields, and never
-// the parent email - not even when it was just added)
+// the email - not even when it was just added)
 const PUBLIC_USER_SELECT = {
   id: true,
   name: true,
@@ -40,7 +40,7 @@ export async function PUT(req: Request) {
   }
   const { firstName, lastName, age, grade, profileImage } = parsed.data.data;
 
-  // Optional: add a parent email to an account that has none (all three fields
+  // Optional: add an email to an account that has none (all three fields
   // together: parentEmail, confirmParentEmail, acceptedTerms). Validated here; the
   // add-only rule is enforced by the database condition below.
   const emailUpdate = parseParentEmailUpdate((body as { data?: unknown }).data);
@@ -62,7 +62,7 @@ export async function PUT(req: Request) {
   try {
     if (emailUpdate.action === 'set') {
       // Add-only, checked against the database in the same statement: the row is only
-      // updated if it has NO parent email yet. If one is already on file, nothing at
+      // updated if it has NO email yet. If one is already on file, nothing at
       // all is written (profile fields included) and the request is rejected.
       const result = await prisma.user.updateMany({
         where: { id: userId, parentEmail: null },
