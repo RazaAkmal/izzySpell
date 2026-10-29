@@ -14,7 +14,11 @@ const NAV_LINKS = [
   {
     label: "Privacy Policy",
     img: "/images/LandingPage/privacy-policy.svg",
-    href: "#privacy",
+    href: "/privacy",
+  },
+  {
+    label: "Terms of Service",
+    href: "/terms",
   },
   {
     label: "Play Games",

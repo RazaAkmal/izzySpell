@@ -7,7 +7,16 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import SuccessSignUpModal from "./SuccessSignUpModal";
 import PasswordToggleButton from "@/components/PasswordToggleButton";
+import ConsentCheckbox from "@/components/ConsentCheckbox";
 import { authenticate } from "@/app/actions/authenticate";
+import {
+  AUTH_MESSAGES,
+  emailSchema,
+  normalizeEmail,
+  passwordSchema,
+  usernameSchema,
+  zodFieldRule,
+} from "@/lib/authValidation";
 
 const SignupForm = () => {
   const {
@@ -18,6 +27,7 @@ const SignupForm = () => {
   } = useForm<SignupFormValues>();
   const router = useRouter();
   const password = watch("password"); // Watch the password field
+  const parentEmail = watch("parentEmail");
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successModal, setSuccessModal] = useState<boolean>(false);
@@ -36,7 +46,11 @@ const SignupForm = () => {
         },
         body: JSON.stringify({
           name: data.name,
+          parentEmail: data.parentEmail,
+          confirmParentEmail: data.confirmParentEmail,
           password: data.password,
+          confirmPassword: data.confirmPassword,
+          acceptedTerms: data.acceptedTerms === true,
         }),
       });
 
@@ -52,7 +66,8 @@ const SignupForm = () => {
       // On success the server action redirects; if it fails, fall back to
       // the success modal so the user can log in manually.
       const formData = new FormData();
-      formData.append("name", data.name);
+      // Use the name as stored by the server (trimmed)
+      formData.append("name", user.name ?? data.name);
       formData.append("password", data.password);
       formData.append("redirectTo", `/profile/${user.id}`);
       const signInError = await authenticate(undefined, formData).catch(
@@ -92,18 +107,34 @@ const SignupForm = () => {
         requiredValue={true}
         placeholder="User Name"
         rules={{
-          minLength: {
-            value: 4,
-            message: "Username must be at least 4 characters",
-          },
-          pattern: {
-            value: /^[\p{L}\p{N}]+$/u,
-            message: "Username must contain only letters and numbers",
-          },
-          validate: {
-            notOnlyNumbers: (value: string) =>
-              /\p{L}/u.test(value) || "Username cannot be all numbers",
-          },
+          // Same rules as the server (src/lib/authValidation.ts)
+          validate: zodFieldRule(usernameSchema),
+        }}
+      />
+      <InputField
+        id="parentEmail"
+        register={register}
+        errors={errors}
+        fieldName="parentEmail"
+        type="text"
+        requiredValue={true}
+        placeholder="Parent Email"
+        rules={{
+          // Same rules as the server (src/lib/authValidation.ts)
+          validate: zodFieldRule(emailSchema),
+        }}
+      />
+      <InputField
+        id="confirmParentEmail"
+        register={register}
+        errors={errors}
+        fieldName="confirmParentEmail"
+        type="text"
+        requiredValue={true}
+        placeholder="Confirm Parent Email"
+        rules={{
+          validate: (value: any) =>
+            normalizeEmail(value) === normalizeEmail(parentEmail) || AUTH_MESSAGES.parentEmailsDoNotMatch,
         }}
       />
       <div className="relative w-full max-w-md">
@@ -117,10 +148,7 @@ const SignupForm = () => {
           placeholder="Password"
           className="pr-10"
           rules={{
-            minLength: {
-              value: 6,
-              message: "Password must be at least 6 characters",
-            },
+            validate: zodFieldRule(passwordSchema),
           }}
         />
         <PasswordToggleButton show={showPassword} onClick={() => setShowPassword((v) => !v)} />
@@ -138,11 +166,18 @@ const SignupForm = () => {
           className="pr-10"
           rules={{
             validate: (value: any) =>
-              value === password || "Passwords do not match",
+              value === password || AUTH_MESSAGES.passwordsDoNotMatch,
           }}
         />
         <PasswordToggleButton show={showConfirmPassword} onClick={() => setShowConfirmPassword((v) => !v)} />
       </div>
+      <ConsentCheckbox
+        registration={register("acceptedTerms", {
+          shouldUnregister: true,
+          validate: (value: boolean) => value === true || AUTH_MESSAGES.termsRequired,
+        })}
+        error={errors.acceptedTerms?.message}
+      />
       {errorMessage && <p className="text-red-500 mt-2">{errorMessage}</p>}
       <div className="w-full max-w-md px-4">
         <CustomButton

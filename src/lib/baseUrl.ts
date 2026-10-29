@@ -10,3 +10,20 @@ export async function getBaseUrl() {
   }
   return process.env.NEXT_PUBLIC_BASE_URL || "";
 }
+
+// Public site URL for links that leave the app (e.g. password reset emails).
+// Comes ONLY from configuration - never from the request's Host/Origin headers,
+// which an attacker controls (host-header poisoning would put their domain in a
+// real reset email). SITE_URL wins (set it to http://localhost:3000 locally);
+// otherwise NEXT_PUBLIC_BASE_URL. Returns null if neither is a valid http(s) URL.
+export function getSiteUrl(): string | null {
+  const configured = (process.env.SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || "").trim();
+  if (!configured) return null;
+  try {
+    const url = new URL(configured);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    return url.origin;
+  } catch {
+    return null;
+  }
+}

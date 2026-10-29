@@ -9,19 +9,18 @@ import AgeGradeSelectionButton from "@/components/AgeGradeSelectionButton";
 import CustomButton from "@/components/HeadlessButton";
 import { supabase } from "@/app/utils/supabaseClient";
 import { v4 as uuidv4 } from 'uuid';
+import { AGE_OPTIONS, GRADE_OPTIONS, firstNameSchema, lastNameSchema } from "@/lib/profileValidation";
+import { AUTH_MESSAGES, emailSchema, normalizeEmail, zodFieldRule } from "@/lib/authValidation";
+import ConsentCheckbox from "@/components/ConsentCheckbox";
+
+const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL;
 
 const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg"];
 const MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024;
 
-const ageOptions = ["6-7", "7-8", "8-9", "9-10", "10-11", "11-12"];
-const gradeOptions = [
-  "1st Grade",
-  "2nd Grade",
-  "3rd Grade",
-  "4th Grade",
-  "5th Grade",
-  "6th Grade",
-];
+// Same options the server accepts (src/lib/profileValidation.ts)
+const ageOptions = AGE_OPTIONS;
+const gradeOptions = GRADE_OPTIONS;
 type Props = {
   onComplete: () => void,
   userId: string | string[] | undefined; 
@@ -37,8 +36,20 @@ const ProfileForm = ({onComplete, userId, userData}: Props) => {
     setValue,
     formState: { errors },
     watch,
+    getValues,
   } = useForm<ProfileFormValues>();
-  console.log(userData)
+
+  // Parent email (add-only): accounts without one can add it here; accounts with one
+  // only see it masked. userData never contains the full address.
+  const hasParentEmail = Boolean(userData?.hasParentEmail);
+  const showAddParentEmail = !hasParentEmail;
+  // Shown on "My Profile" only - not on the first profile step right after sign-up
+  const showMaskedParentEmail = hasParentEmail && Boolean(userData?.profileUpdated);
+  // The three fields are optional, but all-or-nothing
+  const parentEmailStarted = () => {
+    const v = getValues();
+    return Boolean((v.parentEmail ?? "").trim() || (v.confirmParentEmail ?? "").trim() || v.acceptedTerms);
+  };
   useEffect(() => {
     if (userData) {
       setValue("firstName", userData.firstName ?? "");
@@ -51,6 +62,12 @@ const ProfileForm = ({onComplete, userId, userData}: Props) => {
   const profileImage = watch("profileImage");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Send the parent email fields only when the section is shown and was filled in
+  const buildPayload = (data: ProfileFormValues) => {
+    const { parentEmail, confirmParentEmail, acceptedTerms, ...profile } = data;
+    if (!showAddParentEmail || !parentEmailStarted()) return profile;
+    return { ...profile, parentEmail, confirmParentEmail, acceptedTerms: acceptedTerms === true };
+  };
   const submitForm = async (data: ProfileFormValues) => {
     setSaving(true);
     setSaveError(null);
@@ -61,13 +78,16 @@ const ProfileForm = ({onComplete, userId, userData}: Props) => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ data, userId }),
+          body: JSON.stringify({ data: buildPayload(data), userId }),
         });
 
         if (!response.ok) {
+          const result = await response.json().catch(() => ({}));
           throw new Error(
             response.status === 401
               ? "Your session has expired. Please log in again."
+              : response.status === 400 && typeof result.error === "string"
+              ? result.error
               : "We couldn't save your profile. Please try again."
           );
         }
@@ -192,6 +212,7 @@ const ProfileForm = ({onComplete, userId, userData}: Props) => {
           fieldName="firstName"
           type="text"
           requiredValue={true}
+          rules={{ validate: zodFieldRule(firstNameSchema) }}
           placeholder="First Name"
         />
         <InputField
@@ -201,6 +222,7 @@ const ProfileForm = ({onComplete, userId, userData}: Props) => {
           fieldName="lastName"
           type="text"
           requiredValue={true}
+          rules={{ validate: zodFieldRule(lastNameSchema) }}
           placeholder="Last Name"
         />
       </div>
@@ -282,6 +304,68 @@ const ProfileForm = ({onComplete, userId, userData}: Props) => {
           )}
         />
       </div>
+      {showAddParentEmail && (
+        <div className="mb-6">
+          <p className="text-sm font-medium text-gray-700 mb-1">Parent email</p>
+          <p className="text-xs text-gray-500 mb-2">
+            Add a parent or guardian email so a password reset link can be sent if the password is ever forgotten.
+          </p>
+          <div className="flex flex-col gap-3 items-center">
+            <InputField
+              id="parentEmail"
+              register={register}
+              errors={errors}
+              fieldName="parentEmail"
+              type="text"
+              requiredValue={false}
+              placeholder="Parent Email"
+              rules={{
+                validate: (value: string) => !parentEmailStarted() || zodFieldRule(emailSchema)(value),
+              }}
+            />
+            <InputField
+              id="confirmParentEmail"
+              register={register}
+              errors={errors}
+              fieldName="confirmParentEmail"
+              type="text"
+              requiredValue={false}
+              placeholder="Confirm Parent Email"
+              rules={{
+                validate: (value: string) =>
+                  !parentEmailStarted() ||
+                  normalizeEmail(value) === normalizeEmail(getValues("parentEmail")) ||
+                  AUTH_MESSAGES.parentEmailsDoNotMatch,
+              }}
+            />
+            <ConsentCheckbox
+              registration={register("acceptedTerms", {
+                shouldUnregister: true,
+                validate: (value?: boolean) => !parentEmailStarted() || value === true || AUTH_MESSAGES.termsRequired,
+              })}
+              error={errors.acceptedTerms?.message}
+            />
+          </div>
+        </div>
+      )}
+      {showMaskedParentEmail && (
+        <div className="mb-6">
+          <p className="text-sm font-medium text-gray-700 mb-1">Parent email</p>
+          <p className="text-sm text-darkBlue">{userData?.parentEmailMasked}</p>
+          <p className="text-xs text-gray-500 mt-1">
+            To change it, contact support
+            {SUPPORT_EMAIL ? (
+              <>
+                {" "}at{" "}
+                <a href={`mailto:${SUPPORT_EMAIL}`} className="font-bold underline">
+                  {SUPPORT_EMAIL}
+                </a>
+              </>
+            ) : null}
+            .
+          </p>
+        </div>
+      )}
       {saveError && (
         <p className="text-red-500 text-sm text-center mb-3">{saveError}</p>
       )}

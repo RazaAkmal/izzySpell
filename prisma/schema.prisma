@@ -31,9 +31,14 @@ model User {
   expireMonth    String?        @map(name: "expire_month")
   expireYear     String?        @map(name: "expire_year")
   cardCVC        String?        @map(name: "card_cvc")
+  parentEmail       String?   @map(name: "parent_email") // not unique: one parent can have several child accounts
+  parentConsentAt   DateTime? @map(name: "parent_consent_at")
+  consentVersion    String?   @map(name: "consent_version")
+  passwordChangedAt DateTime? @map(name: "password_changed_at")
   spellingLists  SpellingList[] // Relation to SpellingList
   quizAttempts   QuizAttempt[]
   quizMistakes   QuizMistake[]
+  passwordResetTokens PasswordResetToken[]
 
   @@map(name: "users")
 }
@@ -168,4 +173,17 @@ model ScrambleWord {
 
   @@index([listId])
   @@map(name: "scramble_words")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String    @map(name: "user_id")
+  tokenHash String    @unique @map(name: "token_hash") // only a SHA-256 hash of the token is stored
+  expiresAt DateTime  @map(name: "expires_at")
+  usedAt    DateTime? @map(name: "used_at")
+  createdAt DateTime  @default(now()) @map(name: "created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map(name: "password_reset_tokens")
 }

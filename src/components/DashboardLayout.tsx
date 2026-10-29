@@ -20,6 +20,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = async ({
 }) => {
   const session = (await auth()) as Session | null;
   const user = session?.user as User;
+  // No session (e.g. it was ended after a password change): middleware can't tell,
+  // so clear the cookie and go to sign-in via /session-expired (avoids a redirect loop)
+  if (!user?.id) {
+    redirect("/session-expired");
+  }
   const userData = user?.id ? await getUserDetails(user.id) : undefined;
   if (userData?.id && userData?.profileUpdated === false) {
     redirect(`/profile/${userData?.id}`);

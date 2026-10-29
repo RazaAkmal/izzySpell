@@ -1,5 +1,5 @@
 import React from "react";
-import ResetPassword from "./ResetPassword";
+import ForgotPasswordForm from "./ForgotPasswordForm";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -17,9 +17,9 @@ export default function LoginPage() {
           />
         </div>
         <p className="text-center text-blue font-bold text-3xl mb-6">
-          Set New Password
+          Forgot Password
         </p>
-        <ResetPassword />
+        <ForgotPasswordForm />
         <p className="mt-4 text-center text-purple text-sm">
           Don’t have an account yet?{" "}
           <Link

@@ -11,7 +11,8 @@ export default async function MistakesPracticePage({ params }: { params: Promise
   const session = await auth();
 
   if (!session?.user) {
-    redirect("/api/auth/signin");
+    // No session (e.g. ended after a password change): clear the cookie and go to sign-in
+    redirect("/session-expired");
   }
 
   const listId = (await params).listId;
