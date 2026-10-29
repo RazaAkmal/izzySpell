@@ -13,13 +13,17 @@ const ListNameContext = createContext<ListNameContextType | undefined>(undefined
 export function ListNameProvider({
   children,
   listId,
+  initialListName,
 }: {
   children: React.ReactNode;
   listId: string;
+  // When the page already loaded the name on the server, skip the client fetch
+  initialListName?: string;
 }) {
-  const [listName, setListName] = useState("");
+  const [listName, setListName] = useState(initialListName ?? "");
 
   useEffect(() => {
+    if (initialListName !== undefined) return;
     const fetchListName = async () => {
       try {
         const result = await getListById(parseInt(listId));
@@ -32,7 +36,7 @@ export function ListNameProvider({
     };
 
     fetchListName();
-  }, [listId]);
+  }, [listId, initialListName]);
 
   return (
     <ListNameContext.Provider value={{ listName, setListName }}>

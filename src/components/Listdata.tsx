@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { SpellingListItem } from "@/lib/defination";
@@ -8,6 +8,7 @@ import EditWordModal from "./EditWordsModal";
 import { deleteList, fetchWordsForList, resetListProgress } from "@/app/actions/prismaActions";
 import { revalidateRoute } from "@/app/actions/revalidate";
 import ConfirmationModal from "./ConfirmationModal";
+import type { PrefetchKind } from "next/dist/client/components/router-reducer/router-reducer-types";
 
 function AllListData({
   spellingLists,
@@ -29,6 +30,19 @@ function AllListData({
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [isResetLoading, setIsResetLoading] = useState(false);
+
+  // Prefetch a row's "Continue Learning" page when the user is about to click
+  // (hover, focus or touch), so the click shows the loading screen straight away.
+  // Done on intent rather than on mount because a user can have dozens of lists.
+  // "auto" prefetches only up to the loading screen, so progress data is still
+  // fetched fresh on click. ("View All" already opens instantly: it shares this
+  // page's loading screen.) No-op in `next dev`.
+  const prefetchedListIds = useRef(new Set<number>());
+  const prefetchListPages = (listId: number) => {
+    if (prefetchedListIds.current.has(listId)) return;
+    prefetchedListIds.current.add(listId);
+    route.prefetch(`/spellPractice/${listId}`, { kind: "auto" as PrefetchKind });
+  };
 
   const handleContinueLearning = (listId: number) => {
     route.push(`/spellPractice/${listId}`);
@@ -119,6 +133,9 @@ function AllListData({
       {spellingLists.map((item) => (
         <div
           key={item.id}
+          onMouseEnter={() => prefetchListPages(item.id)}
+          onFocus={() => prefetchListPages(item.id)}
+          onTouchStart={() => prefetchListPages(item.id)}
           className="grid px-2 py-2 grid-cols-1 md:grid-cols-12 text-left gap-4 items-center md:gap-0 bg-[#ECF7FF] border-2 border-sky-300 rounded-2xl mb-3 shadow-md"
         >
           <div className="md:col-span-3 flex items-center gap-2 me-3">

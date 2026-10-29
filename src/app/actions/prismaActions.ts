@@ -66,16 +66,23 @@ export const deleteList = async (listId: number | string, userId: string) => {
 };
 
 
+// Same data as GET /api/fetch-words (the list plus its words), read directly from
+// the database instead of making an extra HTTP request to this app's own API.
 export async function fetchWordsForList(userId: string, listId: number) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-  const response = await fetch(
-    `${baseUrl}/api/fetch-words?userId=${userId}&&spellingListId=${listId}`,
-    {
-      cache: "no-store",
-    }
-  );
-  const { spellingListWithWords } = await response.json(); 
-  return spellingListWithWords;
+  // The API returned nothing for a missing userId or an invalid list id
+  if (!userId || isNaN(listId)) return undefined;
+  try {
+    const [list, words] = await Promise.all([
+      prisma.spellingList.findUnique({ where: { id: listId } }),
+      prisma.word.findMany({ where: { listId } }),
+    ]);
+    if (!list) return undefined;
+    // JSON round-trip keeps the exact shape the API response had (e.g. dates as strings)
+    return JSON.parse(JSON.stringify({ ...list, words }));
+  } catch (error) {
+    console.error("Error fetching spelling list and words:", error);
+    return undefined;
+  }
 }
 
 export async function getWordCountForEachExercise(listId: number) {
@@ -196,16 +203,16 @@ export async function getGroupedWordsByListId(listId: number) {
 
 export async function markWordsAsStudied(wordIds: number[]) {
   try {
-    // Update only the words with the provided IDs
-    await prisma.word.updateMany({
-      where: { id: { in: wordIds }, studied: false },
-      data: { studied: true },
-    });
-
-    // Get the listId from the first word
-    const listId = (
-      await prisma.word.findUnique({ where: { id: wordIds[0] } })
-    )?.listId;
+    // Update only the words with the provided IDs, and get the listId from the
+    // first word at the same time (independent queries, so run them together)
+    const [, firstWord] = await Promise.all([
+      prisma.word.updateMany({
+        where: { id: { in: wordIds }, studied: false },
+        data: { studied: true },
+      }),
+      prisma.word.findUnique({ where: { id: wordIds[0] } }),
+    ]);
+    const listId = firstWord?.listId;
 
     if (listId) {
       await updateListProgress(listId);
@@ -265,10 +272,16 @@ export async function markSyllableWordsAsStudied(wordIds: number[], listId: numb
 }
 
 export async function markGroupAsStudied(groupName: string, listId: number) {
+  return markGroupsAsStudied([groupName], listId);
+}
+
+// Marks several groups at once with a single update and a single progress
+// recalculation (instead of one full save per group).
+export async function markGroupsAsStudied(groupNames: string[], listId: number) {
   try {
     await prisma.groupedWord.updateMany({
       where: {
-        groupName,
+        groupName: { in: groupNames },
         listId,
         studied: false
       },
@@ -280,50 +293,57 @@ export async function markGroupAsStudied(groupName: string, listId: number) {
     return { success: true as const };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.log("[markGroupAsStudied] failed:", { groupName, listId, message });
+    console.log("[markGroupsAsStudied] failed:", { groupNames, listId, message });
     return { success: false as const, error: message };
   }
 }
 
 // Helper function to update list progress
 async function updateListProgress(listId: number) {
+  // All counts in one parallel round (previously ~5 sequential steps that also
+  // loaded every word just to count them). The formula below is unchanged.
+  const [totalWords, studiedWords, totalSyllableWords, syllableWordsStudied, groupCounts] =
+    await Promise.all([
+      prisma.word.count({ where: { listId } }),
+      prisma.word.count({ where: { listId, studied: true } }),
+      prisma.syllableWord.count({ where: { listId } }),
+      prisma.syllableWord.count({ where: { listId, studied: true } }),
+      // One row per (group, studied) pair gives both total and studied counts per group
+      prisma.groupedWord.groupBy({
+        by: ['groupName', 'studied'],
+        where: { listId },
+        _count: { word: true },
+      }),
+    ]);
+
   // Calculate progress for regular words
-  const regularWords = await getWordsByListId(listId);
-  const regularProgress = regularWords.total > 0 
-    ? (regularWords.studiedWordCount / regularWords.total) * 100 
+  const regularProgress = totalWords > 0
+    ? (studiedWords / totalWords) * 100
     : 0;
 
   // Calculate progress for syllable words
-  const syllableWords = await getSyllableWordsByListId(listId);
-  const syllableWordsStudied = await prisma.syllableWord.count({
-    where: { listId, studied: true },
-  });
-  const syllableProgress = syllableWords.total > 0 
-    ? (syllableWordsStudied / syllableWords.total) * 100 
+  const syllableProgress = totalSyllableWords > 0
+    ? (syllableWordsStudied / totalSyllableWords) * 100
     : 0;
+
   // Calculate progress for grouped words
-  const groupedWords = await getGroupedWordsByListId(listId);
-  
-  // Get all unique group names for this list and count words in each group
-  const groupsWithCounts = await prisma.groupedWord.groupBy({
-    by: ['groupName'],
-    where: { listId },
-    _count: {
-      word: true
-    }
-  });
-  
+  const totalPerGroup = new Map<string, number>();
+  const studiedPerGroup = new Map<string, number>();
+  for (const row of groupCounts) {
+    totalPerGroup.set(row.groupName, (totalPerGroup.get(row.groupName) ?? 0) + row._count.word);
+    if (row.studied) studiedPerGroup.set(row.groupName, row._count.word);
+  }
   // Filter out groups with only one word
-  const validGroups = groupsWithCounts.filter(group => group._count.word > 1);
-  const totalGroups = validGroups.length;
-  const groupedProgress = totalGroups > 0 
-    ? (groupedWords.totalStudiedGroups / totalGroups) * 100 
+  const totalGroups = [...totalPerGroup.values()].filter((count) => count > 1).length;
+  const totalStudiedGroups = [...studiedPerGroup.values()].filter((count) => count > 1).length;
+  const groupedProgress = totalGroups > 0
+    ? (totalStudiedGroups / totalGroups) * 100
     : 0;
 
   // Count how many exercise types are present
   const activeTypes = [
-    regularWords.total > 0,
-    syllableWords.total > 0,
+    totalWords > 0,
+    totalSyllableWords > 0,
     totalGroups > 0
   ].filter(Boolean).length;
 

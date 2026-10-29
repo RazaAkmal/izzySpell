@@ -6,6 +6,18 @@ export type User = {
 
 export type SignupFormValues = {
   name: string;
+  parentEmail: string;
+  confirmParentEmail: string;
+  password: string;
+  confirmPassword: string;
+  acceptedTerms: boolean;
+};
+
+export type ForgotPasswordFormValues = {
+  name: string;
+};
+
+export type ResetPasswordFormValues = {
   password: string;
   confirmPassword: string;
 };
@@ -22,13 +34,10 @@ export type ProfileFormValues = {
   age: string;
   grade: string;
   profileImage: string;
-};
-export type CardDetailsFormValues = {
-  card_number: number;
-  cardName: string;
-  expireMonth: string;
-  expireYear: number;
-  cardCVC: number;
+  // Only used while the account has no email (add-only, see authValidation)
+  parentEmail?: string;
+  confirmParentEmail?: string;
+  acceptedTerms?: boolean;
 };
 
 

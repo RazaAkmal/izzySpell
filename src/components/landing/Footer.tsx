@@ -10,8 +10,8 @@ const NAV_LINKS = [
 
 const SUPPORT_LINKS = [
   { label: "Help Center", href: "#" },
-  { label: "Privacy Policy", href: "#" },
-  { label: "Terms of Service", href: "#" },
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Terms of Service", href: "/terms" },
   { label: "Contact Us", href: "#" },
 ];
 

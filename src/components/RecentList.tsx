@@ -6,6 +6,7 @@ import { SpellingListItem } from "@/lib/defination";
 import CustomButton from "./HeadlessButton";
 import { useRouter } from "next/navigation";
 import ConfirmationModal from "./ConfirmationModal";
+import type { PrefetchKind } from "next/dist/client/components/router-reducer/router-reducer-types";
 
 const MyRecentList = ({
   spellingLists,
@@ -23,6 +24,17 @@ const MyRecentList = ({
     setAllLists(spellingLists);
     setDisplayedLists(spellingLists.slice(0, 3)); // Always show the newest 3 lists
   }, [spellingLists]);
+
+  // Prefetch the practice page for each visible list so a click shows its
+  // loading screen straight away. "auto" (what <Link> uses) prefetches only up to
+  // the loading screen; router.prefetch's default ("full") would also cache the
+  // progress data for 5 minutes and show stale progress on a later click.
+  // (Prefetching only runs in production builds, not in `next dev`.)
+  useEffect(() => {
+    displayedLists.forEach((item) =>
+      router.prefetch(`/spellPractice/${item.id}`, { kind: "auto" as PrefetchKind })
+    );
+  }, [displayedLists, router]);
 
   const handleRemoveItem = (itemId: number) => {
     const updatedAllLists = allLists.filter((item) => item.id !== itemId);
@@ -71,8 +83,8 @@ const MyRecentList = ({
         <Image
           src="/images/titles/MyListTitle.svg"
           alt="User avatar"
-          width={40}
-          height={40}
+          width={324}
+          height={90}
           className="w-52"
         />
         <CustomButton

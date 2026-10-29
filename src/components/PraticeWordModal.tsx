@@ -35,6 +35,9 @@ interface PracticeWordModalProps {
   words: string[];
   initialRecentAttempts: QuizAttempt[];
   initialMistakesCount: number;
+  // Pre-checked on the server; null/undefined means "unknown" and the client checks itself
+  initialFlashCardsExist?: boolean | null;
+  initialScrambleWordsExist?: boolean | null;
 }
 
 const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
@@ -47,6 +50,8 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
   words,
   initialRecentAttempts,
   initialMistakesCount,
+  initialFlashCardsExist = null,
+  initialScrambleWordsExist = null,
 }) => {
   const router = useRouter();
   const { listId } = useParams();
@@ -61,8 +66,8 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
   const hasShownInitialQuizData = useRef(false);
   const [isGeneratingFlashCards, setIsGeneratingFlashCards] = useState(false);
   const [isGeneratingScrambleWords, setIsGeneratingScrambleWords] = useState(false);
-  const [flashCardsExist, setFlashCardsExist] = useState<boolean | null>(null); // null = checking, true = exist, false = don't exist
-  const [scrambleWordsExist, setScrambleWordsExist] = useState<boolean | null>(null); // null = checking, true = exist, false = don't exist
+  const [flashCardsExist, setFlashCardsExist] = useState<boolean | null>(initialFlashCardsExist); // null = checking, true = exist, false = don't exist
+  const [scrambleWordsExist, setScrambleWordsExist] = useState<boolean | null>(initialScrambleWordsExist); // null = checking, true = exist, false = don't exist
   
   // Fetch recent quiz attempts when quiz tab is selected.
   // First click: skip (server pre-fetched). Subsequent clicks: refresh silently
@@ -86,8 +91,9 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
   }, [selectedTab, listId]);
 
   // Check if flash cards exist for this list on component mount
+  // (skipped when the server already told us)
   useEffect(() => {
-    if (listId) {
+    if (listId && initialFlashCardsExist === null) {
       const numericListId = parseInt(listId as string, 10);
       checkFlashCardsExist(numericListId)
         .then((result) => {
@@ -98,11 +104,12 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
           setFlashCardsExist(false);
         });
     }
-  }, [listId]);
+  }, [listId, initialFlashCardsExist]);
 
   // Check if scramble words exist for this list on component mount
+  // (skipped when the server already told us)
   useEffect(() => {
-    if (listId) {
+    if (listId && initialScrambleWordsExist === null) {
       const numericListId = parseInt(listId as string, 10);
       checkScrambleWordsExist(numericListId)
         .then((result) => {
@@ -113,7 +120,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
           setScrambleWordsExist(false);
         });
     }
-  }, [listId]);
+  }, [listId, initialScrambleWordsExist]);
 
   // Update selected mode when tab changes
   useEffect(() => {

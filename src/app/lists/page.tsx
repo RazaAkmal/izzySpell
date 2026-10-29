@@ -10,14 +10,11 @@ import { redirect } from "next/navigation";
 
 const AllListsPage = async () => {
   const session = (await auth()) as Session | null;
-  if (!session) { 
-    redirect('/sign-in'); 
+  // No session (e.g. ended after a password change): clear the cookie and go to sign-in
+  if (!session?.user) {
+    redirect('/session-expired');
   }
-  const user = session?.user;
-
-  if (!user) {
-    return <div>Loading...</div>;
-  }
+  const user = session.user;
 
   const spellingWithColors = user?.id ? await fetchSpellingLists(user.id) : [];
   

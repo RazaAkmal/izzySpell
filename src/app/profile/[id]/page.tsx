@@ -2,12 +2,14 @@ import { auth } from "@/auth";
 import MultiStepForm from "./MultiStepForm";
 import { Session } from "next-auth";
 import { getUserDetails } from "@/app/actions/getUserDetails";
+import { redirect } from "next/navigation";
 const ProfilePage = async () => {
   const session = (await auth()) as Session | null;
     const user = session?.user;
   
+    // No session (e.g. ended after a password change): clear the cookie and go to sign-in
     if (!user) {
-      return <div>Loading...</div>;
+      redirect("/session-expired");
     }
   
     const userData = user?.id ? await getUserDetails(user.id) : undefined;

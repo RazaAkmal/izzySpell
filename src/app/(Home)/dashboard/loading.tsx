@@ -12,8 +12,8 @@ const Loading = () => {
             <Image
               src="/images/titles/AddSpellingListTitle.svg"
               alt="Add Spelling List"
-              width={40}
-              height={40}
+              width={554}
+              height={90}
               className="w-72 mx-auto"
             />
             <div className="w-80 h-6 bg-gray-300 rounded-md mx-auto mb-4"></div>

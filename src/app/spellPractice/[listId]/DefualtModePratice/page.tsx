@@ -3,6 +3,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import DefaultModePage from "@/components/DefaultModePage";
 import { getWordsByListId } from "@/app/actions/prismaActions";
 import { ListNameProvider } from "@/context/ListNameContext";
+import { preloadCurrentUserDetails } from "@/app/actions/getUserDetails";
 
 async function page({
   params,
@@ -10,11 +11,13 @@ async function page({
   params: Promise<{ listId: string }>;
 }) {
   const listId = (await params).listId
-  const { words, studiedWordCount } = await getWordsByListId(parseInt(listId));
+  // Header's user lookup runs in parallel with this page's queries
+  preloadCurrentUserDetails();
+  const { list, words, studiedWordCount } = await getWordsByListId(parseInt(listId));
   return (
     <>
       <DashboardLayout showFooter={false}>
-        <ListNameProvider listId={listId}>
+        <ListNameProvider listId={listId} initialListName={list?.listName}>
           { words.length > 0 && <DefaultModePage studiedWordCount={studiedWordCount} words={words} listId={listId} /> }
         </ListNameProvider>
       </DashboardLayout>

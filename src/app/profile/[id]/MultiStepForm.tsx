@@ -1,7 +1,6 @@
 "use client";
 import React, { useState } from "react";
 import ProfileForm from "./ProfileForm";
-import CardDetailsForm from "./CardDetailsForm";
 import SuccessModal from "./SuccessModal";
 
 type Props = {
@@ -24,10 +23,8 @@ const MultiStepForm = ({ userId, userData }: Props) => {
           onComplete={handleNextStep}
         />
       )}
-      {step === 2 && (
-        <CardDetailsForm userId={userId} onComplete={handleNextStep} />
-      )}
-      {step === 3 && <SuccessModal />}
+      {/* The profile step alone completes onboarding (no card step) */}
+      {step === 2 && <SuccessModal />}
     </div>
   );
 };

@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import ConfirmationModal from "./ConfirmationModal";
 import { useListName } from "@/context/ListNameContext";
 import QuizSummaryModal from "./QuizSummaryModal";
-import QuizTimerModal from "./QuizTimerModal";
+import QuizTimerModal, { AiPaceSuggestions } from "./QuizTimerModal";
 import Timer from "./Timer";
 import TimeExpiredNotification from "./TimeExpiredNotification";
 import { saveQuizAttempt } from "@/app/actions/saveQuizAttempt";
@@ -18,6 +18,7 @@ import { saveQuizAttempt } from "@/app/actions/saveQuizAttempt";
 interface QuizModePageProps {
   words: Word[];
   listId: string;
+  initialAiSuggestions?: AiPaceSuggestions | null;
 }
 
 interface QuizAnswer {
@@ -29,7 +30,7 @@ interface QuizAnswer {
 
 type TimerType = "none" | "word" | "list";
 
-const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId }) => {
+const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSuggestions = null }) => {
   const { listName } = useListName();
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
@@ -365,6 +366,7 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId }) => {
         onStart={handleStartQuiz}
         totalWords={words.length}
         listId={parseInt(listId, 10)}
+        initialAiSuggestions={initialAiSuggestions}
       />
       
       {/* Notification for word time expiration */}

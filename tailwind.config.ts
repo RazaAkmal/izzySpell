@@ -11,7 +11,7 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Pally', 'sans-serif'], 
+        sans: ['var(--font-pally)', 'sans-serif'],
       },
       colors: {
         background: "var(--background)",
