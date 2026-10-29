@@ -20,6 +20,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = async ({
 }) => {
   const session = (await auth()) as Session | null;
   const user = session?.user as User;
+  // No session (e.g. it was ended after a password change): middleware can't tell,
+  // so clear the cookie and go to sign-in via /session-expired (avoids a redirect loop)
+  if (!user?.id) {
+    redirect("/session-expired");
+  }
   const userData = user?.id ? await getUserDetails(user.id) : undefined;
   if (userData?.id && userData?.profileUpdated === false) {
     redirect(`/profile/${userData?.id}`);
@@ -37,6 +42,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = async ({
                   alt="Logo"
                   width={200}
                   height={40}
+                  priority
+                  fetchPriority="high"
                   className="mx-auto hover-scale !shadow-none"
                 />
               </div>
@@ -75,8 +82,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = async ({
               <Image
                 src="/images/titles/ActhievementsTitle.svg"
                 alt="Achievements title"
-                width={40}
-                height={40}
+                width={420}
+                height={90}
                 className="w-72"
               />
             </div>
@@ -86,8 +93,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = async ({
                   key={index}
                   src="/images/Rectangle.svg"
                   alt="User avatar"
-                  width={40}
-                  height={20}
+                  width={79}
+                  height={78}
                   className="w-10 sm:w-12 md:w-14"
                 />
               ))}

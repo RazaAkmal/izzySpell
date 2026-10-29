@@ -1,6 +1,7 @@
 import React from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { ListNameProvider } from "@/context/ListNameContext";
+import { getListName } from "@/lib/listName";
 import WordBuilderGameNew from "@/components/WordBuilderGameNew";
 import { auth } from "@/auth";
 import { Session } from "next-auth";
@@ -17,7 +18,12 @@ async function page({
   // Future enhancement: could integrate with user's word lists
   const session = (await auth()) as Session | null;
   const user = session?.user as User;
-  const userData = user?.id ? await getUserDetails(user.id) : undefined;
+  // getUserDetails is cached per request, so DashboardLayout reuses this lookup;
+  // the list name loads alongside it
+  const [userData, listName] = await Promise.all([
+    user?.id ? getUserDetails(user.id) : undefined,
+    getListName(parseInt(listId)),
+  ]);
    
   // Determine age group and mode based on user's grade
   // This implements the age-aligned Word Builder modes as specified:
@@ -73,7 +79,7 @@ async function page({
   const { ageGroup, mode, difficulty } = getAgeGroupAndMode(userData?.grade);
   return (
     <DashboardLayout showFooter={false}>
-      <ListNameProvider listId={listId}>
+      <ListNameProvider listId={listId} initialListName={listName}>
         <WordBuilderGameNew
           listId={listId}
           ageGroup={ageGroup}

@@ -1,7 +1,7 @@
 import React from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import SpellPractice from "./SpellPractice";
-import { ListNameProvider } from "@/context/ListNameContext";
+import { preloadPracticeHubData } from "./practiceHubData";
 
 async function page({
   params,
@@ -9,13 +9,15 @@ async function page({
   params: Promise<{ listId: string }>;
 }) {
   const listId = (await params).listId;
+  // Start the hub's queries now so they run alongside DashboardLayout's user lookup
+  preloadPracticeHubData(parseInt(listId));
 
   return (
     <>
       <DashboardLayout showFooter={false}>
-        <ListNameProvider listId={listId}>
-          <SpellPractice listId={listId} />
-        </ListNameProvider>
+        {/* No ListNameProvider here: nothing on this page reads the list name,
+            and the provider's client-side fetch was an extra request */}
+        <SpellPractice listId={listId} />
       </DashboardLayout>
     </>
   );

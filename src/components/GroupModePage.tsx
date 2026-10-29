@@ -8,7 +8,7 @@ import CustomPagination from "./CustomPagination";
 import TextToSpeech from "./TextToSpeach";
 import ConfirmationModal from "./ConfirmationModal";
 import StudyCompletionModal from "./StudyCompletionModal";
-import { markGroupAsStudied } from "@/app/actions/prismaActions";
+import { markGroupsAsStudied } from "@/app/actions/prismaActions";
 import CustomButton from "./HeadlessButton";
 import { useListName } from "@/context/ListNameContext";
 
@@ -117,11 +117,12 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
       [currentGroupName]: currentInputs
     }));
 
-    // Move focus to the next input box if it exists
+    // Move focus to the next input box if it exists — only when a letter was typed.
+    // On delete (Backspace) the cursor must stay in the emptied box.
     const nextInput = document.getElementById(
       `input-${rowIndex}-${boxIndex + 1}`
     );
-    if (nextInput) {
+    if (nextInput && value.slice(-1) !== "") {
       (nextInput as HTMLInputElement).focus();
     }
 
@@ -152,10 +153,12 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
   };
 
   const handleKeyDown = (rowIndex: number, boxIndex: number, key: string) => {
+    // Same index mapping as handleInputChange (no offset for words of 2 letters or fewer)
+    const targetIndex = currentGroup[rowIndex].word.length > 2 ? boxIndex + 2 : boxIndex;
     if (
       key === "Backspace" &&
       boxIndex > 0 &&
-      !userInputs[currentGroupName]?.[rowIndex]?.[boxIndex + 2]
+      !userInputs[currentGroupName]?.[rowIndex]?.[targetIndex]
     ) {
       const prevInput = document.getElementById(
         `input-${rowIndex}-${boxIndex - 1}`
@@ -379,7 +382,8 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
           try {
             setIsConfirmLoading(true);
             setError(null);
-            // Mark each completed group as studied
+            // Collect each completed group, then mark them all as studied in one save
+            const completedGroupNames: string[] = [];
             for (
               let pageIndex = 0;
               pageIndex < highestReachedPage;
@@ -395,10 +399,14 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
               );
 
               if (allWordsInGroupCorrect) {
-                const result = await markGroupAsStudied(groupName, Number(listId));
-                if (!result.success) {
-                  throw new Error(result.error || "Failed to save group");
-                }
+                completedGroupNames.push(groupName);
+              }
+            }
+
+            if (completedGroupNames.length > 0) {
+              const result = await markGroupsAsStudied(completedGroupNames, Number(listId));
+              if (!result.success) {
+                throw new Error(result.error || "Failed to save group");
               }
             }
 
@@ -448,14 +456,9 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
         onContinue={async () => {
           try {
             setIsConfirmLoading(true);
-            // Mark all completed groups as studied
-            for (
-              let pageIndex = 0;
-              pageIndex < validGroups.length;
-              pageIndex++
-            ) {
-              const groupName = validGroups[pageIndex];
-              const result = await markGroupAsStudied(groupName, Number(listId));
+            // Mark all completed groups as studied in one save
+            if (validGroups.length > 0) {
+              const result = await markGroupsAsStudied(validGroups, Number(listId));
               if (!result.success) {
                 throw new Error(result.error || "Failed to save group");
               }

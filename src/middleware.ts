@@ -25,7 +25,7 @@ export default auth(async (req) => {
 
   if (
     !token &&
-    ["/dashboard", "/profile", "/lists"].some((path) =>
+    ["/dashboard", "/profile", "/lists", "/spellPractice"].some((path) =>
       url.pathname.startsWith(path)
     )
   ) {
@@ -38,5 +38,5 @@ export default auth(async (req) => {
  
 // Optionally, don't invoke Middleware on some paths
 export const config = {
-  matcher: ['/login', '/', '/sign-in', '/forgot-password', '/profile/:path*', '/signup', '/lists/:path*', '/dashboard/:path*'],
+  matcher: ['/login', '/', '/sign-in', '/forgot-password', '/profile/:path*', '/signup', '/lists/:path*', '/dashboard/:path*', '/spellPractice/:path*'],
 };
