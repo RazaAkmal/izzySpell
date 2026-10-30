@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import prisma from "@/lib/prisma";
+import { OPENAI_MODEL } from "@/lib/openaiModel";
 
 // Quiz timer suggestions (AI). Plain server module on purpose: these functions are NOT
 // server actions, so the browser cannot call them. Callers (save-words route and
@@ -34,7 +35,7 @@ Generous pace: 35 seconds`
       ;
 
     const gptResponse = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: OPENAI_MODEL,
       messages: [
         {
           role: "system",

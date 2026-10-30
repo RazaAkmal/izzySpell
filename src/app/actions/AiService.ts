@@ -4,6 +4,7 @@ import { z } from "zod";
 import { responseSchema } from "@/lib/defination";
 import prisma from '@/lib/prisma';
 import { getBaseUrl } from '@/lib/baseUrl';
+import { OPENAI_MODEL } from '@/lib/openaiModel';
 import { requireSessionUserId, requireListOwner, getSessionUserId } from '@/lib/requireSession';
 import { MAX_RAW_TOKENS, MAX_WORDS_PER_LIST, MAX_WORDS_ERROR } from '@/lib/limits';
 
@@ -86,7 +87,7 @@ const processWordChunk = async (content: string) => {
 
 
     const gptResponse = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: OPENAI_MODEL,
       messages: [
         {
           role: "system",
@@ -270,7 +271,7 @@ A JSON array where each item follows this schema:
 }`;
 
     const gptResponse = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: OPENAI_MODEL,
       messages: [
         {
           role: "system",
@@ -473,7 +474,7 @@ FINAL VALIDATION CHECKLIST:
 Remember: Return ONLY JSON array format. No additional text or explanations.`;
 
     const gptResponse = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: OPENAI_MODEL,
       messages: [
         {
           role: "system",
