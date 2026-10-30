@@ -8,12 +8,8 @@ import { Textarea } from "@headlessui/react";
 import Modal from "@/components/WordListModal";
 import Progress from "./Progress";
 import { processFileWithAI } from "@/app/actions/AiService";
-import { SpellingListItem, responseSchema } from "@/lib/defination";
+import { SpellingListItem } from "@/lib/defination";
 import ConfirmationModal from "@/components/ConfirmationModal";
-import { z } from "zod";
-
-// Define type for AI response based on the zod schema
-type AIResponse = z.infer<typeof responseSchema>;
 
 const WordList = ({ spellingLists, user, refreshSpellingLists, onProcessingChange }: {
   spellingLists: SpellingListItem[],
@@ -28,7 +24,8 @@ const WordList = ({ spellingLists, user, refreshSpellingLists, onProcessingChang
   const [loading, setLoading] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [aiResponse, setAiResponse] = useState<AIResponse | null>(null);
+  // The typed words shown in the review modal (the AI runs later, on the reviewed list)
+  const [reviewWords, setReviewWords] = useState<string[] | null>(null);
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showSwitchModeModal, setShowSwitchModeModal] = useState(false);
@@ -46,23 +43,52 @@ const WordList = ({ spellingLists, user, refreshSpellingLists, onProcessingChang
     setInputField(updatedFields);
   };
 
+  // Runs when the user clicks "Save & Start Learning" in the review modal: the AI
+  // processes the FINAL reviewed words (including anything added or edited in the modal)
   const handleModalSave = async (words: string[], listName: string) => {
-    if (!aiResponse) return;
+    setIsModalOpen(false);
+    setLoading(true);
+    setProgress(0);
+
+    const totalSteps = 20;
+    let currentStep = 0;
+    const uploadInterval = setInterval(() => {
+      currentStep += 1;
+      setProgress((currentStep / totalSteps) * 100);
+      if (currentStep === totalSteps - 1) {
+        clearInterval(uploadInterval);
+      }
+    }, 1000);
+
     try {
+      const response = await processFileWithAI(words);
+      if (!response.success || !response.data) {
+        setErrorMessage(response.error || "Error processing file with AI");
+        setShowErrorModal(true);
+        // The typed words are still in the form, so the user can just save again
+        return;
+      }
+
       const saveResponse = await fetch("/api/save-words", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           listName,
           words,
-          extractedWords: aiResponse,
+          extractedWords: response.data,
           userId: user.id,
         }),
       });
-      if (!saveResponse.ok) throw new Error("Failed to save the list");
+      if (!saveResponse.ok) {
+        const data = await saveResponse.json().catch(() => null);
+        throw new Error(data?.error || "Failed to save the list");
+      }
+
+      setProgress(100);
       await refreshSpellingLists();
       setInputField(["", "", ""]);
-      setIsModalOpen(false);
+      setTextAreaContent("");
+      setReviewWords(null);
       router.push("/lists");
     } catch (error) {
       console.log("Save error:", error);
@@ -70,20 +96,29 @@ const WordList = ({ spellingLists, user, refreshSpellingLists, onProcessingChang
         error instanceof Error ? error.message : "Failed to save the list. Please try again."
       );
       setShowErrorModal(true);
+    } finally {
+      clearInterval(uploadInterval);
+      setLoading(false);
     }
   };
 
-  // Save data to API and handle modal
-  const handleSave = async () => {
+  // "Save the Word List" now only prepares the review step: no AI call yet
+  const handleSave = () => {
     localStorage.removeItem("isNavigate");
-    const wordList = isTextAreaMode
-      ? textAreaContent
-          .split("\n")
-          .map((word) => word.trim())
-          .filter((word) => word !== "")
-      : inputField
-          .filter((word) => word.trim() !== "")
-          .map((word) => word.trim());
+    const typedWords = isTextAreaMode
+      ? textAreaContent.split(/[\n,]/)
+      : inputField;
+
+    // Trim, drop empty entries and case-insensitive duplicates (first one wins)
+    const seen = new Set<string>();
+    const wordList = typedWords
+      .map((word) => word.trim())
+      .filter((word) => {
+        const key = word.toLowerCase();
+        if (!word || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
 
     if (wordList.length === 0) {
       setErrorMessage("Please enter a word.");
@@ -91,47 +126,8 @@ const WordList = ({ spellingLists, user, refreshSpellingLists, onProcessingChang
       return;
     }
 
-    setLoading(true);
-    setProgress(0);
-
-    const totalSteps = 20;
-    let currentStep = 0;
-
-    const uploadInterval = setInterval(() => {
-      currentStep += 1;
-      setProgress((currentStep / totalSteps) * 100);
-
-      if (currentStep === totalSteps - 1) {
-        clearInterval(uploadInterval);
-      }
-    }, 1000);
-
-    try {
-      const response = await processFileWithAI(wordList.join(", "));
-      if (response.success && response.data) {
-        setProgress(100);
-        clearInterval(uploadInterval);
-        setTimeout(() => {
-          setAiResponse(response.data);
-          setIsModalOpen(true);
-        }, 1000);
-        setTextAreaContent("")
-        setInputField(["", "", ""])
-      } else {
-        setErrorMessage(response.error || "Error processing file with AI");
-        setShowErrorModal(true);
-        clearInterval(uploadInterval);
-        setProgress(0);
-      }
-    } catch (error) {
-      console.error("Error saving words:", error);
-      setErrorMessage("Error processing file with AI, Please Try again");
-      setShowErrorModal(true);
-    } finally {
-      clearInterval(uploadInterval);
-      setProgress(100);
-      setLoading(false);
-    }
+    setReviewWords(wordList);
+    setIsModalOpen(true);
   };
 
   const handelSwitchBulkMode = (mode: boolean) => {
@@ -281,15 +277,13 @@ const WordList = ({ spellingLists, user, refreshSpellingLists, onProcessingChang
         message="Switching to Bulk Entry! You can add lots of words at once, but you won't be able to go back to one-at-a-time. Continue?"
       />
 
-      {/* Existing Modal */}
-      {aiResponse && (
+      {/* Review modal: opens with the typed words; the AI runs when the user saves */}
+      {reviewWords && (
         <Modal
           isOpen={isModalOpen}
-          words={aiResponse.OriginalWords}
-          suggestedListName={aiResponse.ListName}
+          words={reviewWords}
           onSave={handleModalSave}
           onClose={() => {
-            setInputField(["", "", ""]);
             setIsModalOpen(false);
           }}
           spellingLists={spellingLists}

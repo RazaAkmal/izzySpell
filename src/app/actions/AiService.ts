@@ -1,8 +1,11 @@
 'use server'
 import OpenAI from "openai";
+import { z } from "zod";
 import { responseSchema } from "@/lib/defination";
 import prisma from '@/lib/prisma';
 import { getBaseUrl } from '@/lib/baseUrl';
+import { requireSessionUserId, requireListOwner, getSessionUserId } from '@/lib/requireSession';
+import { MAX_RAW_TOKENS, MAX_WORDS_PER_LIST, MAX_WORDS_ERROR } from '@/lib/limits';
 
 
 const openai = new OpenAI({
@@ -13,6 +16,13 @@ const openai = new OpenAI({
 // and suggests a list name. Uses gpt-4o-mini to minimise cost.
 // Called immediately after file read, before showing the modal.
 export const extractWordsFromContent = async (rawWords: string[]) => {
+  await requireSessionUserId();
+  if (rawWords.length > MAX_RAW_TOKENS) {
+    return {
+      success: false,
+      error: "This file has too much text. Please upload a shorter word list.",
+    };
+  }
   try {
     const content = rawWords.join(" ");
 
@@ -63,7 +73,12 @@ Raw tokens: ${content}`,
 
 // Part 2: Full processing — generates SyllableWords, GroupedWords, SightWords.
 // Only called after the user reviews and clicks "Save & Start Learning".
-export const processFileWithAI = async (content: any) => {
+const WORDS_PER_AI_CHUNK = 30;
+
+type ProcessedList = z.infer<typeof responseSchema>;
+
+// One AI call for a small group of words (validated with responseSchema)
+const processWordChunk = async (content: string) => {
   try {
     // Read the system prompt from the file
     const res = await fetch(`${await getBaseUrl()}/prompts/systempromt.txt`);
@@ -107,7 +122,7 @@ Requirements:
 5. Return valid JSON that can be parsed`,
         },
       ],
-      max_tokens: 2000,
+      max_tokens: 4096,
       temperature: 0.3, // Reduced temperature for more consistent output
     });
 
@@ -140,131 +155,68 @@ Requirements:
   }
 };
 
-export const getTimeDurationSuggestions = async (
-  grade: string,
-  age: string,
-  spellingList: string[],
-) => {
-  try {
-    const systemPrompt = `You are an expert in spelling education and U.S. spelling bee competitions. Based on the student's grade, age, and a provided spelling list, suggest three appropriate time durations (in seconds) PER WORD. Your suggestions should reflect the average pace of spelling in U.S. competitions, considering age-appropriate speed, word difficulty, and typical time constraints in spelling activities.
-
-Instructions:
-- Younger students (grades 1–3 or ages 6–9) typically need more time per word than older students.
-- U.S. spelling bee competitions often allow 20–30 seconds per word in early rounds, though this can vary.
-- Consider the difficulty and length of words in the provided list.
-- Return only three durations in seconds PER WORD, labeled as:
-
-Short pace: (fast and challenging)
-Medium pace: (balanced for typical practice)
-Generous pace: (slower and supportive)
-
-Example output:
-Short pace: 15 seconds
-Medium pace: 25 seconds
-Generous pace: 35 seconds`
-      ;
-
-    const gptResponse = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        {
-          role: "user",
-          content: `Student Grade: ${grade}
-Student Age: ${age}
-Spelling List: ${spellingList.join(', ')}
-
-Please provide three time duration suggestions for this spelling list.`,
-        },
-      ],
-      max_tokens: 500,
-      temperature: 0.3,
-    });
-
-    const response = gptResponse.choices[0]?.message?.content;
-    console.log('AI response:', response);
-    if (!response) {
-      throw new Error("No response from OpenAI");
+// Combines the validated results of several chunks into the same shape as a single result
+const mergeProcessedChunks = (chunks: ProcessedList[]): ProcessedList => {
+  const GroupedWords: Record<string, string[]> = {};
+  for (const chunk of chunks) {
+    for (const [groupName, groupWords] of Object.entries(chunk.GroupedWords)) {
+      // Every chunk names its groups "Group 1", "Group 2"...: those groups are
+      // unrelated across chunks, so a clashing name gets the next free number
+      let name = groupName;
+      let next = Object.keys(GroupedWords).length + 1;
+      while (name in GroupedWords) name = `Group ${next++}`;
+      GroupedWords[name] = groupWords;
     }
-
-    // Parse the response to extract the durations
-    const shortMatch = response.match(/Short pace:\s*(\d+)\s*seconds?/i);
-    const mediumMatch = response.match(/Medium pace:\s*(\d+)\s*seconds?/i);
-    const generousMatch = response.match(/Generous pace:\s*(\d+)\s*seconds?/i);
-
-    if (!shortMatch || !mediumMatch || !generousMatch) {
-      throw new Error("Could not parse time duration suggestions from AI response");
-    }
-
-    const suggestions = {
-      shortPace: parseInt(shortMatch[1], 10),
-      mediumPace: parseInt(mediumMatch[1], 10),
-      generousPace: parseInt(generousMatch[1], 10),
-    };
-
-    return { success: true, data: suggestions };
-  } catch (error) {
-    console.error("AI Time Duration Suggestion Error:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Error getting time duration suggestions"
-    };
   }
+  return {
+    ListName: chunks[0].ListName,
+    OriginalWords: chunks.flatMap((c) => c.OriginalWords),
+    SyllableWords: chunks.flatMap((c) => c.SyllableWords),
+    GroupedWords,
+    SightWords: Array.from(new Set(chunks.flatMap((c) => c.SightWords))),
+  };
 };
 
-export const saveTimeDurationsToList = async (
-  listId: number,
-  shortPace: number,
-  mediumPace: number,
-  generousPace: number
-) => {
-  try {
-    console.log('saveTimeDurationsToList called with:', {
-      listId,
-      shortPace,
-      mediumPace,
-      generousPace
-    });
+// Part 2 entry point. Lists longer than WORDS_PER_AI_CHUNK are split into chunks so
+// the AI answer is never cut off; each chunk is validated, then the results are merged.
+// Accepts the words as an array (preferred) or as a comma separated string.
+export const processFileWithAI = async (content: string | string[]) => {
+  await requireSessionUserId();
+  const words = Array.isArray(content)
+    ? content
+    : content.split(",").map((w) => w.trim()).filter(Boolean);
 
-    // First check if the list exists
-    const existingList = await prisma.spellingList.findUnique({
-      where: { id: listId },
-      select: { id: true, listName: true }
-    });
-
-    if (!existingList) {
-      throw new Error(`Spelling list with ID ${listId} not found`);
-    }
-
-    console.log('Updating spelling list:', existingList.listName);
-
-    // Update the spelling list with Prisma ORM
-    await prisma.spellingList.update({
-      where: { id: listId },
-      data: {
-        shortPaceDuration: shortPace,
-        mediumPaceDuration: mediumPace,
-        generousPaceDuration: generousPace,
-      }
-    });
-
-    return { success: true, message: "Time durations saved successfully" };
-  } catch (error) {
-
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Error saving time durations"
-    };
+  if (words.length > MAX_WORDS_PER_LIST) {
+    return { success: false as const, error: MAX_WORDS_ERROR };
   }
+
+  if (words.length <= WORDS_PER_AI_CHUNK) {
+    return processWordChunk(words.join(", "));
+  }
+
+  const chunks: string[] = [];
+  for (let i = 0; i < words.length; i += WORDS_PER_AI_CHUNK) {
+    chunks.push(words.slice(i, i + WORDS_PER_AI_CHUNK).join(", "));
+  }
+
+  const results = await Promise.all(chunks.map(processWordChunk));
+  const failed = results.find((r) => !r.success);
+  if (failed) {
+    return { success: false as const, error: failed.error };
+  }
+
+  const validChunks = results.map((r) => (r as { success: true; data: ProcessedList }).data);
+  return { success: true as const, data: mergeProcessedChunks(validChunks) };
 };
 
 export const getTimeDurationsForList = async (listId: number) => {
   try {
-    const list = await prisma.spellingList.findUnique({
-      where: { id: listId },
+    // Page loader: report "not signed in" / "not your list" as a failed result
+    // (the callers already handle that) instead of crashing the page
+    const userId = await getSessionUserId();
+    if (!userId) throw new Error("Not authenticated");
+    const list = await prisma.spellingList.findFirst({
+      where: { id: listId, userId },
       select: {
         shortPaceDuration: true,
         mediumPaceDuration: true,
@@ -286,73 +238,7 @@ export const getTimeDurationsForList = async (listId: number) => {
   }
 };
 
-export const generateAndSaveTimeDurations = async (
-  listId: number,
-  grade: string,
-  age: string,
-  spellingList: string[]
-) => {
-  try {
-    console.log('generateAndSaveTimeDurations called with:', {
-      listId,
-      grade,
-      age,
-      spellingListLength: spellingList?.length,
-      firstFewWords: spellingList?.slice(0, 3)
-    });
-
-    const suggestionsResult = await getTimeDurationSuggestions(grade, age, spellingList);
-
-    if (!suggestionsResult.success || !suggestionsResult.data) {
-      return {
-        success: false,
-        error: suggestionsResult.error || "Failed to get AI suggestions"
-      };
-    }
-
-    const { shortPace, mediumPace, generousPace } = suggestionsResult.data;
-
-    console.log('Saving suggestions to database:', {
-      listId,
-      shortPace,
-      mediumPace,
-      generousPace
-    });
-
-    // Save the suggestions to the database
-    const saveResult = await saveTimeDurationsToList(listId, shortPace, mediumPace, generousPace);
-
-    console.log('Save result:', {
-      success: saveResult.success,
-      error: saveResult.error
-    });
-
-    if (!saveResult.success) {
-      return {
-        success: false,
-        error: saveResult.error || "Failed to save AI suggestions"
-      };
-    }
-
-    return {
-      success: true,
-      data: {
-        shortPace,
-        mediumPace,
-        generousPace
-      },
-      message: "Time durations saved successfully"
-    };
-  } catch (error) {
-    console.error("Error generating and saving time durations:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Error generating time durations"
-    };
-  }
-};
-
-export const generateFlashCards = async (words: string[]) => {
+const generateFlashCards = async (words: string[]) => {
   try {
     const systemPrompt = `You are a tool for a children's spelling practice app called IzzySpell.
 
@@ -441,6 +327,8 @@ A JSON array where each item follows this schema:
 };
 
 export const generateAndSaveFlashCards = async (listId: number, words: string[]) => {
+  await requireListOwner(listId);
+  if (words.length > MAX_WORDS_PER_LIST) return { success: false, error: MAX_WORDS_ERROR };
   try {
     // Check if flash cards already exist for this list
     const existingFlashCards = await prisma.flashCard.findMany({
@@ -502,7 +390,7 @@ export const generateAndSaveFlashCards = async (listId: number, words: string[])
 
 // Scramble Words Generation Functions
 
-export const generateScrambleWords = async (words: string[]) => {
+const generateScrambleWords = async (words: string[]) => {
   try {
     const systemPrompt = `You are a tool for a children's spelling practice web application. Your task is to generate scrambled word challenges for each word in a given spelling list.
 
@@ -719,6 +607,8 @@ Remember: Return ONLY JSON array format. No additional text or explanations.`;
 };
 
 export const generateAndSaveScrambleWords = async (listId: number, words: string[]) => {
+  await requireListOwner(listId);
+  if (words.length > MAX_WORDS_PER_LIST) return { success: false, error: MAX_WORDS_ERROR };
   try {
     // Check if scramble words already exist for this list
     const existingScrambleWords = await prisma.scrambleWord.findMany({
@@ -778,6 +668,7 @@ export const generateAndSaveScrambleWords = async (listId: number, words: string
 };
 
 export const regenerateScrambleWords = async (listId: number, words: string[]) => {
+  await requireListOwner(listId);
   try {
     console.log(`Regenerating scramble words for list ${listId} with ${words.length} words`);
     

@@ -15,6 +15,7 @@ export default async function WordsPage({
   const {
     total,
     studiedWordCount,
+    totalSyllableWords,
     studiedSyllableWord,
     totalGroupsCount,
     totalStudiedGroups,
@@ -45,6 +46,7 @@ export default async function WordsPage({
             totalStudiedGroups={totalStudiedGroups}
             totalWords={total}
             studiedCount={studiedWordCount}
+            totalSyllableWords={totalSyllableWords}
             studiedSyllableCount={studiedSyllableWord}
             studiedGroupCount={Math.round(groupedProgress)}
             words={wordStrings}

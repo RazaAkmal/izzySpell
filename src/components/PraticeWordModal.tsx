@@ -28,6 +28,7 @@ interface ModeConfigItem {
 interface PracticeWordModalProps {
   totalWords: number;
   studiedCount: number;
+  totalSyllableWords: number;
   studiedSyllableCount: number;
   studiedGroupCount: number;
   totalStudiedGroups: number;
@@ -43,6 +44,7 @@ interface PracticeWordModalProps {
 const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
   totalWords,
   studiedCount,
+  totalSyllableWords,
   studiedSyllableCount,
   studiedGroupCount,
   totalGroups,
@@ -252,9 +254,9 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         altText: "syllables Mode",
         label: "Syllables Mode",
         completed: studiedSyllableCount,
-        total: totalWords,
-        progress: totalWords > 0 ? Math.round((studiedSyllableCount / totalWords) * 100) : 0,
-        showContinue: studiedSyllableCount > 0 && studiedSyllableCount < totalWords,
+        total: totalSyllableWords,
+        progress: totalSyllableWords > 0 ? Math.round((studiedSyllableCount / totalSyllableWords) * 100) : 0,
+        showContinue: studiedSyllableCount > 0 && studiedSyllableCount < totalSyllableWords,
         showBeginAgain: studiedSyllableCount > 0,
         continueFrom: studiedSyllableCount,
         isRecentAttempts: false,
@@ -277,7 +279,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         isMistakesPractice: false
       }
     ];
-  }, [selectedTab, totalWords, studiedCount, studiedSyllableCount, studiedGroupCount, totalGroups, totalStudiedGroups, recentAttempts, mistakesCount]);
+  }, [selectedTab, totalWords, studiedCount, totalSyllableWords, studiedSyllableCount, studiedGroupCount, totalGroups, totalStudiedGroups, recentAttempts, mistakesCount]);
   
   // Create a mapping for quick access
   const modeData = React.useMemo(() => {

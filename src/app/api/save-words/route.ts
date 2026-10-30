@@ -1,12 +1,45 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma"; // Import your Prisma client instance
 import { revalidatePath } from "next/cache";
-import { generateAndSaveTimeDurations } from "@/app/actions/AiService";
+import { generateAndSaveTimeDurations } from "@/lib/timeDurations";
+import { getSessionUserId } from "@/lib/requireSession";
+import { isValidExtractedWords } from "@/lib/extractedWords";
+import { MAX_WORDS_PER_LIST, MAX_WORDS_ERROR } from "@/lib/limits";
+
+// TODO: add per-user rate limiting to cap uploads per day.
 
 export async function POST(req: Request) {
   try {
-    // Parse the request body to extract the userId and file content
-    const { userId, words, extractedWords, listName } = await req.json();
+    // The owner is ALWAYS the signed-in user; a userId in the body is ignored
+    const userId = await getSessionUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+    }
+
+    const { words, extractedWords, listName } = await req.json();
+
+    if (
+      !listName ||
+      !Array.isArray(words) ||
+      words.length === 0 ||
+      !words.every((w: unknown) => typeof w === "string")
+    ) {
+      return NextResponse.json(
+        { error: "Invalid input: 'listName' and a non-empty 'words' list are required." },
+        { status: 400 }
+      );
+    }
+    if (words.length > MAX_WORDS_PER_LIST) {
+      return NextResponse.json({ error: MAX_WORDS_ERROR }, { status: 400 });
+    }
+
+    // Same shape check as update-words: bad AI data is rejected before anything is saved
+    if (!isValidExtractedWords(extractedWords)) {
+      return NextResponse.json(
+        { error: "The processed word data was invalid. Your list was not saved. Please try saving again." },
+        { status: 400 }
+      );
+    }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
@@ -44,47 +77,16 @@ export async function POST(req: Request) {
       },
     });
 
-    // Generate AI time duration suggestions if user has grade and age info
-    if (user.grade && user.age && user.grade.trim() && user.age.trim()) {
-      try {
-        console.log(`Generating AI time suggestions for list ${spellingList.id}`, {
-          userId: user.id,
-          grade: user.grade,
-          age: user.age,
-          wordCount: words.length
-        });
-        
-        // Validate that we have proper words array
-        if (!Array.isArray(words) || words.length === 0) {
-          console.warn('No words available for AI suggestions');
-        } else {
-           await generateAndSaveTimeDurations(
-            spellingList.id,
-            user.grade,
-            user.age,
-            words // Use the original words array
-          );
-          
+    // Quiz timer suggestions are started WITHOUT await on purpose: the save response must
+    // not wait for an extra AI call. They are a nice-to-have (QuizTimerModal can still
+    // generate them on demand). On Vercel serverless the function may be stopped as soon
+    // as the response is sent, so this can be cut off before it finishes - that is accepted.
+    if (user.grade && user.age && user.grade.trim() && user.age.trim() && words.length > 0) {
+      generateAndSaveTimeDurations(spellingList.id, user.grade, user.age, words).catch(
+        (error) => {
+          console.error("Error generating AI suggestions:", error);
         }
-      } catch (error) {
-        console.error("Error generating AI suggestions:", error);
-        // Log more details about the error
-        if (error instanceof Error) {
-          console.error("Error details:", {
-            name: error.name,
-            message: error.message,
-            stack: error.stack
-          });
-        }
-        // Continue without AI suggestions - not a critical failure
-      }
-    } else {
-      console.log("User grade/age not available or empty, skipping AI time suggestions", {
-        hasGrade: !!user.grade,
-        hasAge: !!user.age,
-        grade: user.grade,
-        age: user.age
-      });
+      );
     }
 
     revalidatePath("/dashboard");
