@@ -29,6 +29,9 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
   const [highestReachedPage, setHighestReachedPage] = useState(
     studiedWordCount || 1
   );
+  // Pages (1-based) the user actually answered correctly in this session.
+  // "Save and exit" marks only these, never a page that was just opened.
+  const [answeredPages, setAnsweredPages] = useState<Set<number>>(new Set());
   const correctSyllable = syllableWords[currentPage - 1].answer;
   const orignalWord = syllableWords[currentPage - 1].word;
 
@@ -92,6 +95,7 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
   const checkAnswer = (selectedOption: string) => {
     if (selectedOption === correctSyllable) {
       setIsCorrectAnswer(true);
+      setAnsweredPages((prev) => new Set(prev).add(currentPage));
       // Update highest reached page when answer is correct
       if (currentPage < syllableWords.length) {
         setHighestReachedPage((prev) => Math.max(prev, currentPage + 1));
@@ -236,9 +240,9 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
         onConfirm={async () => {
           try {
             setIsConfirmLoading(true);
-            // Get IDs of completed syllable words (up to current page)
+            // Only the words the user actually answered correctly
             const completedWordIds = syllableWords
-              .slice(0, currentPage)
+              .filter((_, index) => answeredPages.has(index + 1))
               .map((word) => word.id);
 
             if (completedWordIds.length > 0) {

@@ -133,6 +133,9 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(studiedWordCount || 1);
   const [highestReachedPage, setHighestReachedPage] = useState(studiedWordCount || 1);
+  // Pages (1-based) the user actually spelled correctly in this session.
+  // "Save and exit" marks only these, never a page that was just opened.
+  const [answeredPages, setAnsweredPages] = useState<Set<number>>(new Set());
   const [selectedLetters, setSelectedLetters] = useState<string[]>(
     Array(wordsSpell[0]?.length || 0).fill("")
   );
@@ -190,6 +193,7 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
       const isMatching = currentWord === letters.join("");
       if (isMatching) {
         setIsCorrect(true);
+        setAnsweredPages((prev) => new Set(prev).add(currentPage));
         setTimeout(() => {
           // Prevent going beyond the last word
           if (currentPage < wordsSpell.length) {
@@ -449,9 +453,9 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
             setIsConfirmLoading(true);
             setError(null);
             
-            // Get IDs of completed words (up to current page)
+            // Only the words the user actually answered correctly
             const completedWordIds = words
-              .slice(0, currentPage)
+              .filter((_, index) => answeredPages.has(index + 1))
               .map((word) => word.id);
 
             if (completedWordIds.length > 0) {
