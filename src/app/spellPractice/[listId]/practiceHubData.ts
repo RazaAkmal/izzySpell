@@ -6,12 +6,13 @@ import { getRecentQuizAttempts } from "@/app/actions/getRecentQuizAttempts";
 // Wrapped in React `cache` so the page can start it early (see preload below)
 // and SpellPractice reuses the same in-flight request.
 export const getPracticeHubData = cache(async (listId: number) => {
-  const [words, studiedSyllableWord, groupCounts, quizData, flashCardCount, scrambleWordCount] = await Promise.all([
+  const [words, totalSyllableWords, studiedSyllableWord, groupCounts, quizData, flashCardCount, scrambleWordCount] = await Promise.all([
     prisma.word.findMany({
       where: { listId },
       orderBy: { id: "asc" },
       select: { word: true, studied: true },
     }),
+    prisma.syllableWord.count({ where: { listId } }),
     prisma.syllableWord.count({
       where: { listId, studied: true },
     }),
@@ -41,6 +42,7 @@ export const getPracticeHubData = cache(async (listId: number) => {
   return {
     total: words.length,
     studiedWordCount: words.filter((w) => w.studied).length,
+    totalSyllableWords,
     studiedSyllableWord,
     totalGroupsCount,
     totalStudiedGroups,

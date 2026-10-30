@@ -8,6 +8,7 @@ import Modal from "@/components/WordListModal";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import { readFileContent } from "@/app/utils/fileReaderUtil";
 import { extractWordsFromContent, processFileWithAI } from "@/app/actions/AiService";
+import { MAX_UPLOAD_BYTES } from "@/lib/limits";
 
 type AIResponse = {
   success: boolean;
@@ -86,8 +87,7 @@ function UploadWord({ user, refreshSpellingLists, onProcessingChange }: {
     }, 600);
 
     try {
-      const content = words.join(", ");
-      const response: AIResponse = await processFileWithAI(content);
+      const response: AIResponse = await processFileWithAI(words);
       clearInterval(interval);
 
       if (!response.success || !response.data) {
@@ -109,7 +109,10 @@ function UploadWord({ user, refreshSpellingLists, onProcessingChange }: {
         }),
       });
 
-      if (!saveResponse.ok) throw new Error("Failed to save the list");
+      if (!saveResponse.ok) {
+        const data = await saveResponse.json().catch(() => null);
+        throw new Error(data?.error || "Failed to save the list");
+      }
 
       await refreshSpellingLists();
       setProcessingProgress(100);
@@ -126,7 +129,11 @@ function UploadWord({ user, refreshSpellingLists, onProcessingChange }: {
     } catch (error) {
       clearInterval(interval);
       console.error("Save error:", error);
-      setErrorMessage("An unexpected error occurred while saving. Please try again.");
+      setErrorMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "An unexpected error occurred while saving. Please try again."
+      );
       setShowErrorModal(true);
       setIsProcessing(false);
       setProcessingProgress(0);
@@ -149,6 +156,16 @@ function UploadWord({ user, refreshSpellingLists, onProcessingChange }: {
       "image/png": [".png"],
     },
     multiple: false,
+    maxSize: MAX_UPLOAD_BYTES,
+    onDropRejected: (rejections) => {
+      const tooLarge = rejections.some((r) => r.errors.some((e) => e.code === "file-too-large"));
+      setErrorMessage(
+        tooLarge
+          ? "This file is too large. The maximum size is 10 MB."
+          : "This file type is not supported. Please upload a .pdf, .xlsx, .csv, .txt, .docx, .jpg or .png file."
+      );
+      setShowErrorModal(true);
+    },
   });
 
   return (
