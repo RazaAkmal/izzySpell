@@ -31,9 +31,6 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
   const resumePage = Math.min(studiedWordCount + 1, syllableWords.length) || 1;
   const [currentPage, setCurrentPage] = useState(resumePage);
   const [highestReachedPage, setHighestReachedPage] = useState(resumePage);
-  // Pages (1-based) the user actually answered correctly in this session.
-  // "Save and exit" marks only these, never a page that was just opened.
-  const [answeredPages, setAnsweredPages] = useState<Set<number>>(new Set());
   const correctSyllable = syllableWords[currentPage - 1].answer;
   const orignalWord = syllableWords[currentPage - 1].word;
 
@@ -97,7 +94,6 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
   const checkAnswer = (selectedOption: string) => {
     if (selectedOption === correctSyllable) {
       setIsCorrectAnswer(true);
-      setAnsweredPages((prev) => new Set(prev).add(currentPage));
       // Auto-save in the background so progress survives back/refresh/closing the tab.
       // The server action returns { success: false } instead of throwing, so check both.
       const answeredWordId = syllableWords[currentPage - 1]?.id;
@@ -276,7 +272,6 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
             // Reset to first page to practice again
             setCurrentPage(1);
             setHighestReachedPage(1);
-            setAnsweredPages(new Set());
             setSelectedOption(null);
             setIsCorrectAnswer(null);
           }

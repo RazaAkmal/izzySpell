@@ -260,7 +260,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
 
       return () => clearTimeout(timer);
     }
-  }, [currentGroupName, currentGroup, validationStates, currentPage, validGroups.length, handlePageChange]);
+  }, [currentGroupName, currentGroup, validationStates, currentPage, validGroups.length, handlePageChange, listId]);
 
   return (
     <div className="bg-skyBlue h-[75vh] m-7 mt-1 p-6 rounded-lg shadow-lg flex flex-col overflow-hidden">

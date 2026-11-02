@@ -188,9 +188,6 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
   const resumePage = Math.min(studiedWordCount + 1, words.length) || 1;
   const [currentPage, setCurrentPage] = useState(resumePage);
   const [highestReachedPage, setHighestReachedPage] = useState(resumePage);
-  // Pages (1-based) the user actually spelled correctly in this session.
-  // "Save and exit" marks only these, never a page that was just opened.
-  const [answeredPages, setAnsweredPages] = useState<Set<number>>(new Set());
   const [selectedLetters, setSelectedLetters] = useState<string[]>(
     Array(wordsSpell[0]?.length || 0).fill("")
   );
@@ -248,7 +245,6 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
       const isMatching = currentWord === letters.join("");
       if (isMatching) {
         setIsCorrect(true);
-        setAnsweredPages((prev) => new Set(prev).add(currentPage));
         // Auto-save in the background so progress survives back/refresh/closing the tab.
         // The server action returns { success: false } instead of throwing, so check both.
         const answeredWordId = words[currentPage - 1]?.id;
@@ -514,7 +510,6 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
             // Reset to first page to practice again
             setCurrentPage(1);
             setHighestReachedPage(1);
-            setAnsweredPages(new Set());
             setSelectedLetters(Array(wordsSpell[0]?.length || 0).fill(""));
             setIsCorrect(true);
             if (wordsSpell[0]) {
