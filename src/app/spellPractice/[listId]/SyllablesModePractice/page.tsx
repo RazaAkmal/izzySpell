@@ -5,6 +5,7 @@ import { getSyllableWordsByListId } from "@/app/actions/prismaActions";
 import { ListNameProvider } from "@/context/ListNameContext";
 import { preloadCurrentUserDetails } from "@/app/actions/getUserDetails";
 import { getListName } from "@/lib/listName";
+import NoModeData from "@/components/NoModeData";
 
 async function page({
   params,
@@ -23,7 +24,14 @@ async function page({
   return (
     <DashboardLayout showFooter={false}>
       <ListNameProvider listId={listId} initialListName={listName}>
-        {syllableWords.length > 0 && <SyllableModePage studiedWordCount={studiedWordCount} syllableWords={syllableWords} listId={parseInt(listId)} />}
+        {syllableWords.length > 0 ? (
+          <SyllableModePage studiedWordCount={studiedWordCount} syllableWords={syllableWords} listId={parseInt(listId)} />
+        ) : (
+          <NoModeData
+            listId={listId}
+            message="No syllable data for this list. Please edit the list to regenerate."
+          />
+        )}
       </ListNameProvider>
     </DashboardLayout>
   );

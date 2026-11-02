@@ -22,21 +22,24 @@ export const getRecentQuizAttempts = async (spellingListId: number) => {
   const userId = session.user.id;
 
   try {
-    // The most recent 3 quiz attempts plus the number of unique mistaken words
-    // across them, in a single database round trip (previously two sequential queries).
+    // The most recent 10 quiz attempts (for the history list) plus the number of unique
+    // unresolved mistaken words across ALL attempts of this list, in a single round trip.
     const rows = await prisma.$queryRaw<RecentAttemptRow[]>`
       WITH recent AS (
         SELECT id, grade, "createdAt", "totalQuestions", "correctAnswers", "incorrectAnswers"
         FROM quiz_attempts
         WHERE "userId" = ${userId} AND "spellingListId" = ${spellingListId}
         ORDER BY "createdAt" DESC
-        LIMIT 3
+        LIMIT 10
       )
       SELECT recent.*,
         (
           SELECT COUNT(DISTINCT m."wordId")
           FROM quiz_mistakes m
-          WHERE m."quizAttemptId" IN (SELECT id FROM recent) AND m."userId" = ${userId}
+          JOIN quiz_attempts a ON a.id = m."quizAttemptId"
+          WHERE m."userId" = ${userId}
+            AND a."userId" = ${userId}
+            AND a."spellingListId" = ${spellingListId}
         )::int AS "uniqueMistakesCount"
       FROM recent
       ORDER BY recent."createdAt" DESC

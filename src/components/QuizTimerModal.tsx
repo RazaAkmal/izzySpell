@@ -79,7 +79,12 @@ const QuizTimerModal: React.FC<QuizTimerModalProps> = ({
 
   if (!isOpen) return null;
 
+  // A timed mode needs a whole number of at least 1 second (0 or empty would time out instantly)
+  const isTimeInvalid =
+    timerType !== "none" && !(Number.isInteger(timeAmount) && timeAmount >= 1);
+
   const handleStart = () => {
+    if (isTimeInvalid) return;
     // Timer selection has been made, proceed with the quiz
     onStart(timerType, timeAmount);
   };
@@ -404,7 +409,13 @@ const QuizTimerModal: React.FC<QuizTimerModalProps> = ({
               </div>
             </div>
 
-            {timerType === "list" && (
+            {isTimeInvalid && (
+              <p className="text-sm text-red-600 mb-2" role="alert">
+                Please enter a time of at least 1 second.
+              </p>
+            )}
+
+            {timerType === "list" && !isTimeInvalid && (
               <p className="text-sm text-gray-500">
                 That&apos;s about {Math.round(timeAmount / totalWords)} seconds
                 per word.
@@ -425,6 +436,7 @@ const QuizTimerModal: React.FC<QuizTimerModalProps> = ({
             variant="primary"
             size="small"
             onClick={handleStart}
+            disabled={isTimeInvalid}
             className="w-48 py-3 text-lg"
           />
         </div>

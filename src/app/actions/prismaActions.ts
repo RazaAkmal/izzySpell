@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 import { getColorForProgress } from "../utils/colors";
 import { SpellingList } from "@prisma/client";
 
@@ -189,9 +190,8 @@ export async function getGroupedWordsByListId(listId: number) {
     })
   ]);
 
-  // Filter out groups with only one word
-  const validStudiedGroups = studiedGroups.filter(group => group._count.word > 1);
-  const totalStudiedGroups = validStudiedGroups.length;
+  // Every group with a studied word counts, including single-word groups (they are pages in Word Groups mode)
+  const totalStudiedGroups = studiedGroups.length;
 
   return { 
     groupedWords, 
@@ -216,6 +216,8 @@ export async function markWordsAsStudied(wordIds: number[]) {
 
     if (listId) {
       await updateListProgress(listId);
+      // The hub page is a cached server component: refresh its progress and counts
+      revalidatePath(`/spellPractice/${listId}`);
     }
 
     return { success: true };
@@ -262,6 +264,8 @@ export async function markSyllableWordsAsStudied(wordIds: number[], listId: numb
 
     if (listId) {
       await updateListProgress(listId);
+      // The hub page is a cached server component: refresh its progress and counts
+      revalidatePath(`/spellPractice/${listId}`);
     }
 
     return { success: true };
@@ -289,6 +293,8 @@ export async function markGroupsAsStudied(groupNames: string[], listId: number) 
     });
 
     await updateListProgress(listId);
+    // The hub page is a cached server component: refresh its progress and counts
+    revalidatePath(`/spellPractice/${listId}`);
 
     return { success: true as const };
   } catch (error) {

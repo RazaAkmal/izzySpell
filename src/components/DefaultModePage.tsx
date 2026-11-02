@@ -10,6 +10,7 @@ import TextToSpeech from "./TextToSpeach";
 import { useRouter } from "next/navigation";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import { TouchBackend } from "react-dnd-touch-backend";
 import ConfirmationModal from "./ConfirmationModal";
 import StudyCompletionModal from "./StudyCompletionModal";
 import { markWordsAsStudied } from "@/app/actions/prismaActions";
@@ -127,12 +128,66 @@ const SlotComponent = ({
     </div>
   );
 };
+// Defined at module level (not inside DefaultModePage) so React does not remount it
+// and its letters on every render
+const ScrambledDropZone = ({
+  scrambledLetters,
+  onDropToScrambled,
+  onLetterClick,
+}: {
+  scrambledLetters: string[];
+  onDropToScrambled: (item: Letter) => void;
+  onLetterClick: (letter: string, index: number) => void;
+}) => {
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: ItemTypes.LETTER,
+    drop: (item: Letter) => onDropToScrambled(item),
+    collect: (monitor) => ({
+      isOver: !!monitor.isOver(),
+    }),
+  }));
+
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    drop(ref);
+  }, [drop]);
+
+  return (
+    <div
+      ref={ref}
+      className={`flex flex-wrap justify-center gap-3 p-4 rounded-lg ${
+        isOver ? "bg-yellow-200" : "bg-transparent"
+      }`}
+    >
+      {scrambledLetters.length > 0 ? (
+        scrambledLetters.map((letter, index) => (
+          <LetterComponent
+            letter={letter}
+            index={index}
+            key={index}
+            onClick={onLetterClick}
+          />
+        ))
+      ) : (
+        <div className="w-16 h-16 border-2 border-dashed border-darkGreen rounded-xl flex items-center justify-center">
+          <span className="text-2xl font-bold text-darkGreen">+</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studiedWordCount }) => {
   const wordsSpell = words.map((word) => word.word);
   const { listName } = useListName();
   const router = useRouter();
-  const [currentPage, setCurrentPage] = useState(studiedWordCount || 1);
-  const [highestReachedPage, setHighestReachedPage] = useState(studiedWordCount || 1);
+  // Resume on the first unfinished word (the one after the studied ones); when everything is
+  // studied this is the last word, and "Begin Again" restarts from the first.
+  // TODO: position-based resume breaks after list edits; needs per-word studied tracking
+  const resumePage = Math.min(studiedWordCount + 1, words.length) || 1;
+  const [currentPage, setCurrentPage] = useState(resumePage);
+  const [highestReachedPage, setHighestReachedPage] = useState(resumePage);
   // Pages (1-based) the user actually spelled correctly in this session.
   // "Save and exit" marks only these, never a page that was just opened.
   const [answeredPages, setAnsweredPages] = useState<Set<number>>(new Set());
@@ -194,6 +249,20 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
       if (isMatching) {
         setIsCorrect(true);
         setAnsweredPages((prev) => new Set(prev).add(currentPage));
+        // Auto-save in the background so progress survives back/refresh/closing the tab.
+        // The server action returns { success: false } instead of throwing, so check both.
+        const answeredWordId = words[currentPage - 1]?.id;
+        if (answeredWordId !== undefined) {
+          markWordsAsStudied([answeredWordId])
+            .then((result) => {
+              if (result && result.success === false) {
+                console.error("Auto-save failed for word:", answeredWordId, result.error);
+              }
+            })
+            .catch((err) =>
+              console.error("Auto-save failed for word:", answeredWordId, err)
+            );
+        }
         setTimeout(() => {
           // Prevent going beyond the last word
           if (currentPage < wordsSpell.length) {
@@ -295,48 +364,16 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
     }
   }, [currentWord, scrambleWord]);
 
-  const ScrambledDropZone = () => {
-    const [{ isOver }, drop] = useDrop(() => ({
-      accept: ItemTypes.LETTER,
-      drop: (item: Letter) => handleDropToScrambled(item),
-      collect: (monitor) => ({
-        isOver: !!monitor.isOver(),
-      }),
-    }));
-
-    const ref = React.useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-      drop(ref);
-    }, [drop]);
-
-    return (
-      <div
-        ref={ref}
-        className={`flex flex-wrap justify-center gap-3 p-4 rounded-lg ${
-          isOver ? "bg-yellow-200" : "bg-transparent"
-        }`}
-      >
-        {scrambledLetters.length > 0 ? (
-          scrambledLetters.map((letter, index) => (
-            <LetterComponent
-              letter={letter}
-              index={index}
-              key={index}
-              onClick={handleLetterClick}
-            />
-          ))
-        ) : (
-          <div className="w-16 h-16 border-2 border-dashed border-darkGreen rounded-xl flex items-center justify-center">
-            <span className="text-2xl font-bold text-darkGreen">+</span>
-          </div>
-        )}
-      </div>
-    );
-  };
+  // Same detection as WordBuilder/DragDropProvider: touch backend on touch devices
+  // (with mouse events kept as a fallback), HTML5 backend otherwise
+  const isTouchDevice =
+    typeof window !== "undefined" &&
+    ("ontouchstart" in window || navigator.maxTouchPoints > 0);
+  const backend = isTouchDevice ? TouchBackend : HTML5Backend;
+  const backendOptions = isTouchDevice ? { enableMouseEvents: true } : undefined;
 
   return (
-    <DndProvider backend={HTML5Backend}>
+    <DndProvider backend={backend} options={backendOptions}>
       <div className="bg-skyBlue h-[75vh] m-7 mt-1 p-6 rounded-lg shadow-lg">
         <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4 sm:gap-0 items-center">
           <div className="order-2 sm:order-1 flex justify-start">
@@ -435,7 +472,11 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
               </div>
 
               <div className="flex flex-wrap justify-center gap-3">
-                <ScrambledDropZone />
+                <ScrambledDropZone
+                  scrambledLetters={scrambledLetters}
+                  onDropToScrambled={handleDropToScrambled}
+                  onLetterClick={handleLetterClick}
+                />
               </div>
 
               <div className="flex items-center justify-center mt-4">
@@ -447,46 +488,38 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
 
       <ConfirmationModal
         isOpen={showConfirmation}
-        onClose={() => !isConfirmLoading && router.push(`/spellPractice/${listId}`)}
-        onConfirm={async () => {
-          try {
-            setIsConfirmLoading(true);
-            setError(null);
-            
-            // Only the words the user actually answered correctly
-            const completedWordIds = words
-              .filter((_, index) => answeredPages.has(index + 1))
-              .map((word) => word.id);
-
-            if (completedWordIds.length > 0) {
-              await markWordsAsStudied(completedWordIds);
-            }
-            
-            router.push(`/spellPractice/${listId}`);
-          } catch (err) {
-            setError(`Failed to save progress: ${err instanceof Error ? err.message : 'Unknown error'}`);
-            console.error('Error marking words as studied:', err);
-          } finally {
-            setIsConfirmLoading(false);
-          }
-        }}
-        title="Mark Words as Studied"
-        message={error || "Would you like to mark your completed words as studied before leaving?"}
-        isLoading={isConfirmLoading}
-        confirmText="Yes, Save Progress"
+        onClose={() => !isConfirmLoading && setShowConfirmation(false)}
+        // Each correct word is auto-saved when answered, so leaving needs no save
+        onConfirm={() => router.push(`/spellPractice/${listId}`)}
+        title="Leave Practice"
+        message={error || "Your completed words are already saved. Leave this practice?"}
+        confirmText="Yes, Leave"
       />
 
       <StudyCompletionModal
         isOpen={showCompletionModal}
-        onClose={() => {
-          setShowCompletionModal(false);
-          // Reset to first page to practice again
-          setCurrentPage(1);
-          setHighestReachedPage(1);
-          setSelectedLetters(Array(wordsSpell[0]?.length || 0).fill(""));
-          setIsCorrect(true);
-          if (wordsSpell[0]) {
-            setScrambledLetters(scrambleWord(wordsSpell[0]));
+        // "Practice Again": the finished session is saved first, then the mode restarts
+        onClose={async () => {
+          setIsConfirmLoading(true);
+          try {
+            const completedWordIds = words.map((word) => word.id);
+            if (completedWordIds.length > 0) {
+              await markWordsAsStudied(completedWordIds);
+            }
+          } catch (err) {
+            console.error("Error saving on practice again:", err);
+          } finally {
+            setIsConfirmLoading(false);
+            setShowCompletionModal(false);
+            // Reset to first page to practice again
+            setCurrentPage(1);
+            setHighestReachedPage(1);
+            setAnsweredPages(new Set());
+            setSelectedLetters(Array(wordsSpell[0]?.length || 0).fill(""));
+            setIsCorrect(true);
+            if (wordsSpell[0]) {
+              setScrambledLetters(scrambleWord(wordsSpell[0]));
+            }
           }
         }}
         onContinue={async () => {

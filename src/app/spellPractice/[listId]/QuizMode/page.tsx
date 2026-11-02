@@ -6,6 +6,16 @@ import { preloadCurrentUserDetails } from "@/app/actions/getUserDetails";
 import { getTimeDurationsForList } from "@/app/actions/AiService";
 import QuizModePage from "@/components/QuizModePage";
 
+// Fisher-Yates shuffle, so the quiz order differs on every visit
+function shuffleArray<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 async function page({
   params,
 }: {
@@ -20,11 +30,12 @@ async function page({
     getWordsByListId(parseInt(listId)),
     getTimeDurationsForList(parseInt(listId)),
   ]);
+  const shuffledWords = shuffleArray(words);
   return (
     <DashboardLayout showFooter={false}>
       <ListNameProvider listId={listId} initialListName={list?.listName}>
         <QuizModePage
-          words={words}
+          words={shuffledWords}
           listId={listId}
           initialAiSuggestions={aiDurations.success && aiDurations.data ? aiDurations.data : null}
         />

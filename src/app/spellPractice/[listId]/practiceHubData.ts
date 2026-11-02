@@ -35,9 +35,9 @@ export const getPracticeHubData = cache(async (listId: number) => {
     totalPerGroup.set(row.groupName, (totalPerGroup.get(row.groupName) ?? 0) + row._count.word);
     if (row.studied) studiedPerGroup.set(row.groupName, row._count.word);
   }
-  // Groups with a single word are ignored, as in Word Groups mode
-  const totalGroupsCount = [...totalPerGroup.values()].filter((count) => count > 1).length;
-  const totalStudiedGroups = [...studiedPerGroup.values()].filter((count) => count > 1).length;
+  // Every group counts, including groups with a single word (each is a page in Word Groups mode)
+  const totalGroupsCount = totalPerGroup.size;
+  const totalStudiedGroups = studiedPerGroup.size;
 
   return {
     total: words.length,

@@ -11,35 +11,19 @@ export const getRecentQuizMistakes = async (spellingListId: number) => {
   const userId = session.user.id;
 
   try {
-    // Get the most recent 3 quiz attempts
-    const recentAttempts = await prisma.quizAttempt.findMany({
-      where: {
-        userId: userId,
-        spellingListId: spellingListId,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: 3,
-      select: {
-        id: true,
-      },
-    });
-
-    // Extract quiz attempt IDs
-    const quizAttemptIds = recentAttempts.map(attempt => attempt.id);
-
-    // Get all the mistakes from these attempts along with the associated words
+    // Every unresolved mistake for this user and list, from any quiz attempt.
+    // A mistake row is deleted by resolvePracticedMistake once practised, so the rows
+    // that still exist are exactly the unresolved ones.
     const mistakes = await prisma.quizMistake.findMany({
       where: {
-        quizAttemptId: {
-          in: quizAttemptIds,
-        },
         userId: userId,
+        quizAttempt: { userId: userId, spellingListId: spellingListId },
       },
       include: {
         word: true,
       },
+      // Newest attempt first, so distinct keeps the most recent wrong answer per word
+      orderBy: { quizAttempt: { createdAt: 'desc' } },
       distinct: ['wordId'], // Only get unique word mistakes
     });
 
