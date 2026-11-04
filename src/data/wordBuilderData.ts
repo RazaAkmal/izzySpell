@@ -356,3 +356,34 @@ export const getWordsByDifficulty = (difficulty: 'easy' | 'medium' | 'hard') => 
 export const getWordsByCategory = (category: string) => {
   return wordBuilderDatabase.filter(word => word.category === category);
 };
+// Builds a game word from a word in the child's own list. The list only has the word text
+// (and, when flash cards exist, a definition and example sentence), so tiles are single
+// letters, and the challenge settings are derived from the word's length.
+export const toWordBuilderWord = (
+  listWord: { id: number; word: string; definition?: string; exampleSentence?: string },
+  context: Pick<WordBuilderWord, 'ageGroup' | 'mode' | 'difficulty'>
+): WordBuilderWord => {
+  const word = listWord.word.trim().toUpperCase();
+  const length = word.length;
+
+  // Extra wrong letters for hard mode: letters the word does not contain
+  const absent = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter((letter) => !word.includes(letter));
+  for (let i = absent.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [absent[i], absent[j]] = [absent[j], absent[i]];
+  }
+
+  return {
+    id: listWord.id,
+    word,
+    ...context,
+    definition: listWord.definition ?? '',
+    exampleSentence: listWord.exampleSentence ?? '',
+    hints: [],
+    audio: '',
+    category: 'my-list',
+    timeLimit: Math.min(300, Math.max(60, length * 20)),
+    maxMoves: length + 2,
+    decoyTiles: absent.slice(0, 3 + Math.floor(length / 3)),
+  };
+};

@@ -7,6 +7,10 @@ import { auth } from "@/auth";
 import { Session } from "next-auth";
 import { getUserDetails } from "@/app/actions/getUserDetails";
 import { User } from "@prisma/client";
+import NoWordsModal from "@/components/NoWordsModal";
+import { shuffleArray } from "@/lib/shuffle";
+import { getWordBuilderSources } from "@/lib/gameWords";
+import { toWordBuilderWord } from "@/data/wordBuilderData";
 
 async function page({
   params,
@@ -14,15 +18,15 @@ async function page({
   params: Promise<{ listId: string }>;
 }) {
   const listId = (await params).listId;
-  // Note: WordBuilderGameNew uses its own static word database
-  // Future enhancement: could integrate with user's word lists
+  // The game plays the child's own words from this list (not a built-in word set)
   const session = (await auth()) as Session | null;
   const user = session?.user as User;
   // getUserDetails is cached per request, so DashboardLayout reuses this lookup;
   // the list name loads alongside it
-  const [userData, listName] = await Promise.all([
+  const [userData, listName, listWords] = await Promise.all([
     user?.id ? getUserDetails(user.id) : undefined,
     getListName(parseInt(listId)),
+    getWordBuilderSources(parseInt(listId)),
   ]);
    
   // Determine age group and mode based on user's grade
@@ -77,15 +81,28 @@ async function page({
   };
 
   const { ageGroup, mode, difficulty } = getAgeGroupAndMode(userData?.grade);
+  // Word order is shuffled on every page load
+  const words = shuffleArray(listWords).map((listWord) =>
+    toWordBuilderWord(listWord, { ageGroup, mode, difficulty })
+  );
   return (
     <DashboardLayout showFooter={false}>
       <ListNameProvider listId={listId} initialListName={listName}>
-        <WordBuilderGameNew
-          listId={listId}
-          ageGroup={ageGroup}
-          mode={mode}
-          difficulty={difficulty}
-        />
+        {words.length > 0 ? (
+          <WordBuilderGameNew
+            listId={listId}
+            ageGroup={ageGroup}
+            mode={mode}
+            difficulty={difficulty}
+            words={words}
+          />
+        ) : (
+          <NoWordsModal
+            isOpen={true}
+            title="No Words Available"
+            message="This list doesn't have any words yet. Please go back and add some first."
+          />
+        )}
       </ListNameProvider>
     </DashboardLayout>
   );

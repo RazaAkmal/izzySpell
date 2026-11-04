@@ -20,93 +20,87 @@ export default function HeroSection() {
         />
       </div>
 
-      {/* Mobile & tablet: stacked layout, content drives the height */}
-      <div className="relative flex flex-col items-center px-5 pb-12 pt-24 sm:px-8 sm:pt-28 lg:hidden">
-        <Image
-          src="/images/LandingPage/hero-img.png"
-          alt="A child using IzzySpell on a tablet with friendly letter characters"
-          width={1728}
-          height={1622}
-          className="h-auto w-full max-w-[560px]"
-          priority
-          quality={100}
-          sizes="(max-width: 640px) 100vw, 560px"
-        />
-        <div className="mt-4 flex flex-col items-center gap-4 text-center">
-          <h1>
-            <Image
-              src="/images/LandingPage/hero-title.png"
-              alt="Spell Play Learn"
-              width={594}
-              height={292}
-              className="h-auto w-48 drop-shadow-md sm:w-64"
-              priority
-              quality={100}
-              sizes="(max-width: 640px) 12rem, 16rem"
-            />
-          </h1>
-          <Link
-            href="/sign-in"
-            className="rounded-full transition-all hover:opacity-90 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white active:scale-95"
-          >
-            <Image
-              src="/images/LandingPage/login-to-start-button.svg"
-              alt="Login to Start"
-              width={256}
-              height={64}
-              className="h-auto w-44 sm:w-52"
-            />
-          </Link>
+      <div className="absolute inset-0 mx-auto w-full max-w-[1400px]">
+        <div className="absolute inset-x-0 top-[96px] md:hidden pointer-events-none">
+          <Image
+            src="/images/LandingPage/hero-img.png"
+            alt=""
+            width={1728}
+            height={1622}
+            className="w-full h-auto"
+            priority
+            quality={100}
+            sizes="100vw"
+          />
         </div>
-      </div>
 
-      {/* Desktop: text on the left, illustration anchored bottom-right */}
-      <div className="absolute inset-0 mx-auto hidden w-full max-w-[1400px] lg:block 2xl:max-w-[1680px]">
-        {/*
-          Sized by height (section minus navbar clearance) so the illustration
-          never runs under the fixed navbar on short, wide laptop screens;
-          max-w keeps it clear of the title on narrower ones.
-        */}
         <div
-          className="pointer-events-none absolute bottom-0 right-[-3%] h-[calc(100%-8rem)] max-w-[60%]"
+          className="absolute bottom-0 right-[-7%] hidden md:block pointer-events-none w-[68%] max-w-[960px] min-w-[560px]"
           style={{ aspectRatio: "1728 / 1622" }}
         >
           <Image
             src="/images/LandingPage/hero-img.png"
-            alt="A child using IzzySpell on a tablet with friendly letter characters"
+            alt=""
             fill
-            className="object-contain object-bottom"
+            className="absolute inset-0 w-full h-full object-contain object-bottom"
             priority
             quality={100}
-            sizes="(max-width: 1440px) 60vw, 900px"
+            sizes="(max-width: 1024px) 68vw, (max-width: 1440px) 62vw, 960px"
           />
         </div>
 
-        <div className="absolute inset-y-0 left-[6%] flex flex-col items-start justify-center gap-5 pt-16">
-          <h1>
-            <Image
-              src="/images/LandingPage/hero-title.png"
-              alt="Spell Play Learn"
-              width={594}
-              height={292}
-              className="h-auto w-72 drop-shadow-md xl:w-[360px] 2xl:w-[440px]"
-              priority
-              quality={100}
-              sizes="(max-width: 1280px) 18rem, (max-width: 1536px) 360px, 440px"
-            />
-          </h1>
-          <Link
-            href="/sign-in"
-            className="rounded-full transition-all hover:opacity-90 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white active:scale-95"
-          >
-            <Image
-              src="/images/LandingPage/login-to-start-button.svg"
-              alt="Login to Start"
-              width={256}
-              height={64}
-              className="h-auto w-52 xl:w-60 2xl:w-72"
-            />
-          </Link>
+        <div className="absolute bottom-6 left-5 z-10 flex flex-col gap-3 items-start sm:left-8 sm:bottom-8 md:hidden">
+          <Image
+            src="/images/LandingPage/hero-title.png"
+            alt="Spell Play Learn"
+            width={594}
+            height={292}
+            className="w-40 sm:w-52 h-auto drop-shadow-md"
+            priority
+            quality={100}
+            sizes="(max-width: 640px) 10rem, 13rem"
+          />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/signup"
+              className="rounded-full bg-[#4793FE] px-4 py-2.5 text-sm font-bold text-white shadow transition hover:bg-[#3578d6] active:scale-95 sm:px-6"
+            >
+              Sign Up Free
+            </Link>
+            <Link
+              href="/sign-in"
+              className="rounded-full border-2 border-white px-4 py-2 text-sm font-bold text-white transition hover:bg-white/20 active:scale-95 sm:px-6"
+            >
+              Login
+            </Link>
+          </div>
+        </div>
+
+        <div className="absolute inset-y-0 left-[4%] hidden md:flex flex-col gap-5 items-start justify-center pt-16 lg:left-[6%]">
+          <Image
+            src="/images/LandingPage/hero-title.png"
+            alt="Spell Play Learn"
+            width={594}
+            height={292}
+            className="w-56 md:w-64 lg:w-80 xl:w-[360px] h-auto drop-shadow-md"
+            priority
+            quality={100}
+            sizes="(max-width: 1024px) 16rem, (max-width: 1280px) 20rem, 360px"
+          />
+          <div className="flex items-center gap-3">
+            <Link
+              href="/signup"
+              className="rounded-full bg-[#4793FE] px-8 py-3 text-base font-bold text-white shadow-md transition hover:bg-[#3578d6] active:scale-95 lg:px-10 lg:text-lg"
+            >
+              Sign Up Free
+            </Link>
+            <Link
+              href="/sign-in"
+              className="rounded-full border-2 border-white px-7 py-2.5 text-base font-bold text-white transition hover:bg-white/20 active:scale-95 lg:px-9 lg:text-lg"
+            >
+              Login
+            </Link>
+          </div>
         </div>
       </div>
     </section>

@@ -23,6 +23,12 @@ export default function LegalPage({ title, children }: { title: string; children
         {/* Same version string that is stored with each account's consent */}
         <p className="text-center text-sm text-darkBlue mb-6">Last updated: {CONSENT_VERSION}</p>
         <div className="space-y-5 text-darkBlue text-sm sm:text-base leading-relaxed">{children}</div>
+        <footer className="mt-8 pt-4 border-t border-darkBlue/20 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs sm:text-sm text-darkBlue">
+          <Link href="/" className="hover:underline">Home</Link>
+          <Link href="/privacy" className="hover:underline">Privacy Policy</Link>
+          <Link href="/terms" className="hover:underline">Terms of Service</Link>
+          <span>&copy; {new Date().getFullYear()} IzzySpell</span>
+        </footer>
       </div>
     </div>
   );

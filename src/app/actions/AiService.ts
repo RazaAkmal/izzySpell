@@ -7,6 +7,10 @@ import { getBaseUrl } from '@/lib/baseUrl';
 import { OPENAI_MODEL } from '@/lib/openaiModel';
 import { requireSessionUserId, requireListOwner, getSessionUserId } from '@/lib/requireSession';
 import { MAX_RAW_TOKENS, MAX_WORDS_PER_LIST, MAX_WORDS_ERROR } from '@/lib/limits';
+import { stripCodeFences, validateFlashCards } from '@/lib/flashCards';
+import { repairScrambleOptions } from '@/lib/scrambleWords';
+import { revalidatePath } from 'next/cache';
+import { GENERATION_CHUNK_SIZE, chunkArray, uniqueWords } from '@/lib/chunks';
 
 
 const openai = new OpenAI({
@@ -290,8 +294,8 @@ A JSON array where each item follows this schema:
       throw new Error("No response from OpenAI");
     }
 
-    // Clean and validate the content before parsing
-    const cleanedContent = content.trim();
+    // Clean and validate the content before parsing (the model sometimes wraps JSON in ``` fences)
+    const cleanedContent = stripCodeFences(content);
     if (!cleanedContent) {
       throw new Error("Empty response from OpenAI");
     }
@@ -327,6 +331,36 @@ A JSON array where each item follows this schema:
   }
 };
 
+// Generates flash cards in chunks (one AI call per chunk, run together) and validates each
+// chunk against its own words. A chunk that fails is logged and skipped, so the other
+// chunks still produce cards; only a total failure is an error.
+const generateFlashCardsInChunks = async (words: string[]) => {
+  const chunks = chunkArray(uniqueWords(words), GENERATION_CHUNK_SIZE);
+  const outcomes = await Promise.all(
+    chunks.map(async (chunk, i) => {
+      console.log(`Generating flash cards chunk ${i + 1}/${chunks.length}`);
+      const result = await generateFlashCards(chunk);
+      if (!result.success) {
+        console.error(`Flash cards chunk ${i + 1}/${chunks.length} failed:`, result.error);
+        return null;
+      }
+      try {
+        return validateFlashCards(result.data, chunk);
+      } catch (error) {
+        console.error(`Flash cards chunk ${i + 1}/${chunks.length} could not be validated:`, error);
+        return null;
+      }
+    })
+  );
+
+  const cards = outcomes.flatMap((cardsForChunk) => cardsForChunk ?? []);
+  const failedChunks = outcomes.filter((cardsForChunk) => cardsForChunk === null).length;
+  if (cards.length === 0) {
+    return { success: false as const, error: "Could not generate flash cards. Please try again." };
+  }
+  return { success: true as const, data: cards, failedChunks };
+};
+
 export const generateAndSaveFlashCards = async (listId: number, words: string[]) => {
   await requireListOwner(listId);
   if (words.length > MAX_WORDS_PER_LIST) return { success: false, error: MAX_WORDS_ERROR };
@@ -344,28 +378,30 @@ export const generateAndSaveFlashCards = async (listId: number, words: string[])
       };
     }
 
-    // Generate flash cards using AI
-    const generationResult = await generateFlashCards(words);
+    // Generate flash cards using AI, a chunk of words at a time
+    const generationResult = await generateFlashCardsInChunks(words);
     
     if (!generationResult.success) {
       throw new Error(generationResult.error);
     }
 
+    // Each chunk was already repaired by validateFlashCards (correct spelling among 4
+    // distinct options, correctIndex pointing at it, a card for every word in the chunk)
     const flashCardsData = generationResult.data;
 
-    if (!flashCardsData || flashCardsData.length === 0) {
+    if (flashCardsData.length === 0) {
       throw new Error('No flash cards data generated');
     }
 
     // Save flash cards to database
     const savedFlashCards = await prisma.flashCard.createMany({
-      data: flashCardsData.map((card: any) => ({
+      data: flashCardsData.map((card) => ({
         listId,
-        originalWord: card.original_word,
+        originalWord: card.originalWord,
         options: card.options,
-        correctIndex: card.correct_index,
+        correctIndex: card.correctIndex,
         definition: card.definition,
-        exampleSentence: card.example_sentence
+        exampleSentence: card.exampleSentence
       }))
     });
 
@@ -374,10 +410,16 @@ export const generateAndSaveFlashCards = async (listId: number, words: string[])
       where: { listId }
     });
 
+    revalidatePath(`/spellPractice/${listId}/FlashCards`);
+
     return {
       success: true,
       data: flashCards,
-      message: `Generated and saved ${savedFlashCards.count} flash cards`
+      message:
+        `Generated and saved ${savedFlashCards.count} flash cards` +
+        (generationResult.failedChunks > 0
+          ? ` (${generationResult.failedChunks} group(s) of words could not be generated; use Regenerate to retry)`
+          : "")
     };
 
   } catch (error) {
@@ -546,52 +588,16 @@ Remember: Return ONLY JSON array format. No additional text or explanations.`;
       throw new Error("No scramble words generated");
     }
 
-    // Server-side validation to ensure only one correct anagram per word
-    const validatedData = scrambleWordsData.map((wordData: any) => {
-      const originalSorted = wordData.original_word.split('').sort().join('').toLowerCase();
-      
-      // Find all correct anagrams
-      const correctIndices = wordData.scrambled_options
-        .map((option: string, index: number) => ({
-          index,
-          option,
-          sorted: option.split('').sort().join('').toLowerCase(),
-          isCorrect: option.split('').sort().join('').toLowerCase() === originalSorted
-        }))
-        .filter((item: any) => item.isCorrect);
-
-      if (correctIndices.length === 0) {
-        console.warn(`No correct anagram found for "${wordData.original_word}". Adding one.`);
-        // Replace first option with a correct anagram
-        const letters = wordData.original_word.split('');
-        const shuffled = [...letters].sort(() => Math.random() - 0.5).join('');
-        wordData.scrambled_options[0] = shuffled;
-      } else if (correctIndices.length > 1) {
-        console.warn(`Multiple anagrams detected for "${wordData.original_word}":`, correctIndices.map((item: any) => item.option));
-        
-        // Keep only the first correct anagram, replace others with letter substitutions
-        for (let i = 1; i < correctIndices.length; i++) {
-          const indexToReplace = correctIndices[i].index;
-          const originalWord = wordData.original_word.toLowerCase();
-          
-          // Create a new incorrect option with letter substitution
-          const letters = originalWord.split('');
-          // Replace 1-2 letters with similar ones
-          if (letters.includes('a')) letters[letters.indexOf('a')] = 'e';
-          else if (letters.includes('e')) letters[letters.indexOf('e')] = 'a';
-          else if (letters.includes('o')) letters[letters.indexOf('o')] = 'u';
-          else if (letters.includes('m')) letters[letters.indexOf('m')] = 'n';
-          else if (letters.includes('w')) letters[letters.indexOf('w')] = 'v';
-          else letters[0] = letters[0] === 'z' ? 'a' : String.fromCharCode(letters[0].charCodeAt(0) + 1);
-          
-          // Scramble the modified letters
-          const incorrectOption = [...letters].sort(() => Math.random() - 0.5).join('').toUpperCase();
-          wordData.scrambled_options[indexToReplace] = incorrectOption;
-        }
-      }
-
-      return wordData;
-    });
+    // Server-side repair: every question ends with exactly one real anagram of the word
+    // (a true scramble, not the word itself) and three distinct non-anagrams. Entries
+    // without a usable word are dropped.
+    const validatedData = scrambleWordsData
+      .filter((wordData: any) => typeof wordData?.original_word === "string" && wordData.original_word.trim())
+      .map((wordData: any) => ({
+        ...wordData,
+        original_word: wordData.original_word.trim(),
+        scrambled_options: repairScrambleOptions(wordData.original_word, wordData.scrambled_options),
+      }));
 
     return {
       success: true,
@@ -605,6 +611,29 @@ Remember: Return ONLY JSON array format. No additional text or explanations.`;
       error: error instanceof Error ? error.message : "Error generating scramble words"
     };
   }
+};
+
+// Same chunking for scramble words: generateScrambleWords already repairs each chunk.
+const generateScrambleWordsInChunks = async (words: string[]) => {
+  const chunks = chunkArray(uniqueWords(words), GENERATION_CHUNK_SIZE);
+  const outcomes = await Promise.all(
+    chunks.map(async (chunk, i) => {
+      console.log(`Generating scramble words chunk ${i + 1}/${chunks.length}`);
+      const result = await generateScrambleWords(chunk);
+      if (!result.success || !result.data) {
+        console.error(`Scramble words chunk ${i + 1}/${chunks.length} failed:`, result.error);
+        return null;
+      }
+      return result.data as any[];
+    })
+  );
+
+  const questions = outcomes.flatMap((questionsForChunk) => questionsForChunk ?? []);
+  const failedChunks = outcomes.filter((questionsForChunk) => questionsForChunk === null).length;
+  if (questions.length === 0) {
+    return { success: false as const, error: "Could not generate scramble words. Please try again." };
+  }
+  return { success: true as const, data: questions, failedChunks };
 };
 
 export const generateAndSaveScrambleWords = async (listId: number, words: string[]) => {
@@ -626,8 +655,8 @@ export const generateAndSaveScrambleWords = async (listId: number, words: string
 
     console.log(`Generating scramble words for list ${listId} with ${words.length} words`);
     
-    // Generate scramble words using AI
-    const generationResult = await generateScrambleWords(words);
+    // Generate scramble words using AI, a chunk of words at a time
+    const generationResult = await generateScrambleWordsInChunks(words);
     
     if (!generationResult.success) {
       throw new Error(generationResult.error);
@@ -653,10 +682,16 @@ export const generateAndSaveScrambleWords = async (listId: number, words: string
       where: { listId }
     });
 
+    revalidatePath(`/spellPractice/${listId}/ScrambleWords`);
+
     return {
       success: true,
       data: scrambleWords,
-      message: `Generated and saved ${savedScrambleWords.count} scramble words`
+      message:
+        `Generated and saved ${savedScrambleWords.count} scramble words` +
+        (generationResult.failedChunks > 0
+          ? ` (${generationResult.failedChunks} group(s) of words could not be generated; use Regenerate to retry)`
+          : "")
     };
 
   } catch (error) {
@@ -668,54 +703,90 @@ export const generateAndSaveScrambleWords = async (listId: number, words: string
   }
 };
 
-export const regenerateScrambleWords = async (listId: number, words: string[]) => {
-  await requireListOwner(listId);
+// Replaces the list's scramble words with freshly generated ones. The words come from the
+// database (not from the caller). New content is generated BEFORE anything is deleted, and
+// the swap is one transaction, so a failed generation leaves the existing words untouched.
+export const regenerateScrambleWords = async (listId: number) => {
   try {
-    console.log(`Regenerating scramble words for list ${listId} with ${words.length} words`);
-    
-    // Delete existing scramble words for this list
-    await prisma.scrambleWord.deleteMany({
-      where: { listId }
-    });
+    await requireListOwner(listId);
+    const words = (await prisma.word.findMany({ where: { listId }, orderBy: { id: 'asc' }, select: { word: true } }))
+      .map((w) => w.word);
+    if (words.length === 0) throw new Error("This list has no words");
+    if (words.length > MAX_WORDS_PER_LIST) return { success: false, error: MAX_WORDS_ERROR };
 
-    // Generate new scramble words using AI with improved prompt
-    const generationResult = await generateScrambleWords(words);
-    
+    const generationResult = await generateScrambleWordsInChunks(words);
     if (!generationResult.success) {
       throw new Error(generationResult.error);
     }
 
     const scrambleWordsData = generationResult.data;
-
     if (!scrambleWordsData || scrambleWordsData.length === 0) {
       throw new Error('No scramble words data generated');
     }
 
-    // Save new scramble words to database
-    const savedScrambleWords = await prisma.scrambleWord.createMany({
-      data: scrambleWordsData.map((word: any) => ({
-        listId,
-        originalWord: word.original_word,
-        scrambledOptions: word.scrambled_options
-      }))
-    });
+    await prisma.$transaction([
+      prisma.scrambleWord.deleteMany({ where: { listId } }),
+      prisma.scrambleWord.createMany({
+        data: scrambleWordsData.map((word: any) => ({
+          listId,
+          originalWord: word.original_word,
+          scrambledOptions: word.scrambled_options
+        }))
+      }),
+    ]);
 
-    // Fetch the saved scramble words to return them
-    const scrambleWords = await prisma.scrambleWord.findMany({
-      where: { listId }
-    });
-
-    return {
-      success: true,
-      data: scrambleWords,
-      message: `Regenerated and saved ${savedScrambleWords.count} scramble words with improved quality`
-    };
-
+    revalidatePath(`/spellPractice/${listId}/ScrambleWords`);
+    return { success: true };
   } catch (error) {
     console.error("Error regenerating scramble words:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Error regenerating scramble words"
+    };
+  }
+};
+
+// Replaces the list's flash cards with freshly generated ones (same safety as above:
+// generate and validate first, then delete + insert in one transaction).
+export const regenerateFlashCards = async (listId: number) => {
+  try {
+    await requireListOwner(listId);
+    const words = (await prisma.word.findMany({ where: { listId }, orderBy: { id: 'asc' }, select: { word: true } }))
+      .map((w) => w.word);
+    if (words.length === 0) throw new Error("This list has no words");
+    if (words.length > MAX_WORDS_PER_LIST) return { success: false, error: MAX_WORDS_ERROR };
+
+    const generationResult = await generateFlashCardsInChunks(words);
+    if (!generationResult.success) {
+      throw new Error(generationResult.error);
+    }
+
+    const flashCardsData = generationResult.data;
+    if (flashCardsData.length === 0) {
+      throw new Error('No flash cards data generated');
+    }
+
+    await prisma.$transaction([
+      prisma.flashCard.deleteMany({ where: { listId } }),
+      prisma.flashCard.createMany({
+        data: flashCardsData.map((card) => ({
+          listId,
+          originalWord: card.originalWord,
+          options: card.options,
+          correctIndex: card.correctIndex,
+          definition: card.definition,
+          exampleSentence: card.exampleSentence
+        }))
+      }),
+    ]);
+
+    revalidatePath(`/spellPractice/${listId}/FlashCards`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error regenerating flash cards:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Error regenerating flash cards"
     };
   }
 };
