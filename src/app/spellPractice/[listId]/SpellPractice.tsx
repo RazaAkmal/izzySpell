@@ -4,12 +4,15 @@ import { getPracticeHubData } from "./practiceHubData";
 import PracticeWordModal from "@/components/PraticeWordModal";
 import GoToHomeButton from "@/components/GoToHomeButton";
 import CustomButton from "@/components/HeadlessButton";
+import { requireListOwnerForPage } from "@/lib/requireSession";
 
 export default async function WordsPage({
   listId,
 }: {
   listId: string;
 }) {
+  // This file is "use server", so its export is checked too (the lookup is shared with the page)
+  await requireListOwnerForPage(parseInt(listId));
   // All hub data in one parallel round (started early by the page via preload);
   // quiz data is included so the quiz tab is instant
   const {

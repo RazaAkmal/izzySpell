@@ -13,21 +13,19 @@ const SeeAppActions = () => {
       <Image
         src="/images/LandingPage/see-app-action-mobile-bg.svg"
         alt=""
-        width={1920}
-        height={1200}
+        width={440}
+        height={956}
         className="w-full h-auto md:hidden"
         aria-hidden="true"
-        priority
         sizes="100vw"
       />
       <Image
         src="/images/LandingPage/see-app-actions.svg"
         alt=""
-        width={1920}
-        height={900}
+        width={1728}
+        height={1185}
         className="w-full h-auto hidden md:block"
         aria-hidden="true"
-        priority
         sizes="100vw"
       />
     </section>

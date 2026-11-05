@@ -1,7 +1,7 @@
 'use server';
 
-import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
+import { requireListOwner } from '@/lib/requireSession';
 
 interface QuizStats {
   total: number;
@@ -43,11 +43,8 @@ export const saveQuizAttempt = async (
       throw new Error('Invalid List ID: Must be a valid number');
     }
     
-    const session = await auth();
-    if (!session?.user?.id) {
-      throw new Error('User not authenticated');
-    }
-    const userId = session.user.id;
+    // Signed in AND the list belongs to the user
+    const userId = await requireListOwner(spellingListId);
 
     // Prepare data with safe conversions and logging
     const quizData = {
@@ -125,21 +122,32 @@ export const saveQuizAttempt = async (
         })
         .filter((m): m is NonNullable<typeof m> => m !== null);
 
-      const toCreate = validMistakes.filter(m => !alreadySavedWordIds.has(m.wordId));
-      const alreadySavedCount = validMistakes.length - toCreate.length;
+      // Only words from this list can be saved; anything else counts as failed below
+      const listWords = await prisma.word.findMany({
+        where: { listId: spellingListId, id: { in: validMistakes.map(m => m.wordId) } },
+        select: { id: true },
+      });
+      const listWordIds = new Set(listWords.map(w => w.id));
+      const listMistakes = validMistakes.filter(m => listWordIds.has(m.wordId));
 
-      console.log(`Found ${validMistakes.length} valid mistakes to save (${alreadySavedCount} already saved)`);
+      const toCreate = listMistakes.filter(m => !alreadySavedWordIds.has(m.wordId));
+      const alreadySavedCount = listMistakes.length - toCreate.length;
 
-      const savedMistakes = await Promise.allSettled(
-        toCreate.map(mistake => prisma.quizMistake.create({ data: mistake }))
-      );
+      console.log(`Found ${listMistakes.length} valid mistakes to save (${alreadySavedCount} already saved)`);
 
-      const failedMistakes = savedMistakes.filter(r => r.status === 'rejected');
-      if (failedMistakes.length > 0) {
-        console.warn(`${failedMistakes.length} mistakes failed to save`);
+      // One insert for all the mistakes. A failure must not lose the saved score: it is
+      // reported through mistakesFailed, and the quiz summary warns about it.
+      let createdCount = 0;
+      if (toCreate.length > 0) {
+        try {
+          const { count } = await prisma.quizMistake.createMany({ data: toCreate });
+          createdCount = count;
+        } catch (error) {
+          console.warn(`${toCreate.length} mistakes failed to save`, error);
+        }
       }
 
-      mistakesSaved = alreadySavedCount + (savedMistakes.length - failedMistakes.length);
+      mistakesSaved = alreadySavedCount + createdCount;
     }
 
     // Anything requested but not saved counts as failed (including invalid entries)

@@ -3,6 +3,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { getScrambleWordsByListId } from "@/app/actions/prismaActions";
 import { ListNameProvider } from "@/context/ListNameContext";
 import { preloadCurrentUserDetails } from "@/app/actions/getUserDetails";
+import { requireListOwnerForPage } from "@/lib/requireSession";
 import { getListName } from "@/lib/listName";
 import ScrambleWordsGame from "@/components/ScrambleWordsGame";
 import NoWordsModal from "@/components/NoWordsModal";
@@ -15,6 +16,7 @@ async function page({
   params: Promise<{ listId: string }>;
 }) {
   const listId = (await params).listId;
+  await requireListOwnerForPage(parseInt(listId));
   // Header's user lookup runs in parallel with this page's queries
   preloadCurrentUserDetails();
   const [result, listName, listWords] = await Promise.all([

@@ -8,9 +8,10 @@ import CustomPagination from "./CustomPagination";
 import TextToSpeech from "./TextToSpeach";
 import ConfirmationModal from "./ConfirmationModal";
 import StudyCompletionModal from "./StudyCompletionModal";
-import { markGroupsAsStudied } from "@/app/actions/prismaActions";
+import { autoSaveGroupAsStudied, markGroupsAsStudied } from "@/app/actions/prismaActions";
 import CustomButton from "./HeadlessButton";
 import { useListName } from "@/context/ListNameContext";
+import { useSyncProgressOnLeave } from "@/lib/useSyncProgressOnLeave";
 
 interface GroupModePageProps {
   listId: string;
@@ -25,6 +26,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
 }) => {
   const router = useRouter();
   const { listName } = useListName();
+  const { markProgressPending, clearProgressPending } = useSyncProgressOnLeave(Number(listId));
   // All state declarations at the top
   // studiedPage is already the next unfinished group (studied groups + 1)
   // TODO: position-based resume breaks after list edits; needs per-group studied tracking
@@ -228,7 +230,8 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
       if (!autoSavedGroups.current.has(currentGroupName)) {
         const savedGroupName = currentGroupName;
         autoSavedGroups.current.add(savedGroupName);
-        markGroupsAsStudied([savedGroupName], Number(listId))
+        markProgressPending();
+        autoSaveGroupAsStudied(savedGroupName, Number(listId))
           .then((result) => {
             if (result && result.success === false) {
               autoSavedGroups.current.delete(savedGroupName);
@@ -260,7 +263,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
 
       return () => clearTimeout(timer);
     }
-  }, [currentGroupName, currentGroup, validationStates, currentPage, validGroups.length, handlePageChange, listId]);
+  }, [currentGroupName, currentGroup, validationStates, currentPage, validGroups.length, handlePageChange, listId, markProgressPending]);
 
   return (
     <div className="bg-skyBlue h-[75vh] m-7 mt-1 p-6 rounded-lg shadow-lg flex flex-col overflow-hidden">
@@ -417,6 +420,8 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
               const result = await markGroupsAsStudied(validGroups, Number(listId));
               if (!result.success) {
                 console.error("Error saving groups on practice again:", result.error);
+              } else {
+                clearProgressPending();
               }
             }
           } catch (err) {
@@ -453,6 +458,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
               if (!result.success) {
                 throw new Error(result.error || "Failed to save group");
               }
+              clearProgressPending();
             }
             router.push(`/spellPractice/${listId}`);
           } catch (err) {

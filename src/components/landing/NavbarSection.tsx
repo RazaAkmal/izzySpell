@@ -20,7 +20,6 @@ export default function Navbar() {
             alt="IzzySpell Logo"
             fill
             className="object-contain"
-            priority
             quality={100}
             sizes="(max-width: 640px) 9rem, 12rem"
           />
@@ -35,7 +34,6 @@ export default function Navbar() {
               width={80}
               height={24}
               className="w-20 h-auto"
-              priority
             />
           </Link>
           <Link href="#why-choose">
@@ -45,7 +43,6 @@ export default function Navbar() {
               width={80}
               height={24}
               className="w-20 h-auto"
-              priority
             />
           </Link>
           <Link href="#how-it-works">
@@ -55,7 +52,6 @@ export default function Navbar() {
               width={96}
               height={24}
               className="w-24 h-auto"
-              priority
             />
           </Link>
           <Link href="#contact">
@@ -65,7 +61,6 @@ export default function Navbar() {
               width={96}
               height={24}
               className="w-24 h-auto"
-              priority
             />
           </Link>
           <Link

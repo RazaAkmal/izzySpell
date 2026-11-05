@@ -4,11 +4,13 @@ import GroupModePage from "@/components/GroupModePage";
 import { getGroupedWordsByListId } from "@/app/actions/prismaActions";
 import { ListNameProvider } from "@/context/ListNameContext";
 import { preloadCurrentUserDetails } from "@/app/actions/getUserDetails";
+import { requireListOwnerForPage } from "@/lib/requireSession";
 import { getListName } from "@/lib/listName";
 import NoModeData from "@/components/NoModeData";
 
 async function page({ params }: { params: Promise<{ listId: string }> }) {
   const listId = (await params).listId;
+  await requireListOwnerForPage(parseInt(listId));
 
   // Header's user lookup runs in parallel with this page's queries
   preloadCurrentUserDetails();

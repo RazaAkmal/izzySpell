@@ -5,6 +5,7 @@ import { Session } from "next-auth";
 import ShowWords from "@/components/ShowWords";
 import { redirect } from "next/navigation";
 import { fetchWordsForList } from "@/app/actions/prismaActions";
+import { requireListOwnerForPage } from "@/lib/requireSession";
 const WordsPage = async ({
   params,
 }: {
@@ -18,6 +19,7 @@ const WordsPage = async ({
   if (!user) {
     redirect("/session-expired");
   }
+  await requireListOwnerForPage(parseInt(listID));
   // Read the list directly instead of calling this app's own /api/fetch-words over HTTP
   const spellingListWithWords = await fetchWordsForList(user.id as string, parseInt(listID));
 

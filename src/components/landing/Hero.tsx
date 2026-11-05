@@ -3,22 +3,15 @@ import Link from "next/link";
 
 export default function HeroSection() {
   return (
-    <section className="relative w-full overflow-hidden bg-[#4FB4FE] lg:h-svh lg:min-h-[680px]">
-      {/*
-        Background sky. The bottom ~30% of hero-bg.svg is a solid yellow band,
-        so the image box is made taller than the section (1881 / 1320 ≈ 143%)
-        and anchored to the top — only the sky is ever visible, at any aspect ratio.
-      */}
-      <div className="absolute inset-x-0 top-0 h-[143%]" aria-hidden="true">
-        <Image
-          src="/images/LandingPage/hero-bg.svg"
-          alt=""
-          fill
-          className="object-cover object-top"
-          priority
-          sizes="100vw"
-        />
-      </div>
+    <section className="relative w-full min-h-[680px] md:min-h-screen overflow-hidden bg-[#3BB5F5] pb-8">
+      {/* Background sky — fills the viewport */}
+      <Image
+        src="/images/LandingPage/hero-bg.svg"
+        alt=""
+        fill
+        className="absolute inset-0 w-full h-full object-cover object-top"
+        sizes="100vw"
+      />
 
       <div className="absolute inset-0 mx-auto w-full max-w-[1400px]">
         <div className="absolute inset-x-0 top-[96px] md:hidden pointer-events-none">
@@ -28,7 +21,6 @@ export default function HeroSection() {
             width={1728}
             height={1622}
             className="w-full h-auto"
-            priority
             quality={100}
             sizes="100vw"
           />
@@ -56,7 +48,6 @@ export default function HeroSection() {
             width={594}
             height={292}
             className="w-40 sm:w-52 h-auto drop-shadow-md"
-            priority
             quality={100}
             sizes="(max-width: 640px) 10rem, 13rem"
           />
@@ -83,7 +74,6 @@ export default function HeroSection() {
             width={594}
             height={292}
             className="w-56 md:w-64 lg:w-80 xl:w-[360px] h-auto drop-shadow-md"
-            priority
             quality={100}
             sizes="(max-width: 1024px) 16rem, (max-width: 1280px) 20rem, 360px"
           />

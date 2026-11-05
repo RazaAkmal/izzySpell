@@ -445,9 +445,8 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
             src="/images/titles/ChooseModeTitle.svg"
             alt="Choose a Mode to Practice Your Word List"
             width={400}
-            height={30}
+            height={38}
             className="mx-auto w-full max-w-[90%] sm:max-w-md h-auto"
-            priority
           />
         </div>
 

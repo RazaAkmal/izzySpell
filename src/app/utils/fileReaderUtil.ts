@@ -1,6 +1,4 @@
 'use client'
-import * as XLSX from "xlsx";
-import mammoth from "mammoth";
 
 export const readFileContent = (file: File): Promise<string[]> => {
   return new Promise((resolve, reject) => {
@@ -31,8 +29,9 @@ export const readFileContent = (file: File): Promise<string[]> => {
       file.type === "text/csv" ||
       file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     ) {
-      reader.onload = () => {
+      reader.onload = async () => {
         try {
+          const XLSX = await import("xlsx");
           const workbook = XLSX.read(reader.result, { type: "array" });
           let text = "";
           workbook.SheetNames.forEach((sheetName) => {
@@ -51,6 +50,7 @@ export const readFileContent = (file: File): Promise<string[]> => {
     } else if (file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
       reader.onload = async () => {
         try {
+          const { default: mammoth } = await import("mammoth");
           const { value } = await mammoth.extractRawText({
             arrayBuffer: reader.result as ArrayBuffer
           });

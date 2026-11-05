@@ -13,8 +13,9 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import { TouchBackend } from "react-dnd-touch-backend";
 import ConfirmationModal from "./ConfirmationModal";
 import StudyCompletionModal from "./StudyCompletionModal";
-import { markWordsAsStudied } from "@/app/actions/prismaActions";
+import { autoSaveWordAsStudied, markWordsAsStudied } from "@/app/actions/prismaActions";
 import { useListName } from "@/context/ListNameContext";
+import { useSyncProgressOnLeave } from "@/lib/useSyncProgressOnLeave";
 
 interface DefaultModePageProps {
   words: Word[];
@@ -182,6 +183,7 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
   const wordsSpell = words.map((word) => word.word);
   const { listName } = useListName();
   const router = useRouter();
+  const { markProgressPending, clearProgressPending } = useSyncProgressOnLeave(Number(listId));
   // Resume on the first unfinished word (the one after the studied ones); when everything is
   // studied this is the last word, and "Begin Again" restarts from the first.
   // TODO: position-based resume breaks after list edits; needs per-word studied tracking
@@ -249,7 +251,8 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
         // The server action returns { success: false } instead of throwing, so check both.
         const answeredWordId = words[currentPage - 1]?.id;
         if (answeredWordId !== undefined) {
-          markWordsAsStudied([answeredWordId])
+          markProgressPending();
+          autoSaveWordAsStudied(answeredWordId)
             .then((result) => {
               if (result && result.success === false) {
                 console.error("Auto-save failed for word:", answeredWordId, result.error);
@@ -385,8 +388,7 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
               src="/images/titles/DefaultModeTitle.svg"
               alt="Default title"
               width={250}
-              height={24}
-              priority
+              height={69}
               className="w-[200px] sm:w-[250px] h-auto"
             />
           </div>
@@ -501,6 +503,7 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
             const completedWordIds = words.map((word) => word.id);
             if (completedWordIds.length > 0) {
               await markWordsAsStudied(completedWordIds);
+              clearProgressPending();
             }
           } catch (err) {
             console.error("Error saving on practice again:", err);
@@ -523,6 +526,7 @@ const DefaultModePage: React.FC<DefaultModePageProps> = ({ words, listId, studie
             // Mark all words as studied since we completed them
             const completedWordIds = words.map(word => word.id);
             await markWordsAsStudied(completedWordIds);
+            clearProgressPending();
             router.push(`/spellPractice/${listId}`);
           } catch (err) {
             setError(`Failed to save progress: ${err instanceof Error ? err.message : 'Unknown error'}`);

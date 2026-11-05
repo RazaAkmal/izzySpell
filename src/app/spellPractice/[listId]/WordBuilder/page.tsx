@@ -11,6 +11,7 @@ import NoWordsModal from "@/components/NoWordsModal";
 import { shuffleArray } from "@/lib/shuffle";
 import { getWordBuilderSources } from "@/lib/gameWords";
 import { toWordBuilderWord } from "@/data/wordBuilderData";
+import { requireListOwnerForPage } from "@/lib/requireSession";
 
 async function page({
   params,
@@ -18,6 +19,7 @@ async function page({
   params: Promise<{ listId: string }>;
 }) {
   const listId = (await params).listId;
+  await requireListOwnerForPage(parseInt(listId));
   // The game plays the child's own words from this list (not a built-in word set)
   const session = (await auth()) as Session | null;
   const user = session?.user as User;

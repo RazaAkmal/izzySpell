@@ -3,6 +3,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { getWordsByListId } from "@/app/actions/prismaActions";
 import { ListNameProvider } from "@/context/ListNameContext";
 import { preloadCurrentUserDetails } from "@/app/actions/getUserDetails";
+import { requireListOwnerForPage } from "@/lib/requireSession";
 import { getTimeDurationsForList } from "@/app/actions/AiService";
 import QuizModePage from "@/components/QuizModePage";
 
@@ -22,6 +23,7 @@ async function page({
   params: Promise<{ listId: string }>;
 }) {
   const listId = (await params).listId
+  await requireListOwnerForPage(parseInt(listId));
   // Header's user lookup runs in parallel with this page's queries
   preloadCurrentUserDetails();
   // Words (incl. list name) and the AI timer suggestions load together,

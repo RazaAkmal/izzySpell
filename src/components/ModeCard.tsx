@@ -142,7 +142,6 @@ const ModeCard: React.FC<ModeCardProps> = ({
             className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24"
             width={80}
             height={80}
-            priority
           />
         )}
         <span className="text-lg sm:text-xl font-bold text-blue text-center">

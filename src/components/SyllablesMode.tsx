@@ -6,9 +6,10 @@ import { SyllableWord } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import TextToSpeech from "./TextToSpeach";
 import ConfirmationModal from "./ConfirmationModal";
-import { markSyllableWordsAsStudied } from "@/app/actions/prismaActions";
+import { autoSaveSyllableWordAsStudied, markSyllableWordsAsStudied } from "@/app/actions/prismaActions";
 import StudyCompletionModal from "./StudyCompletionModal";
 import { useListName } from "@/context/ListNameContext";
+import { useSyncProgressOnLeave } from "@/lib/useSyncProgressOnLeave";
 import CustomButton from "./HeadlessButton";
 import { Button } from "@headlessui/react";
 
@@ -25,6 +26,7 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
 }) => {
   const router = useRouter();
   const { listName } = useListName();
+  const { markProgressPending, clearProgressPending } = useSyncProgressOnLeave(listId);
   // Resume on the first unfinished word (the one after the studied ones); when everything is
   // studied this is the last word, and "Begin Again" restarts from the first.
   // TODO: position-based resume breaks after list edits; needs per-word studied tracking
@@ -98,7 +100,8 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
       // The server action returns { success: false } instead of throwing, so check both.
       const answeredWordId = syllableWords[currentPage - 1]?.id;
       if (answeredWordId !== undefined) {
-        markSyllableWordsAsStudied([answeredWordId], listId)
+        markProgressPending();
+        autoSaveSyllableWordAsStudied(answeredWordId, listId)
           .then((result) => {
             if (result && result.success === false) {
               console.error("Auto-save failed for syllable word:", answeredWordId, result.error);
@@ -263,6 +266,7 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
             const completedWordIds = syllableWords.map((word) => word.id);
             if (completedWordIds.length > 0) {
               await markSyllableWordsAsStudied(completedWordIds, listId);
+              clearProgressPending();
             }
           } catch (err) {
             console.error("Error saving on practice again:", err);
@@ -283,6 +287,7 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
             // Mark all words as studied since we completed them
             const completedWordIds = syllableWords.map((word) => word.id);
             await markSyllableWordsAsStudied(completedWordIds, listId);
+            clearProgressPending();
             router.push(`/spellPractice/${listId}`);
           } catch (err) {
             setError(
