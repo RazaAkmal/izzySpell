@@ -1,92 +1,111 @@
 import Image from "next/image";
 import Link from "next/link";
 
+const ctaFocusClass =
+  "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white";
+
 export default function HeroSection() {
   return (
-    <section className="relative w-full min-h-[680px] md:min-h-screen overflow-hidden bg-[#3BB5F5] pb-8">
-      {/* Background sky — fills the viewport */}
-      <Image
-        src="/images/LandingPage/hero-bg.svg"
-        alt=""
-        fill
-        className="absolute inset-0 w-full h-full object-cover object-top"
-        sizes="100vw"
-      />
+    <section className="relative w-full overflow-hidden bg-[#4FB4FE] lg:h-svh lg:min-h-[680px]">
+      {/*
+        Background sky. The bottom ~30% of hero-bg.svg is a solid yellow band,
+        so the image box is made taller than the section (1881 / 1320 ≈ 143%)
+        and anchored to the top — only the sky is ever visible, at any aspect ratio.
+      */}
+      <div className="absolute inset-x-0 top-0 h-[143%]" aria-hidden="true">
+        <Image
+          src="/images/LandingPage/hero-bg.svg"
+          alt=""
+          fill
+          className="object-cover object-top"
+          sizes="100vw"
+        />
+      </div>
 
-      <div className="absolute inset-0 mx-auto w-full max-w-[1400px]">
-        <div className="absolute inset-x-0 top-[96px] md:hidden pointer-events-none">
-          <Image
-            src="/images/LandingPage/hero-img.png"
-            alt=""
-            width={1728}
-            height={1622}
-            className="w-full h-auto"
-            quality={100}
-            sizes="100vw"
-          />
-        </div>
-
-        <div
-          className="absolute bottom-0 right-[-7%] hidden md:block pointer-events-none w-[68%] max-w-[960px] min-w-[560px]"
-          style={{ aspectRatio: "1728 / 1622" }}
-        >
-          <Image
-            src="/images/LandingPage/hero-img.png"
-            alt=""
-            fill
-            className="absolute inset-0 w-full h-full object-contain object-bottom"
-            priority
-            quality={100}
-            sizes="(max-width: 1024px) 68vw, (max-width: 1440px) 62vw, 960px"
-          />
-        </div>
-
-        <div className="absolute bottom-6 left-5 z-10 flex flex-col gap-3 items-start sm:left-8 sm:bottom-8 md:hidden">
-          <Image
-            src="/images/LandingPage/hero-title.png"
-            alt="Spell Play Learn"
-            width={594}
-            height={292}
-            className="w-40 sm:w-52 h-auto drop-shadow-md"
-            quality={100}
-            sizes="(max-width: 640px) 10rem, 13rem"
-          />
+      {/* Mobile & tablet: stacked layout, content drives the height */}
+      <div className="relative flex flex-col items-center px-5 pb-12 pt-24 sm:px-8 sm:pt-28 lg:hidden">
+        <Image
+          src="/images/LandingPage/hero-img.png"
+          alt="A child using IzzySpell on a tablet with friendly letter characters"
+          width={1728}
+          height={1622}
+          className="h-auto w-full max-w-[560px]"
+          quality={100}
+          sizes="(max-width: 640px) 100vw, 560px"
+        />
+        <div className="mt-4 flex flex-col items-center gap-4 text-center">
+          <h1>
+            <Image
+              src="/images/LandingPage/hero-title.png"
+              alt="Spell Play Learn"
+              width={594}
+              height={292}
+              className="h-auto w-48 drop-shadow-md sm:w-64"
+              quality={100}
+              sizes="(max-width: 640px) 12rem, 16rem"
+            />
+          </h1>
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/signup"
-              className="rounded-full bg-[#4793FE] px-4 py-2.5 text-sm font-bold text-white shadow transition hover:bg-[#3578d6] active:scale-95 sm:px-6"
+              className={`rounded-full bg-[#4793FE] px-5 py-3 text-sm font-bold text-white shadow transition hover:bg-[#3578d6] active:scale-95 sm:px-7 sm:text-base ${ctaFocusClass}`}
             >
               Sign Up Free
             </Link>
             <Link
               href="/sign-in"
-              className="rounded-full border-2 border-white px-4 py-2 text-sm font-bold text-white transition hover:bg-white/20 active:scale-95 sm:px-6"
+              className={`rounded-full border-2 border-white px-5 py-2.5 text-sm font-bold text-white transition hover:bg-white/20 active:scale-95 sm:px-7 sm:text-base ${ctaFocusClass}`}
             >
               Login
             </Link>
           </div>
         </div>
+      </div>
 
-        <div className="absolute inset-y-0 left-[4%] hidden md:flex flex-col gap-5 items-start justify-center pt-16 lg:left-[6%]">
+      {/* Desktop: text on the left, illustration anchored bottom-right */}
+      <div className="absolute inset-0 mx-auto hidden w-full max-w-[1400px] lg:block 2xl:max-w-[1680px]">
+        {/*
+          Sized by height (section minus navbar clearance) so the illustration
+          never runs under the fixed navbar on short, wide laptop screens;
+          max-w keeps it clear of the title on narrower ones.
+        */}
+        <div
+          className="pointer-events-none absolute bottom-0 right-[-3%] h-[calc(100%-8rem)] max-w-[60%]"
+          style={{ aspectRatio: "1728 / 1622" }}
+        >
           <Image
-            src="/images/LandingPage/hero-title.png"
-            alt="Spell Play Learn"
-            width={594}
-            height={292}
-            className="w-56 md:w-64 lg:w-80 xl:w-[360px] h-auto drop-shadow-md"
+            src="/images/LandingPage/hero-img.png"
+            alt="A child using IzzySpell on a tablet with friendly letter characters"
+            fill
+            className="object-contain object-bottom"
+            priority
             quality={100}
-            sizes="(max-width: 1024px) 16rem, (max-width: 1280px) 20rem, 360px"
+            sizes="(max-width: 1440px) 60vw, 900px"
           />
+        </div>
+
+        <div className="absolute inset-y-0 left-[6%] flex flex-col items-start justify-center gap-5 pt-16">
+          <h1>
+            <Image
+              src="/images/LandingPage/hero-title.png"
+              alt="Spell Play Learn"
+              width={594}
+              height={292}
+              className="h-auto w-72 drop-shadow-md xl:w-[360px] 2xl:w-[440px]"
+              quality={100}
+              sizes="(max-width: 1280px) 18rem, (max-width: 1536px) 360px, 440px"
+            />
+          </h1>
           <div className="flex items-center gap-3">
             <Link
               href="/signup"
-              className="rounded-full bg-[#4793FE] px-8 py-3 text-base font-bold text-white shadow-md transition hover:bg-[#3578d6] active:scale-95 lg:px-10 lg:text-lg"
+              className={`rounded-full bg-[#4793FE] px-8 py-3 text-base font-bold text-white shadow-md transition hover:bg-[#3578d6] active:scale-95 xl:px-10 xl:text-lg 2xl:px-12 2xl:py-4 2xl:text-xl ${ctaFocusClass}`}
             >
               Sign Up Free
             </Link>
             <Link
               href="/sign-in"
-              className="rounded-full border-2 border-white px-7 py-2.5 text-base font-bold text-white transition hover:bg-white/20 active:scale-95 lg:px-9 lg:text-lg"
+              className={`rounded-full border-2 border-white px-7 py-2.5 text-base font-bold text-white transition hover:bg-white/20 active:scale-95 xl:px-9 xl:text-lg 2xl:px-11 2xl:py-3.5 2xl:text-xl ${ctaFocusClass}`}
             >
               Login
             </Link>

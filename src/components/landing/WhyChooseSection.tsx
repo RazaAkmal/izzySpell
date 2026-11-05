@@ -104,14 +104,14 @@ export default function WhyChooseSection() {
         src="/images/LandingPage/why-choose-mobile-bg.svg"
         alt=""
         fill
-        className="absolute inset-0 w-full h-full object-cover md:hidden"
+        className="absolute inset-0 w-full h-full object-cover lg:hidden"
         sizes="100vw"
       />
       <Image
         src="/images/LandingPage/why-choose-bg.svg"
         alt=""
         fill
-        className="absolute inset-0 w-full h-full object-cover hidden md:block"
+        className="absolute inset-0 w-full h-full object-cover hidden lg:block"
         sizes="100vw"
       />
 
