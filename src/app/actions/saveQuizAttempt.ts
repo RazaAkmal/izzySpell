@@ -1,7 +1,7 @@
 'use server';
 
-import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
+import { requireListOwner } from '@/lib/requireSession';
 
 interface QuizStats {
   total: number;
@@ -19,6 +19,9 @@ interface QuizMistake {
   wordId: number;
   userAnswer: string;
 }
+
+// Window in which an identical attempt is treated as a retry of the same save
+const DUPLICATE_WINDOW_MS = 30_000;
 
 export const saveQuizAttempt = async (
   listId: number,
@@ -40,11 +43,8 @@ export const saveQuizAttempt = async (
       throw new Error('Invalid List ID: Must be a valid number');
     }
     
-    const session = await auth();
-    if (!session?.user?.id) {
-      throw new Error('User not authenticated');
-    }
-    const userId = session.user.id;
+    // Signed in AND the list belongs to the user
+    const userId = await requireListOwner(spellingListId);
 
     // Prepare data with safe conversions and logging
     const quizData = {
@@ -62,15 +62,49 @@ export const saveQuizAttempt = async (
     };
 
     
-    // Create the attempt with just the essential data
-    const result = await prisma.quizAttempt.create({
-      data: quizData
+    // A retry after a failed save must not create a second attempt. The schema has no
+    // idempotency key, so an attempt from the last 30 seconds with exactly the same
+    // user, list, score and timer settings is treated as the same attempt.
+    const existingAttempt = await prisma.quizAttempt.findFirst({
+      where: {
+        userId,
+        spellingListId,
+        createdAt: { gte: new Date(Date.now() - DUPLICATE_WINDOW_MS) },
+        totalQuestions: quizData.totalQuestions,
+        correctAnswers: quizData.correctAnswers,
+        incorrectAnswers: quizData.incorrectAnswers,
+        grade: quizData.grade,
+        isTimed: quizData.isTimed,
+        timerType: quizData.timerType,
+        timeAmount: quizData.timeAmount,
+        expiredWords: quizData.expiredWords,
+      },
+      orderBy: { createdAt: 'desc' },
     });
 
+    const result =
+      existingAttempt ??
+      (await prisma.quizAttempt.create({
+        data: quizData,
+      }));
+
     // Add mistakes if there are any
-    if (Array.isArray(mistakes) && mistakes.length > 0) {      
+    const requestedMistakes = Array.isArray(mistakes) ? mistakes : [];
+    let mistakesSaved = 0;
+
+    if (requestedMistakes.length > 0) {
+      // On a retry, some mistakes may already be saved: only add the missing ones
+      const alreadySavedWordIds = new Set<number>();
+      if (existingAttempt) {
+        const saved = await prisma.quizMistake.findMany({
+          where: { quizAttemptId: result.id, userId },
+          select: { wordId: true },
+        });
+        saved.forEach((m) => alreadySavedWordIds.add(m.wordId));
+      }
+
       // Prepare all mistakes with proper validation
-      const validMistakes = mistakes
+      const validMistakes = requestedMistakes
         .filter(m => m && typeof m.wordId !== 'undefined')
         .map(mistake => {
           const wordId = Number(mistake.wordId);
@@ -86,28 +120,47 @@ export const saveQuizAttempt = async (
             userId
           };
         })
-        .filter(Boolean);
-      
-      console.log(`Found ${validMistakes.length} valid mistakes to save`);
-      
-      // Create all mistakes in a transaction for atomicity
-      const savedMistakes = await Promise.allSettled(
-        validMistakes.map(mistake => 
-          mistake ? prisma.quizMistake.create({ data: mistake }) : Promise.resolve(null)
-        )
-      );
-      
-      // Check for any failures
-      const failedMistakes = savedMistakes.filter(r => r.status === 'rejected');
-      if (failedMistakes.length > 0) {
-        console.warn(`${failedMistakes.length} mistakes failed to save`);
+        .filter((m): m is NonNullable<typeof m> => m !== null);
+
+      // Only words from this list can be saved; anything else counts as failed below
+      const listWords = await prisma.word.findMany({
+        where: { listId: spellingListId, id: { in: validMistakes.map(m => m.wordId) } },
+        select: { id: true },
+      });
+      const listWordIds = new Set(listWords.map(w => w.id));
+      const listMistakes = validMistakes.filter(m => listWordIds.has(m.wordId));
+
+      const toCreate = listMistakes.filter(m => !alreadySavedWordIds.has(m.wordId));
+      const alreadySavedCount = listMistakes.length - toCreate.length;
+
+      console.log(`Found ${listMistakes.length} valid mistakes to save (${alreadySavedCount} already saved)`);
+
+      // One insert for all the mistakes. A failure must not lose the saved score: it is
+      // reported through mistakesFailed, and the quiz summary warns about it.
+      let createdCount = 0;
+      if (toCreate.length > 0) {
+        try {
+          const { count } = await prisma.quizMistake.createMany({ data: toCreate });
+          createdCount = count;
+        } catch (error) {
+          console.warn(`${toCreate.length} mistakes failed to save`, error);
+        }
       }
-          }
+
+      mistakesSaved = alreadySavedCount + createdCount;
+    }
+
+    // Anything requested but not saved counts as failed (including invalid entries)
+    const mistakesFailed = requestedMistakes.length - mistakesSaved;
 
     return {
-  ...result,
-  grade: typeof result.grade?.toNumber === 'function' ? result.grade.toNumber() : result.grade,
-};
+      success: true as const,
+      attemptId: result.id,
+      mistakesSaved,
+      mistakesFailed,
+      ...result,
+      grade: typeof result.grade?.toNumber === 'function' ? result.grade.toNumber() : result.grade,
+    };
   } catch (error) {
     console.error('Failed to save quiz attempt:', error);
     

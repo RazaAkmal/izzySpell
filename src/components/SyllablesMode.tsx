@@ -6,9 +6,10 @@ import { SyllableWord } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import TextToSpeech from "./TextToSpeach";
 import ConfirmationModal from "./ConfirmationModal";
-import { markSyllableWordsAsStudied } from "@/app/actions/prismaActions";
+import { autoSaveSyllableWordAsStudied, markSyllableWordsAsStudied } from "@/app/actions/prismaActions";
 import StudyCompletionModal from "./StudyCompletionModal";
 import { useListName } from "@/context/ListNameContext";
+import { useSyncProgressOnLeave } from "@/lib/useSyncProgressOnLeave";
 import CustomButton from "./HeadlessButton";
 import { Button } from "@headlessui/react";
 
@@ -25,10 +26,13 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
 }) => {
   const router = useRouter();
   const { listName } = useListName();
-  const [currentPage, setCurrentPage] = useState(studiedWordCount || 1);
-  const [highestReachedPage, setHighestReachedPage] = useState(
-    studiedWordCount || 1
-  );
+  const { markProgressPending, clearProgressPending } = useSyncProgressOnLeave(listId);
+  // Resume on the first unfinished word (the one after the studied ones); when everything is
+  // studied this is the last word, and "Begin Again" restarts from the first.
+  // TODO: position-based resume breaks after list edits; needs per-word studied tracking
+  const resumePage = Math.min(studiedWordCount + 1, syllableWords.length) || 1;
+  const [currentPage, setCurrentPage] = useState(resumePage);
+  const [highestReachedPage, setHighestReachedPage] = useState(resumePage);
   const correctSyllable = syllableWords[currentPage - 1].answer;
   const orignalWord = syllableWords[currentPage - 1].word;
 
@@ -92,6 +96,21 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
   const checkAnswer = (selectedOption: string) => {
     if (selectedOption === correctSyllable) {
       setIsCorrectAnswer(true);
+      // Auto-save in the background so progress survives back/refresh/closing the tab.
+      // The server action returns { success: false } instead of throwing, so check both.
+      const answeredWordId = syllableWords[currentPage - 1]?.id;
+      if (answeredWordId !== undefined) {
+        markProgressPending();
+        autoSaveSyllableWordAsStudied(answeredWordId, listId)
+          .then((result) => {
+            if (result && result.success === false) {
+              console.error("Auto-save failed for syllable word:", answeredWordId, result.error);
+            }
+          })
+          .catch((err) =>
+            console.error("Auto-save failed for syllable word:", answeredWordId, err)
+          );
+      }
       // Update highest reached page when answer is correct
       if (currentPage < syllableWords.length) {
         setHighestReachedPage((prev) => Math.max(prev, currentPage + 1));
@@ -230,51 +249,36 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
 
       <ConfirmationModal
         isOpen={showConfirmation}
-        onClose={() =>
-          !isConfirmLoading && router.push(`/spellPractice/${listId}`)
-        }
-        onConfirm={async () => {
-          try {
-            setIsConfirmLoading(true);
-            // Get IDs of completed syllable words (up to current page)
-            const completedWordIds = syllableWords
-              .slice(0, currentPage)
-              .map((word) => word.id);
-
-            if (completedWordIds.length > 0) {
-              await markSyllableWordsAsStudied(completedWordIds, listId);
-            }
-
-            router.push(`/spellPractice/${listId}`);
-          } catch (err) {
-            setError(
-              `Failed to save progress: ${
-                err instanceof Error ? err.message : "Unknown error"
-              }`
-            );
-            console.error("Error marking syllable words as studied:", err);
-          } finally {
-            setIsConfirmLoading(false);
-          }
-        }}
-        title="Mark Words as Studied"
-        message={
-          error ||
-          "Would you like to mark your completed words as studied before leaving?"
-        }
-        isLoading={isConfirmLoading}
-        confirmText="Yes"
+        onClose={() => !isConfirmLoading && setShowConfirmation(false)}
+        // Each correct word is auto-saved when answered, so leaving needs no save
+        onConfirm={() => router.push(`/spellPractice/${listId}`)}
+        title="Leave Practice"
+        message={error || "Your completed words are already saved. Leave this practice?"}
+        confirmText="Yes, Leave"
       />
 
       <StudyCompletionModal
         isOpen={showCompletionModal}
-        onClose={() => {
-          setShowCompletionModal(false);
-          // Reset to first page to practice again
-          setCurrentPage(1);
-          setHighestReachedPage(1);
-          setSelectedOption(null);
-          setIsCorrectAnswer(null);
+        // "Practice Again": the finished session is saved first, then the mode restarts
+        onClose={async () => {
+          setIsConfirmLoading(true);
+          try {
+            const completedWordIds = syllableWords.map((word) => word.id);
+            if (completedWordIds.length > 0) {
+              await markSyllableWordsAsStudied(completedWordIds, listId);
+              clearProgressPending();
+            }
+          } catch (err) {
+            console.error("Error saving on practice again:", err);
+          } finally {
+            setIsConfirmLoading(false);
+            setShowCompletionModal(false);
+            // Reset to first page to practice again
+            setCurrentPage(1);
+            setHighestReachedPage(1);
+            setSelectedOption(null);
+            setIsCorrectAnswer(null);
+          }
         }}
         onContinue={async () => {
           try {
@@ -283,6 +287,7 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
             // Mark all words as studied since we completed them
             const completedWordIds = syllableWords.map((word) => word.id);
             await markSyllableWordsAsStudied(completedWordIds, listId);
+            clearProgressPending();
             router.push(`/spellPractice/${listId}`);
           } catch (err) {
             setError(

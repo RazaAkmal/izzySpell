@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Button } from "@headlessui/react";
 import { GroupedWord } from "@prisma/client";
@@ -8,9 +8,10 @@ import CustomPagination from "./CustomPagination";
 import TextToSpeech from "./TextToSpeach";
 import ConfirmationModal from "./ConfirmationModal";
 import StudyCompletionModal from "./StudyCompletionModal";
-import { markGroupsAsStudied } from "@/app/actions/prismaActions";
+import { autoSaveGroupAsStudied, markGroupsAsStudied } from "@/app/actions/prismaActions";
 import CustomButton from "./HeadlessButton";
 import { useListName } from "@/context/ListNameContext";
+import { useSyncProgressOnLeave } from "@/lib/useSyncProgressOnLeave";
 
 interface GroupModePageProps {
   listId: string;
@@ -25,7 +26,10 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
 }) => {
   const router = useRouter();
   const { listName } = useListName();
+  const { markProgressPending, clearProgressPending } = useSyncProgressOnLeave(Number(listId));
   // All state declarations at the top
+  // studiedPage is already the next unfinished group (studied groups + 1)
+  // TODO: position-based resume breaks after list edits; needs per-group studied tracking
   const [currentPage, setCurrentPage] = useState(studiedPage || 1);
   const [highestReachedPage, setHighestReachedPage] = useState(studiedPage || 1);
   const [currentGroupIndex, setCurrentGroupIndex] = useState(studiedPage - 1 || 0);
@@ -35,6 +39,8 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [isConfirmLoading, setIsConfirmLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Groups already auto-saved this session (the completion effect below re-runs often)
+  const autoSavedGroups = useRef<Set<string>>(new Set());
 
 
    useEffect(() => {
@@ -68,8 +74,9 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
     }, {} as Record<string, GroupedWord[]>)
   , [groupedWords]);
 
+  // Every group is a page, including groups with a single word
   const validGroups = React.useMemo(() => 
-    Object.keys(groups).filter((groupName) => groups[groupName].length > 1)
+    Object.keys(groups)
   , [groups]);
 
   const currentGroupName = validGroups[currentGroupIndex];
@@ -216,7 +223,27 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
 
     if (allWordsCorrect) {
       console.log(`All words correct in group: ${currentGroupName}`);
-      
+
+      // Auto-save in the background so progress survives back/refresh/closing the tab.
+      // The server action returns { success: false } instead of throwing, so check both;
+      // a failed save is forgotten so the next run of this effect can retry it.
+      if (!autoSavedGroups.current.has(currentGroupName)) {
+        const savedGroupName = currentGroupName;
+        autoSavedGroups.current.add(savedGroupName);
+        markProgressPending();
+        autoSaveGroupAsStudied(savedGroupName, Number(listId))
+          .then((result) => {
+            if (result && result.success === false) {
+              autoSavedGroups.current.delete(savedGroupName);
+              console.error("Auto-save failed for group:", savedGroupName, result.error);
+            }
+          })
+          .catch((err) => {
+            autoSavedGroups.current.delete(savedGroupName);
+            console.error("Auto-save failed for group:", savedGroupName, err);
+          });
+      }
+
       // If we're on the last page, show completion modal
       if (currentPage === validGroups.length) {
         setHighestReachedPage(prevHighest => Math.max(prevHighest, currentPage));
@@ -236,7 +263,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
 
       return () => clearTimeout(timer);
     }
-  }, [currentGroupName, currentGroup, validationStates, currentPage, validGroups.length, handlePageChange]);
+  }, [currentGroupName, currentGroup, validationStates, currentPage, validGroups.length, handlePageChange, listId, markProgressPending]);
 
   return (
     <div className="bg-skyBlue h-[75vh] m-7 mt-1 p-6 rounded-lg shadow-lg flex flex-col overflow-hidden">
@@ -375,82 +402,51 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
 
       <ConfirmationModal
         isOpen={showConfirmation}
-        onClose={() =>
-          !isConfirmLoading && router.push(`/spellPractice/${listId}`)
-        }
-        onConfirm={async () => {
-          try {
-            setIsConfirmLoading(true);
-            setError(null);
-            // Collect each completed group, then mark them all as studied in one save
-            const completedGroupNames: string[] = [];
-            for (
-              let pageIndex = 0;
-              pageIndex < highestReachedPage;
-              pageIndex++
-            ) {
-              const groupName = validGroups[pageIndex];
-              const groupValidation = validationStates[groupName];
-              const groupWords = groups[groupName] || [];
-
-              // Check if all words in this group are correct
-              const allWordsInGroupCorrect = groupWords.every((_, rowIndex) =>
-                groupValidation?.[rowIndex]?.every((state) => state === "valid")
-              );
-
-              if (allWordsInGroupCorrect) {
-                completedGroupNames.push(groupName);
-              }
-            }
-
-            if (completedGroupNames.length > 0) {
-              const result = await markGroupsAsStudied(completedGroupNames, Number(listId));
-              if (!result.success) {
-                throw new Error(result.error || "Failed to save group");
-              }
-            }
-
-            router.push(`/spellPractice/${listId}`);
-          } catch (err) {
-            setError(
-              `Failed to save study progress: ${
-                err instanceof Error ? err.message : "Unknown error"
-              }`
-            );
-            console.log("Error marking groups as studied:", err);
-            setIsConfirmLoading(false);
-          }
-        }}
-        title="Mark Groups as Studied"
-        message={
-          error ||
-          "Would you like to mark your completed groups as studied before leaving?"
-        }
-        isLoading={isConfirmLoading}
-        confirmText="Yes"
+        onClose={() => !isConfirmLoading && setShowConfirmation(false)}
+        // Each completed group is auto-saved when finished, so leaving needs no save
+        onConfirm={() => router.push(`/spellPractice/${listId}`)}
+        title="Leave Practice"
+        message={error || "Your completed groups are already saved. Leave this practice?"}
+        confirmText="Yes, Leave"
       />
 
       <StudyCompletionModal
         isOpen={showCompletionModal}
-        onClose={() => {
-          setShowCompletionModal(false);
-          // Reset to first page to practice again
-          setCurrentPage(1);
-          setHighestReachedPage(1);
-          setCurrentGroupIndex(0);
-          // Reset user inputs and validation states for the first group
-          const firstGroupName = validGroups[0];
-          if (firstGroupName && groups[firstGroupName]) {
-            setUserInputs({
-              [firstGroupName]: groups[firstGroupName].map((word) =>
-                Array(word.word.length).fill("")
-              ),
-            });
-            setValidationStates({
-              [firstGroupName]: groups[firstGroupName].map((word) =>
-                Array(word.word.length).fill("default")
-              ),
-            });
+        // "Practice Again": the finished session is saved first, then the mode restarts
+        onClose={async () => {
+          setIsConfirmLoading(true);
+          try {
+            if (validGroups.length > 0) {
+              const result = await markGroupsAsStudied(validGroups, Number(listId));
+              if (!result.success) {
+                console.error("Error saving groups on practice again:", result.error);
+              } else {
+                clearProgressPending();
+              }
+            }
+          } catch (err) {
+            console.error("Error saving on practice again:", err);
+          } finally {
+            setIsConfirmLoading(false);
+            setShowCompletionModal(false);
+            // Reset to first page to practice again
+            setCurrentPage(1);
+            setHighestReachedPage(1);
+            setCurrentGroupIndex(0);
+            // Reset user inputs and validation states for the first group
+            const firstGroupName = validGroups[0];
+            if (firstGroupName && groups[firstGroupName]) {
+              setUserInputs({
+                [firstGroupName]: groups[firstGroupName].map((word) =>
+                  Array(word.word.length).fill("")
+                ),
+              });
+              setValidationStates({
+                [firstGroupName]: groups[firstGroupName].map((word) =>
+                  Array(word.word.length).fill("default")
+                ),
+              });
+            }
           }
         }}
         onContinue={async () => {
@@ -462,6 +458,7 @@ const GroupModePage: React.FC<GroupModePageProps> = ({
               if (!result.success) {
                 throw new Error(result.error || "Failed to save group");
               }
+              clearProgressPending();
             }
             router.push(`/spellPractice/${listId}`);
           } catch (err) {

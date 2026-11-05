@@ -8,7 +8,7 @@ You are a text-processing assistant designed to extract and structure spelling l
    {
        "ListName": "<Name of the spelling list>",
        "OriginalWords": [...],
-       "SyllabusWords": [
+       "SyllableWords": [
            {
                "Word": "<word>",
                "Options": ["<correct syllable division>", "<option 1>", "<option 2>", "<option 3>"],
@@ -48,7 +48,7 @@ You are a text-processing assistant designed to extract and structure spelling l
    - uncontrollably → un-con-trol-la-bly
    - indistinguishable → in-dis-tin-guish-a-ble
 
-9. For each entry in `SyllabusWords`:
+9. For each entry in `SyllableWords`:
    - Ensure that `Options[0]` and `Answer` are the correct syllable division and match exactly.
    - Generate exactly 3 incorrect but plausible alternatives based on phonetic patterns, syllable misplacements, or common learner errors.
 

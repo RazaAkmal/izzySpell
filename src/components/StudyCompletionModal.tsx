@@ -37,7 +37,6 @@ export default function StudyCompletionModal({ isOpen, onClose, onContinue, mode
               alt="Success"
               width={300}
               height={280}
-              priority
             />
           </div>
           <h2 className="text-2xl font-bold text-purple mb-4">

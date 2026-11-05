@@ -6,12 +6,13 @@ import { getRecentQuizAttempts } from "@/app/actions/getRecentQuizAttempts";
 // Wrapped in React `cache` so the page can start it early (see preload below)
 // and SpellPractice reuses the same in-flight request.
 export const getPracticeHubData = cache(async (listId: number) => {
-  const [words, studiedSyllableWord, groupCounts, quizData, flashCardCount, scrambleWordCount] = await Promise.all([
+  const [words, totalSyllableWords, studiedSyllableWord, groupCounts, quizData, flashCardCount, scrambleWordCount] = await Promise.all([
     prisma.word.findMany({
       where: { listId },
       orderBy: { id: "asc" },
       select: { word: true, studied: true },
     }),
+    prisma.syllableWord.count({ where: { listId } }),
     prisma.syllableWord.count({
       where: { listId, studied: true },
     }),
@@ -34,13 +35,14 @@ export const getPracticeHubData = cache(async (listId: number) => {
     totalPerGroup.set(row.groupName, (totalPerGroup.get(row.groupName) ?? 0) + row._count.word);
     if (row.studied) studiedPerGroup.set(row.groupName, row._count.word);
   }
-  // Groups with a single word are ignored, as in Word Groups mode
-  const totalGroupsCount = [...totalPerGroup.values()].filter((count) => count > 1).length;
-  const totalStudiedGroups = [...studiedPerGroup.values()].filter((count) => count > 1).length;
+  // Every group counts, including groups with a single word (each is a page in Word Groups mode)
+  const totalGroupsCount = totalPerGroup.size;
+  const totalStudiedGroups = studiedPerGroup.size;
 
   return {
     total: words.length,
     studiedWordCount: words.filter((w) => w.studied).length,
+    totalSyllableWords,
     studiedSyllableWord,
     totalGroupsCount,
     totalStudiedGroups,

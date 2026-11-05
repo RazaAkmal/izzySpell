@@ -1,8 +1,16 @@
 'use server'
 import OpenAI from "openai";
+import { z } from "zod";
 import { responseSchema } from "@/lib/defination";
 import prisma from '@/lib/prisma';
 import { getBaseUrl } from '@/lib/baseUrl';
+import { OPENAI_MODEL } from '@/lib/openaiModel';
+import { requireSessionUserId, requireListOwner, getSessionUserId } from '@/lib/requireSession';
+import { MAX_RAW_TOKENS, MAX_WORDS_PER_LIST, MAX_WORDS_ERROR } from '@/lib/limits';
+import { stripCodeFences, validateFlashCards } from '@/lib/flashCards';
+import { repairScrambleOptions } from '@/lib/scrambleWords';
+import { revalidatePath } from 'next/cache';
+import { GENERATION_CHUNK_SIZE, chunkArray, uniqueWords } from '@/lib/chunks';
 
 
 const openai = new OpenAI({
@@ -13,6 +21,13 @@ const openai = new OpenAI({
 // and suggests a list name. Uses gpt-4o-mini to minimise cost.
 // Called immediately after file read, before showing the modal.
 export const extractWordsFromContent = async (rawWords: string[]) => {
+  await requireSessionUserId();
+  if (rawWords.length > MAX_RAW_TOKENS) {
+    return {
+      success: false,
+      error: "This file has too much text. Please upload a shorter word list.",
+    };
+  }
   try {
     const content = rawWords.join(" ");
 
@@ -63,7 +78,12 @@ Raw tokens: ${content}`,
 
 // Part 2: Full processing — generates SyllableWords, GroupedWords, SightWords.
 // Only called after the user reviews and clicks "Save & Start Learning".
-export const processFileWithAI = async (content: any) => {
+const WORDS_PER_AI_CHUNK = 30;
+
+type ProcessedList = z.infer<typeof responseSchema>;
+
+// One AI call for a small group of words (validated with responseSchema)
+const processWordChunk = async (content: string) => {
   try {
     // Read the system prompt from the file
     const res = await fetch(`${await getBaseUrl()}/prompts/systempromt.txt`);
@@ -71,7 +91,7 @@ export const processFileWithAI = async (content: any) => {
 
 
     const gptResponse = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: OPENAI_MODEL,
       messages: [
         {
           role: "system",
@@ -107,7 +127,7 @@ Requirements:
 5. Return valid JSON that can be parsed`,
         },
       ],
-      max_tokens: 2000,
+      max_tokens: 4096,
       temperature: 0.3, // Reduced temperature for more consistent output
     });
 
@@ -140,131 +160,68 @@ Requirements:
   }
 };
 
-export const getTimeDurationSuggestions = async (
-  grade: string,
-  age: string,
-  spellingList: string[],
-) => {
-  try {
-    const systemPrompt = `You are an expert in spelling education and U.S. spelling bee competitions. Based on the student's grade, age, and a provided spelling list, suggest three appropriate time durations (in seconds) PER WORD. Your suggestions should reflect the average pace of spelling in U.S. competitions, considering age-appropriate speed, word difficulty, and typical time constraints in spelling activities.
-
-Instructions:
-- Younger students (grades 1–3 or ages 6–9) typically need more time per word than older students.
-- U.S. spelling bee competitions often allow 20–30 seconds per word in early rounds, though this can vary.
-- Consider the difficulty and length of words in the provided list.
-- Return only three durations in seconds PER WORD, labeled as:
-
-Short pace: (fast and challenging)
-Medium pace: (balanced for typical practice)
-Generous pace: (slower and supportive)
-
-Example output:
-Short pace: 15 seconds
-Medium pace: 25 seconds
-Generous pace: 35 seconds`
-      ;
-
-    const gptResponse = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        {
-          role: "user",
-          content: `Student Grade: ${grade}
-Student Age: ${age}
-Spelling List: ${spellingList.join(', ')}
-
-Please provide three time duration suggestions for this spelling list.`,
-        },
-      ],
-      max_tokens: 500,
-      temperature: 0.3,
-    });
-
-    const response = gptResponse.choices[0]?.message?.content;
-    console.log('AI response:', response);
-    if (!response) {
-      throw new Error("No response from OpenAI");
+// Combines the validated results of several chunks into the same shape as a single result
+const mergeProcessedChunks = (chunks: ProcessedList[]): ProcessedList => {
+  const GroupedWords: Record<string, string[]> = {};
+  for (const chunk of chunks) {
+    for (const [groupName, groupWords] of Object.entries(chunk.GroupedWords)) {
+      // Every chunk names its groups "Group 1", "Group 2"...: those groups are
+      // unrelated across chunks, so a clashing name gets the next free number
+      let name = groupName;
+      let next = Object.keys(GroupedWords).length + 1;
+      while (name in GroupedWords) name = `Group ${next++}`;
+      GroupedWords[name] = groupWords;
     }
-
-    // Parse the response to extract the durations
-    const shortMatch = response.match(/Short pace:\s*(\d+)\s*seconds?/i);
-    const mediumMatch = response.match(/Medium pace:\s*(\d+)\s*seconds?/i);
-    const generousMatch = response.match(/Generous pace:\s*(\d+)\s*seconds?/i);
-
-    if (!shortMatch || !mediumMatch || !generousMatch) {
-      throw new Error("Could not parse time duration suggestions from AI response");
-    }
-
-    const suggestions = {
-      shortPace: parseInt(shortMatch[1], 10),
-      mediumPace: parseInt(mediumMatch[1], 10),
-      generousPace: parseInt(generousMatch[1], 10),
-    };
-
-    return { success: true, data: suggestions };
-  } catch (error) {
-    console.error("AI Time Duration Suggestion Error:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Error getting time duration suggestions"
-    };
   }
+  return {
+    ListName: chunks[0].ListName,
+    OriginalWords: chunks.flatMap((c) => c.OriginalWords),
+    SyllableWords: chunks.flatMap((c) => c.SyllableWords),
+    GroupedWords,
+    SightWords: Array.from(new Set(chunks.flatMap((c) => c.SightWords))),
+  };
 };
 
-export const saveTimeDurationsToList = async (
-  listId: number,
-  shortPace: number,
-  mediumPace: number,
-  generousPace: number
-) => {
-  try {
-    console.log('saveTimeDurationsToList called with:', {
-      listId,
-      shortPace,
-      mediumPace,
-      generousPace
-    });
+// Part 2 entry point. Lists longer than WORDS_PER_AI_CHUNK are split into chunks so
+// the AI answer is never cut off; each chunk is validated, then the results are merged.
+// Accepts the words as an array (preferred) or as a comma separated string.
+export const processFileWithAI = async (content: string | string[]) => {
+  await requireSessionUserId();
+  const words = Array.isArray(content)
+    ? content
+    : content.split(",").map((w) => w.trim()).filter(Boolean);
 
-    // First check if the list exists
-    const existingList = await prisma.spellingList.findUnique({
-      where: { id: listId },
-      select: { id: true, listName: true }
-    });
-
-    if (!existingList) {
-      throw new Error(`Spelling list with ID ${listId} not found`);
-    }
-
-    console.log('Updating spelling list:', existingList.listName);
-
-    // Update the spelling list with Prisma ORM
-    await prisma.spellingList.update({
-      where: { id: listId },
-      data: {
-        shortPaceDuration: shortPace,
-        mediumPaceDuration: mediumPace,
-        generousPaceDuration: generousPace,
-      }
-    });
-
-    return { success: true, message: "Time durations saved successfully" };
-  } catch (error) {
-
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Error saving time durations"
-    };
+  if (words.length > MAX_WORDS_PER_LIST) {
+    return { success: false as const, error: MAX_WORDS_ERROR };
   }
+
+  if (words.length <= WORDS_PER_AI_CHUNK) {
+    return processWordChunk(words.join(", "));
+  }
+
+  const chunks: string[] = [];
+  for (let i = 0; i < words.length; i += WORDS_PER_AI_CHUNK) {
+    chunks.push(words.slice(i, i + WORDS_PER_AI_CHUNK).join(", "));
+  }
+
+  const results = await Promise.all(chunks.map(processWordChunk));
+  const failed = results.find((r) => !r.success);
+  if (failed) {
+    return { success: false as const, error: failed.error };
+  }
+
+  const validChunks = results.map((r) => (r as { success: true; data: ProcessedList }).data);
+  return { success: true as const, data: mergeProcessedChunks(validChunks) };
 };
 
 export const getTimeDurationsForList = async (listId: number) => {
   try {
-    const list = await prisma.spellingList.findUnique({
-      where: { id: listId },
+    // Page loader: report "not signed in" / "not your list" as a failed result
+    // (the callers already handle that) instead of crashing the page
+    const userId = await getSessionUserId();
+    if (!userId) throw new Error("Not authenticated");
+    const list = await prisma.spellingList.findFirst({
+      where: { id: listId, userId },
       select: {
         shortPaceDuration: true,
         mediumPaceDuration: true,
@@ -286,73 +243,7 @@ export const getTimeDurationsForList = async (listId: number) => {
   }
 };
 
-export const generateAndSaveTimeDurations = async (
-  listId: number,
-  grade: string,
-  age: string,
-  spellingList: string[]
-) => {
-  try {
-    console.log('generateAndSaveTimeDurations called with:', {
-      listId,
-      grade,
-      age,
-      spellingListLength: spellingList?.length,
-      firstFewWords: spellingList?.slice(0, 3)
-    });
-
-    const suggestionsResult = await getTimeDurationSuggestions(grade, age, spellingList);
-
-    if (!suggestionsResult.success || !suggestionsResult.data) {
-      return {
-        success: false,
-        error: suggestionsResult.error || "Failed to get AI suggestions"
-      };
-    }
-
-    const { shortPace, mediumPace, generousPace } = suggestionsResult.data;
-
-    console.log('Saving suggestions to database:', {
-      listId,
-      shortPace,
-      mediumPace,
-      generousPace
-    });
-
-    // Save the suggestions to the database
-    const saveResult = await saveTimeDurationsToList(listId, shortPace, mediumPace, generousPace);
-
-    console.log('Save result:', {
-      success: saveResult.success,
-      error: saveResult.error
-    });
-
-    if (!saveResult.success) {
-      return {
-        success: false,
-        error: saveResult.error || "Failed to save AI suggestions"
-      };
-    }
-
-    return {
-      success: true,
-      data: {
-        shortPace,
-        mediumPace,
-        generousPace
-      },
-      message: "Time durations saved successfully"
-    };
-  } catch (error) {
-    console.error("Error generating and saving time durations:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Error generating time durations"
-    };
-  }
-};
-
-export const generateFlashCards = async (words: string[]) => {
+const generateFlashCards = async (words: string[]) => {
   try {
     const systemPrompt = `You are a tool for a children's spelling practice app called IzzySpell.
 
@@ -384,7 +275,7 @@ A JSON array where each item follows this schema:
 }`;
 
     const gptResponse = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: OPENAI_MODEL,
       messages: [
         {
           role: "system",
@@ -403,8 +294,8 @@ A JSON array where each item follows this schema:
       throw new Error("No response from OpenAI");
     }
 
-    // Clean and validate the content before parsing
-    const cleanedContent = content.trim();
+    // Clean and validate the content before parsing (the model sometimes wraps JSON in ``` fences)
+    const cleanedContent = stripCodeFences(content);
     if (!cleanedContent) {
       throw new Error("Empty response from OpenAI");
     }
@@ -440,7 +331,39 @@ A JSON array where each item follows this schema:
   }
 };
 
+// Generates flash cards in chunks (one AI call per chunk, run together) and validates each
+// chunk against its own words. A chunk that fails is logged and skipped, so the other
+// chunks still produce cards; only a total failure is an error.
+const generateFlashCardsInChunks = async (words: string[]) => {
+  const chunks = chunkArray(uniqueWords(words), GENERATION_CHUNK_SIZE);
+  const outcomes = await Promise.all(
+    chunks.map(async (chunk, i) => {
+      console.log(`Generating flash cards chunk ${i + 1}/${chunks.length}`);
+      const result = await generateFlashCards(chunk);
+      if (!result.success) {
+        console.error(`Flash cards chunk ${i + 1}/${chunks.length} failed:`, result.error);
+        return null;
+      }
+      try {
+        return validateFlashCards(result.data, chunk);
+      } catch (error) {
+        console.error(`Flash cards chunk ${i + 1}/${chunks.length} could not be validated:`, error);
+        return null;
+      }
+    })
+  );
+
+  const cards = outcomes.flatMap((cardsForChunk) => cardsForChunk ?? []);
+  const failedChunks = outcomes.filter((cardsForChunk) => cardsForChunk === null).length;
+  if (cards.length === 0) {
+    return { success: false as const, error: "Could not generate flash cards. Please try again." };
+  }
+  return { success: true as const, data: cards, failedChunks };
+};
+
 export const generateAndSaveFlashCards = async (listId: number, words: string[]) => {
+  await requireListOwner(listId);
+  if (words.length > MAX_WORDS_PER_LIST) return { success: false, error: MAX_WORDS_ERROR };
   try {
     // Check if flash cards already exist for this list
     const existingFlashCards = await prisma.flashCard.findMany({
@@ -455,28 +378,30 @@ export const generateAndSaveFlashCards = async (listId: number, words: string[])
       };
     }
 
-    // Generate flash cards using AI
-    const generationResult = await generateFlashCards(words);
+    // Generate flash cards using AI, a chunk of words at a time
+    const generationResult = await generateFlashCardsInChunks(words);
     
     if (!generationResult.success) {
       throw new Error(generationResult.error);
     }
 
+    // Each chunk was already repaired by validateFlashCards (correct spelling among 4
+    // distinct options, correctIndex pointing at it, a card for every word in the chunk)
     const flashCardsData = generationResult.data;
 
-    if (!flashCardsData || flashCardsData.length === 0) {
+    if (flashCardsData.length === 0) {
       throw new Error('No flash cards data generated');
     }
 
     // Save flash cards to database
     const savedFlashCards = await prisma.flashCard.createMany({
-      data: flashCardsData.map((card: any) => ({
+      data: flashCardsData.map((card) => ({
         listId,
-        originalWord: card.original_word,
+        originalWord: card.originalWord,
         options: card.options,
-        correctIndex: card.correct_index,
+        correctIndex: card.correctIndex,
         definition: card.definition,
-        exampleSentence: card.example_sentence
+        exampleSentence: card.exampleSentence
       }))
     });
 
@@ -485,10 +410,16 @@ export const generateAndSaveFlashCards = async (listId: number, words: string[])
       where: { listId }
     });
 
+    revalidatePath(`/spellPractice/${listId}/FlashCards`);
+
     return {
       success: true,
       data: flashCards,
-      message: `Generated and saved ${savedFlashCards.count} flash cards`
+      message:
+        `Generated and saved ${savedFlashCards.count} flash cards` +
+        (generationResult.failedChunks > 0
+          ? ` (${generationResult.failedChunks} group(s) of words could not be generated; use Regenerate to retry)`
+          : "")
     };
 
   } catch (error) {
@@ -502,7 +433,7 @@ export const generateAndSaveFlashCards = async (listId: number, words: string[])
 
 // Scramble Words Generation Functions
 
-export const generateScrambleWords = async (words: string[]) => {
+const generateScrambleWords = async (words: string[]) => {
   try {
     const systemPrompt = `You are a tool for a children's spelling practice web application. Your task is to generate scrambled word challenges for each word in a given spelling list.
 
@@ -585,7 +516,7 @@ FINAL VALIDATION CHECKLIST:
 Remember: Return ONLY JSON array format. No additional text or explanations.`;
 
     const gptResponse = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: OPENAI_MODEL,
       messages: [
         {
           role: "system",
@@ -657,52 +588,16 @@ Remember: Return ONLY JSON array format. No additional text or explanations.`;
       throw new Error("No scramble words generated");
     }
 
-    // Server-side validation to ensure only one correct anagram per word
-    const validatedData = scrambleWordsData.map((wordData: any) => {
-      const originalSorted = wordData.original_word.split('').sort().join('').toLowerCase();
-      
-      // Find all correct anagrams
-      const correctIndices = wordData.scrambled_options
-        .map((option: string, index: number) => ({
-          index,
-          option,
-          sorted: option.split('').sort().join('').toLowerCase(),
-          isCorrect: option.split('').sort().join('').toLowerCase() === originalSorted
-        }))
-        .filter((item: any) => item.isCorrect);
-
-      if (correctIndices.length === 0) {
-        console.warn(`No correct anagram found for "${wordData.original_word}". Adding one.`);
-        // Replace first option with a correct anagram
-        const letters = wordData.original_word.split('');
-        const shuffled = [...letters].sort(() => Math.random() - 0.5).join('');
-        wordData.scrambled_options[0] = shuffled;
-      } else if (correctIndices.length > 1) {
-        console.warn(`Multiple anagrams detected for "${wordData.original_word}":`, correctIndices.map((item: any) => item.option));
-        
-        // Keep only the first correct anagram, replace others with letter substitutions
-        for (let i = 1; i < correctIndices.length; i++) {
-          const indexToReplace = correctIndices[i].index;
-          const originalWord = wordData.original_word.toLowerCase();
-          
-          // Create a new incorrect option with letter substitution
-          const letters = originalWord.split('');
-          // Replace 1-2 letters with similar ones
-          if (letters.includes('a')) letters[letters.indexOf('a')] = 'e';
-          else if (letters.includes('e')) letters[letters.indexOf('e')] = 'a';
-          else if (letters.includes('o')) letters[letters.indexOf('o')] = 'u';
-          else if (letters.includes('m')) letters[letters.indexOf('m')] = 'n';
-          else if (letters.includes('w')) letters[letters.indexOf('w')] = 'v';
-          else letters[0] = letters[0] === 'z' ? 'a' : String.fromCharCode(letters[0].charCodeAt(0) + 1);
-          
-          // Scramble the modified letters
-          const incorrectOption = [...letters].sort(() => Math.random() - 0.5).join('').toUpperCase();
-          wordData.scrambled_options[indexToReplace] = incorrectOption;
-        }
-      }
-
-      return wordData;
-    });
+    // Server-side repair: every question ends with exactly one real anagram of the word
+    // (a true scramble, not the word itself) and three distinct non-anagrams. Entries
+    // without a usable word are dropped.
+    const validatedData = scrambleWordsData
+      .filter((wordData: any) => typeof wordData?.original_word === "string" && wordData.original_word.trim())
+      .map((wordData: any) => ({
+        ...wordData,
+        original_word: wordData.original_word.trim(),
+        scrambled_options: repairScrambleOptions(wordData.original_word, wordData.scrambled_options),
+      }));
 
     return {
       success: true,
@@ -718,7 +613,32 @@ Remember: Return ONLY JSON array format. No additional text or explanations.`;
   }
 };
 
+// Same chunking for scramble words: generateScrambleWords already repairs each chunk.
+const generateScrambleWordsInChunks = async (words: string[]) => {
+  const chunks = chunkArray(uniqueWords(words), GENERATION_CHUNK_SIZE);
+  const outcomes = await Promise.all(
+    chunks.map(async (chunk, i) => {
+      console.log(`Generating scramble words chunk ${i + 1}/${chunks.length}`);
+      const result = await generateScrambleWords(chunk);
+      if (!result.success || !result.data) {
+        console.error(`Scramble words chunk ${i + 1}/${chunks.length} failed:`, result.error);
+        return null;
+      }
+      return result.data as any[];
+    })
+  );
+
+  const questions = outcomes.flatMap((questionsForChunk) => questionsForChunk ?? []);
+  const failedChunks = outcomes.filter((questionsForChunk) => questionsForChunk === null).length;
+  if (questions.length === 0) {
+    return { success: false as const, error: "Could not generate scramble words. Please try again." };
+  }
+  return { success: true as const, data: questions, failedChunks };
+};
+
 export const generateAndSaveScrambleWords = async (listId: number, words: string[]) => {
+  await requireListOwner(listId);
+  if (words.length > MAX_WORDS_PER_LIST) return { success: false, error: MAX_WORDS_ERROR };
   try {
     // Check if scramble words already exist for this list
     const existingScrambleWords = await prisma.scrambleWord.findMany({
@@ -735,8 +655,8 @@ export const generateAndSaveScrambleWords = async (listId: number, words: string
 
     console.log(`Generating scramble words for list ${listId} with ${words.length} words`);
     
-    // Generate scramble words using AI
-    const generationResult = await generateScrambleWords(words);
+    // Generate scramble words using AI, a chunk of words at a time
+    const generationResult = await generateScrambleWordsInChunks(words);
     
     if (!generationResult.success) {
       throw new Error(generationResult.error);
@@ -762,10 +682,16 @@ export const generateAndSaveScrambleWords = async (listId: number, words: string
       where: { listId }
     });
 
+    revalidatePath(`/spellPractice/${listId}/ScrambleWords`);
+
     return {
       success: true,
       data: scrambleWords,
-      message: `Generated and saved ${savedScrambleWords.count} scramble words`
+      message:
+        `Generated and saved ${savedScrambleWords.count} scramble words` +
+        (generationResult.failedChunks > 0
+          ? ` (${generationResult.failedChunks} group(s) of words could not be generated; use Regenerate to retry)`
+          : "")
     };
 
   } catch (error) {
@@ -777,53 +703,90 @@ export const generateAndSaveScrambleWords = async (listId: number, words: string
   }
 };
 
-export const regenerateScrambleWords = async (listId: number, words: string[]) => {
+// Replaces the list's scramble words with freshly generated ones. The words come from the
+// database (not from the caller). New content is generated BEFORE anything is deleted, and
+// the swap is one transaction, so a failed generation leaves the existing words untouched.
+export const regenerateScrambleWords = async (listId: number) => {
   try {
-    console.log(`Regenerating scramble words for list ${listId} with ${words.length} words`);
-    
-    // Delete existing scramble words for this list
-    await prisma.scrambleWord.deleteMany({
-      where: { listId }
-    });
+    await requireListOwner(listId);
+    const words = (await prisma.word.findMany({ where: { listId }, orderBy: { id: 'asc' }, select: { word: true } }))
+      .map((w) => w.word);
+    if (words.length === 0) throw new Error("This list has no words");
+    if (words.length > MAX_WORDS_PER_LIST) return { success: false, error: MAX_WORDS_ERROR };
 
-    // Generate new scramble words using AI with improved prompt
-    const generationResult = await generateScrambleWords(words);
-    
+    const generationResult = await generateScrambleWordsInChunks(words);
     if (!generationResult.success) {
       throw new Error(generationResult.error);
     }
 
     const scrambleWordsData = generationResult.data;
-
     if (!scrambleWordsData || scrambleWordsData.length === 0) {
       throw new Error('No scramble words data generated');
     }
 
-    // Save new scramble words to database
-    const savedScrambleWords = await prisma.scrambleWord.createMany({
-      data: scrambleWordsData.map((word: any) => ({
-        listId,
-        originalWord: word.original_word,
-        scrambledOptions: word.scrambled_options
-      }))
-    });
+    await prisma.$transaction([
+      prisma.scrambleWord.deleteMany({ where: { listId } }),
+      prisma.scrambleWord.createMany({
+        data: scrambleWordsData.map((word: any) => ({
+          listId,
+          originalWord: word.original_word,
+          scrambledOptions: word.scrambled_options
+        }))
+      }),
+    ]);
 
-    // Fetch the saved scramble words to return them
-    const scrambleWords = await prisma.scrambleWord.findMany({
-      where: { listId }
-    });
-
-    return {
-      success: true,
-      data: scrambleWords,
-      message: `Regenerated and saved ${savedScrambleWords.count} scramble words with improved quality`
-    };
-
+    revalidatePath(`/spellPractice/${listId}/ScrambleWords`);
+    return { success: true };
   } catch (error) {
     console.error("Error regenerating scramble words:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Error regenerating scramble words"
+    };
+  }
+};
+
+// Replaces the list's flash cards with freshly generated ones (same safety as above:
+// generate and validate first, then delete + insert in one transaction).
+export const regenerateFlashCards = async (listId: number) => {
+  try {
+    await requireListOwner(listId);
+    const words = (await prisma.word.findMany({ where: { listId }, orderBy: { id: 'asc' }, select: { word: true } }))
+      .map((w) => w.word);
+    if (words.length === 0) throw new Error("This list has no words");
+    if (words.length > MAX_WORDS_PER_LIST) return { success: false, error: MAX_WORDS_ERROR };
+
+    const generationResult = await generateFlashCardsInChunks(words);
+    if (!generationResult.success) {
+      throw new Error(generationResult.error);
+    }
+
+    const flashCardsData = generationResult.data;
+    if (flashCardsData.length === 0) {
+      throw new Error('No flash cards data generated');
+    }
+
+    await prisma.$transaction([
+      prisma.flashCard.deleteMany({ where: { listId } }),
+      prisma.flashCard.createMany({
+        data: flashCardsData.map((card) => ({
+          listId,
+          originalWord: card.originalWord,
+          options: card.options,
+          correctIndex: card.correctIndex,
+          definition: card.definition,
+          exampleSentence: card.exampleSentence
+        }))
+      }),
+    ]);
+
+    revalidatePath(`/spellPractice/${listId}/FlashCards`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error regenerating flash cards:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Error regenerating flash cards"
     };
   }
 };

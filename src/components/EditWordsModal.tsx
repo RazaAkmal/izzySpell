@@ -141,6 +141,25 @@ const EditWordModal: React.FC<ModalProps> = ({ isOpen, listWithWords, onClose, u
 
   const showValidationError = (message: string) => setValidationModal({ isOpen: true, message });
 
+  // Identity-based comparison (by dbId), so a reorder alone is never a "word change":
+  // edited = same dbId, different text; added = no dbId; removed = original dbId missing now
+  const getWordChanges = () => {
+    const norm = (w: string) => w.trim();
+    const edited = wordList.some((w) => {
+      if (w.dbId === null) return false;
+      const original = listWithWords.words.find((o) => o.id === w.dbId);
+      return !!original && norm(original.word) !== norm(w.word);
+    });
+    const added = wordList.some((w) => w.dbId === null);
+    const currentIds = new Set(wordList.map((w) => w.dbId));
+    const removed = listWithWords.words.some((o) => !currentIds.has(o.id));
+    // Words that existed in the database but were deleted in the modal
+    const deletedWordIds = listWithWords.words
+      .filter((o) => !currentIds.has(o.id))
+      .map((o) => o.id);
+    return { hasWordsChanged: edited || added || removed, deletedWordIds };
+  };
+
   useEffect(() => {
     const items: WordItem[] = listWithWords.words.map((w) => ({
       dbId: w.id,
@@ -186,28 +205,11 @@ const EditWordModal: React.FC<ModalProps> = ({ isOpen, listWithWords, onClose, u
     setShowDeleteConfirmation(true);
   };
 
-  const handleConfirmDelete = async () => {
+  // Deleting only removes the word from local state. The word is deleted from the
+  // database on Save (see handleSave); closing without saving discards the deletion.
+  const handleConfirmDelete = () => {
     if (!pendingDeleteItem) return;
     setShowDeleteConfirmation(false);
-
-    if (pendingDeleteItem.dbId !== null) {
-      // Existing DB word — call delete API
-      setLoading(true);
-      try {
-        await fetch(`/api/delete-word?wordId=${pendingDeleteItem.dbId}&&listId=${listWithWords.id}`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-        });
-        await revalidateRoute("/lists");
-      } catch {
-        setErrorMessage("Failed to delete the word. Please try again.");
-        setShowErrorModal(true);
-        setLoading(false);
-        setPendingDeleteItem(null);
-        return;
-      }
-      setLoading(false);
-    }
 
     setWordList((prev) => prev.filter((w) => w.localId !== pendingDeleteItem.localId));
     if (editingLocalId === pendingDeleteItem.localId) {
@@ -245,14 +247,17 @@ const EditWordModal: React.FC<ModalProps> = ({ isOpen, listWithWords, onClose, u
       showValidationError("Please enter a name for your list.");
       return;
     }
+    if (wordList.length === 0) {
+      showValidationError("A list must have at least one word.");
+      return;
+    }
     if (wordList.some((w) => !w.word.trim())) {
       showValidationError("Please ensure all words are filled in before saving.");
       return;
     }
 
-    const originalWords = listWithWords.words.map((w) => w.word);
-    const currentWords = wordList.map((w) => w.word);
-    const hasWordsChanged = JSON.stringify(originalWords) !== JSON.stringify(currentWords) || wordList.length !== listWithWords.words.length;
+    // Reorder-only counts as NO word change: no AI call and nothing is written
+    const { hasWordsChanged, deletedWordIds } = getWordChanges();
     const hasListNameChanged = listName !== listWithWords.listName;
 
     if (!hasWordsChanged && !hasListNameChanged) {
@@ -278,15 +283,18 @@ const EditWordModal: React.FC<ModalProps> = ({ isOpen, listWithWords, onClose, u
         userId,
         listId: listWithWords.id,
         listName,
-        words: [
-          ...modifiedWords,
-          ...newWords.map((word) => ({ id: null, word })),
-        ],
+        // Name-only (or name + reorder) saves send no words and no AI data
+        words: hasWordsChanged
+          ? [
+              ...modifiedWords,
+              ...newWords.map((word) => ({ id: null, word })),
+            ]
+          : [],
         extractedWords: {},
       };
 
       if (hasWordsChanged) {
-        const response = await processFileWithAI(allWords.join(", "));
+        const response = await processFileWithAI(allWords);
         if (!response.success || !response.data) {
           setErrorMessage(response.error || "Failed to process the list.");
           setShowErrorModal(true);
@@ -296,20 +304,39 @@ const EditWordModal: React.FC<ModalProps> = ({ isOpen, listWithWords, onClose, u
         requestData.extractedWords = response.data;
       }
 
+      // Apply the deletions the user confirmed in the modal. This runs after the AI step
+      // succeeded, so an AI failure leaves the list completely untouched.
+      for (const wordId of deletedWordIds) {
+        const deleteResponse = await fetch(
+          `/api/delete-word?wordId=${wordId}&listId=${listWithWords.id}`,
+          { method: "DELETE" }
+        );
+        if (!deleteResponse.ok) {
+          throw new Error("Failed to delete a word. Please try again.");
+        }
+      }
+
       const response = await fetch("/api/update-words", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestData),
       });
 
-      if (!response.ok) throw new Error("Failed to save the list");
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || "Failed to save the list");
+      }
 
       await revalidateRoute("/lists");
       setShowSuccessModal(true);
       setLoading(false);
     } catch (error) {
       console.error("Error saving:", error);
-      setErrorMessage("An error occurred while saving. Please try again.");
+      setErrorMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "An error occurred while saving. Please try again."
+      );
       setShowErrorModal(true);
       setLoading(false);
     }

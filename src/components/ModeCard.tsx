@@ -85,6 +85,8 @@ const ModeCard: React.FC<ModeCardProps> = ({
               {recentAttempts.length} Recent Attempt
               {recentAttempts.length > 1 ? "s" : ""}
             </div>
+            {/* Up to 10 attempts: scroll inside the card instead of growing it */}
+            <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
             {recentAttempts.map((attempt) => (
               <div
                 key={attempt.id}
@@ -108,6 +110,7 @@ const ModeCard: React.FC<ModeCardProps> = ({
                 </div>
               </div>
             ))}
+            </div>
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center">
@@ -139,7 +142,6 @@ const ModeCard: React.FC<ModeCardProps> = ({
             className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24"
             width={80}
             height={80}
-            priority
           />
         )}
         <span className="text-lg sm:text-xl font-bold text-blue text-center">

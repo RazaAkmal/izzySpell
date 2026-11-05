@@ -23,7 +23,6 @@ export default function LoginPage() {
             alt="User avatar"
             width={250}
             height={40}
-            priority={true}
             className="mx-auto"
           />
         </div>

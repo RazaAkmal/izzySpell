@@ -3,8 +3,19 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { getWordsByListId } from "@/app/actions/prismaActions";
 import { ListNameProvider } from "@/context/ListNameContext";
 import { preloadCurrentUserDetails } from "@/app/actions/getUserDetails";
+import { requireListOwnerForPage } from "@/lib/requireSession";
 import { getTimeDurationsForList } from "@/app/actions/AiService";
 import QuizModePage from "@/components/QuizModePage";
+
+// Fisher-Yates shuffle, so the quiz order differs on every visit
+function shuffleArray<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
 async function page({
   params,
@@ -12,6 +23,7 @@ async function page({
   params: Promise<{ listId: string }>;
 }) {
   const listId = (await params).listId
+  await requireListOwnerForPage(parseInt(listId));
   // Header's user lookup runs in parallel with this page's queries
   preloadCurrentUserDetails();
   // Words (incl. list name) and the AI timer suggestions load together,
@@ -20,11 +32,12 @@ async function page({
     getWordsByListId(parseInt(listId)),
     getTimeDurationsForList(parseInt(listId)),
   ]);
+  const shuffledWords = shuffleArray(words);
   return (
     <DashboardLayout showFooter={false}>
       <ListNameProvider listId={listId} initialListName={list?.listName}>
         <QuizModePage
-          words={words}
+          words={shuffledWords}
           listId={listId}
           initialAiSuggestions={aiDurations.success && aiDurations.data ? aiDurations.data : null}
         />

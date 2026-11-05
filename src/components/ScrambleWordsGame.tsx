@@ -10,10 +10,16 @@ import GameCompletionContent from "./GameCompletionContent";
 import { useListName } from "@/context/ListNameContext";
 import JSConfetti from "js-confetti";
 import TextToSpeech from "./TextToSpeach";
+import { shuffleArray } from "@/lib/shuffle";
+import RegenerateButton from "./RegenerateButton";
+import { markWordsAsStudied } from "@/app/actions/prismaActions";
+import { matchWordIds, ListWordRef } from "@/lib/gameWords";
+import { regenerateScrambleWords } from "@/app/actions/AiService";
 
 interface ScrambleWordsGameProps {
   listId: string;
   scrambleWordsData: any[];
+  listWords: ListWordRef[];
 }
 
 interface ScrambleWord {
@@ -32,7 +38,7 @@ interface GameCard {
   hasShake: boolean;
 }
 
-const ScrambleWordsGame: React.FC<ScrambleWordsGameProps> = ({ listId, scrambleWordsData }) => {
+const ScrambleWordsGame: React.FC<ScrambleWordsGameProps> = ({ listId, scrambleWordsData, listWords }) => {
   const { listName } = useListName();
   const router = useRouter();
   const confettiRef = useRef<JSConfetti | null>(null);
@@ -41,7 +47,9 @@ const ScrambleWordsGame: React.FC<ScrambleWordsGameProps> = ({ listId, scrambleW
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [gameCards, setGameCards] = useState<GameCard[]>([]);
   const [gameState, setGameState] = useState<"playing" | "answered" | "completed">("playing");
-  const [score, setScore] = useState(0);
+  const [score, setScore] = useState(0); // questions answered correctly on the first try
+  // Question indices where a wrong answer was given before the correct one (they score 0)
+  const [answeredWithMistake, setAnsweredWithMistake] = useState<Set<number>>(new Set());
   const [showExitModal, setShowExitModal] = useState(false);
   const [isConfirmLoading] = useState(false);
   const [attempts, setAttempts] = useState(0);
@@ -60,7 +68,7 @@ const ScrambleWordsGame: React.FC<ScrambleWordsGameProps> = ({ listId, scrambleW
         const options = Array.isArray(word.scrambledOptions) ? word.scrambledOptions as string[] : [];
         
         // Create a shuffled array of options
-        const shuffledOptions = [...options].sort(() => Math.random() - 0.5);
+        const shuffledOptions = shuffleArray(options);
         
         // More robust correct answer detection
         const originalWordSorted = word.originalWord.split('').sort().join('').toLowerCase();
@@ -137,35 +145,40 @@ const ScrambleWordsGame: React.FC<ScrambleWordsGameProps> = ({ listId, scrambleW
     }
   }, [gameState, currentQuestionIndex, currentScrambleWord]);
 
+  // Record completion: when the player finishes every question, mark the list's words as
+  // studied in the background (not on exit or regenerate, which never reach "completed")
+  useEffect(() => {
+    if (gameState !== "completed") return;
+    const wordIds = matchWordIds(scrambleWords.map((word) => word.originalWord), listWords);
+    if (wordIds.length > 0) {
+      markWordsAsStudied(wordIds).catch(console.error);
+    }
+  }, [gameState, scrambleWords, listWords]);
+
   // Initialize confetti
   useEffect(() => {
     confettiRef.current = new JSConfetti();
   }, []);
 
-  const generateHint = (correctWord: string, selectedWord: string) => {
-    const correct = correctWord.toLowerCase();
-    const selected = selectedWord.toLowerCase();
-    
-    if (correct.length !== selected.length) {
-      if (correct.length > selected.length) {
-        return `Good try! The word needs ${correct.length - selected.length} more letter${correct.length - selected.length > 1 ? 's' : ''}. Keep going!`;
-      } else {
-        return `Nice attempt! The word has ${selected.length - correct.length} too many letter${selected.length - correct.length > 1 ? 's' : ''}. Try another option!`;
-      }
+  // Compares the clicked scrambled option with the correct scrambled option (the anagram),
+  // so the hint helps pick the right option rather than spell the unscrambled word
+  const generateHint = (clickedOption: string, correctOption: string) => {
+    const clicked = clickedOption.toLowerCase();
+    const correct = correctOption.toLowerCase();
+
+    if (clicked.length !== correct.length) {
+      return `This option has ${clicked.length > correct.length ? 'more' : 'fewer'} letters than the correct answer.`;
     }
-    
-    // Check for correct letters in wrong positions
-    const correctLetters = correct.split('').filter((letter, index) => 
-      selected[index] === letter
-    ).length;
-    
-    if (correctLetters === 0) {
-      return `Keep trying! The word starts with "${correct[0].toUpperCase()}". You can do this!`;
-    } else if (correctLetters < correct.length / 2) {
-      return `You're getting warmer! Some letters are in the right places. Try a different arrangement!`;
-    } else {
-      return `So close! You have most letters correct. Just try moving a few around!`;
+
+    const matches = clicked.split('').filter((letter, index) => correct[index] === letter).length;
+    const startsWith = clicked[0] === correct[0] ? ` It starts with "${correct[0].toUpperCase()}".` : '';
+
+    if (matches === 0) {
+      return 'None of the letters are in the right position.';
+    } else if (matches >= clicked.length / 2) {
+      return `You're close! Some letters are in the right position.${startsWith}`;
     }
+    return `A few letters are in the right position.${startsWith}`;
   };
 
   const handleCardClick = (cardIndex: number) => {
@@ -184,7 +197,10 @@ const ScrambleWordsGame: React.FC<ScrambleWordsGameProps> = ({ listId, scrambleW
       })));
       
       setGameState("answered");
-      setScore(score + 1);
+      // Only a first-try answer scores
+      if (!answeredWithMistake.has(currentQuestionIndex)) {
+        setScore(score + 1);
+      }
       setShowHint(false);
       
       // Record attempts for this question
@@ -216,7 +232,9 @@ const ScrambleWordsGame: React.FC<ScrambleWordsGameProps> = ({ listId, scrambleW
         }, 5000);
       }
     } else {
-      // Wrong answer - show hint and shake effect
+      // Wrong answer - this question no longer scores
+      setAnsweredWithMistake(prev => new Set(prev).add(currentQuestionIndex));
+      // Show hint and shake effect
       setShowHint(true);
       
       // Add shake effect to the selected card
@@ -250,6 +268,7 @@ const ScrambleWordsGame: React.FC<ScrambleWordsGameProps> = ({ listId, scrambleW
   const handleRestart = () => {
     setCurrentQuestionIndex(0);
     setScore(0);
+    setAnsweredWithMistake(new Set());
     setGameState("playing");
     setAttempts(0);
     setTotalAttempts(0);
@@ -284,7 +303,13 @@ const ScrambleWordsGame: React.FC<ScrambleWordsGameProps> = ({ listId, scrambleW
             }
           </p>
         </div>
-        <div className="order-1 sm:order-3 flex justify-end">
+        <div className="order-1 sm:order-3 flex justify-end items-start gap-3">
+          <RegenerateButton
+            label="Regenerate Words"
+            confirmTitle="Regenerate Scramble Words?"
+            confirmMessage="This will replace all current scramble words with new AI-generated ones. Continue?"
+            onRegenerate={() => regenerateScrambleWords(Number(listId))}
+          />
           <Button 
             className="focus:outline-none" 
             disabled={isConfirmLoading}
@@ -306,6 +331,12 @@ const ScrambleWordsGame: React.FC<ScrambleWordsGameProps> = ({ listId, scrambleW
           gameTitle="Scramble Challenge"
           totalQuestions={totalQuestions}
           totalAttempts={totalAttempts}
+          customStats={[
+            { label: "Words Completed", value: totalQuestions },
+            { label: "Correct on First Try", value: `${score} / ${totalQuestions}` },
+            { label: "Total Tries", value: totalAttempts },
+            { label: "Avg Attempts", value: totalQuestions > 0 ? (totalAttempts / totalQuestions).toFixed(1) : "0.0" },
+          ]}
           onPlayAgain={handleRestart}
           onBackToExercises={handleExitConfirm}
           motivationalMessage="You completed the Scramble Words challenge!"
@@ -349,7 +380,7 @@ const ScrambleWordsGame: React.FC<ScrambleWordsGameProps> = ({ listId, scrambleW
                       <div className="flex-1">
                         <h4 className="font-bold text-darkBlue mb-2 text-lg drop-shadow-lg">💭 Helpful Hint:</h4>
                         <p className="text-darkBlue font-medium leading-relaxed drop-shadow-md">
-                          {generateHint(currentScrambleWord.originalWord, lastSelectedWord)}
+                          {generateHint(lastSelectedWord, currentScrambleWord.scrambledOptions[currentScrambleWord.correctIndex])}
                         </p>
                       </div>
                     </div>

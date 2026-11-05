@@ -28,6 +28,7 @@ interface ModeConfigItem {
 interface PracticeWordModalProps {
   totalWords: number;
   studiedCount: number;
+  totalSyllableWords: number;
   studiedSyllableCount: number;
   studiedGroupCount: number;
   totalStudiedGroups: number;
@@ -43,6 +44,7 @@ interface PracticeWordModalProps {
 const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
   totalWords,
   studiedCount,
+  totalSyllableWords,
   studiedSyllableCount,
   studiedGroupCount,
   totalGroups,
@@ -241,43 +243,57 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         progress: totalWords > 0 ? Math.round((studiedCount / totalWords) * 100) : 0,
         showContinue: studiedCount > 0 && studiedCount < totalWords,
         showBeginAgain: studiedCount > 0,
+        // Only a hint: the mode page ignores any start value except 0 and resumes from the
+        // studied count itself (first unfinished word = studied count + 1)
         continueFrom: studiedCount,
         isRecentAttempts: false,
         recentAttempts: [],
         isMistakesPractice: false
       },
-      {
-        id: "SyllablesModePractice" as const,
-        imageSrc: "/images/SyllabusMode.svg",
-        altText: "syllables Mode",
-        label: "Syllables Mode",
-        completed: studiedSyllableCount,
-        total: totalWords,
-        progress: totalWords > 0 ? Math.round((studiedSyllableCount / totalWords) * 100) : 0,
-        showContinue: studiedSyllableCount > 0 && studiedSyllableCount < totalWords,
-        showBeginAgain: studiedSyllableCount > 0,
+      // Hidden when the list has no syllable exercises (the mode would open a blank page)
+      ...(totalSyllableWords > 0
+        ? [
+          {
+            id: "SyllablesModePractice" as const,
+            imageSrc: "/images/SyllabusMode.svg",
+            altText: "syllables Mode",
+            label: "Syllables Mode",
+            completed: studiedSyllableCount,
+            total: totalSyllableWords,
+            progress: totalSyllableWords > 0 ? Math.round((studiedSyllableCount / totalSyllableWords) * 100) : 0,
+            showContinue: studiedSyllableCount > 0 && studiedSyllableCount < totalSyllableWords,
+            showBeginAgain: studiedSyllableCount > 0,
+            // Only a hint: the mode page ignores any start value except 0 and resumes from the
+        // studied count itself (first unfinished word = studied count + 1)
         continueFrom: studiedSyllableCount,
-        isRecentAttempts: false,
-        recentAttempts: [],
-        isMistakesPractice: false
-      },
-      {
-        id: "GroupModePractice" as const,
-        imageSrc: "/images/GroupMode.svg",
-        altText: "Word Groups Mode",
-        label: "Word Groups Mode",
-        completed: totalStudiedGroups,
-        total: totalGroups,
-        progress: studiedGroupCount,
-        showContinue: totalStudiedGroups > 0 && totalStudiedGroups < totalGroups,
-        showBeginAgain: totalStudiedGroups > 0,
-        continueFrom: totalStudiedGroups,
-        isRecentAttempts: false,
-        recentAttempts: [],
-        isMistakesPractice: false
-      }
+            isRecentAttempts: false,
+            recentAttempts: [],
+            isMistakesPractice: false
+          }
+          ]
+        : []),
+      // Hidden when no group has more than one word (the mode would have nothing to show)
+      ...(totalGroups > 0
+        ? [
+          {
+            id: "GroupModePractice" as const,
+            imageSrc: "/images/GroupMode.svg",
+            altText: "Word Groups Mode",
+            label: "Word Groups Mode",
+            completed: totalStudiedGroups,
+            total: totalGroups,
+            progress: studiedGroupCount,
+            showContinue: totalStudiedGroups > 0 && totalStudiedGroups < totalGroups,
+            showBeginAgain: totalStudiedGroups > 0,
+            continueFrom: totalStudiedGroups,
+            isRecentAttempts: false,
+            recentAttempts: [],
+            isMistakesPractice: false
+          }
+          ]
+        : []),
     ];
-  }, [selectedTab, totalWords, studiedCount, studiedSyllableCount, studiedGroupCount, totalGroups, totalStudiedGroups, recentAttempts, mistakesCount]);
+  }, [selectedTab, totalWords, studiedCount, totalSyllableWords, studiedSyllableCount, studiedGroupCount, totalGroups, totalStudiedGroups, recentAttempts, mistakesCount]);
   
   // Create a mapping for quick access
   const modeData = React.useMemo(() => {
@@ -429,9 +445,8 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
             src="/images/titles/ChooseModeTitle.svg"
             alt="Choose a Mode to Practice Your Word List"
             width={400}
-            height={30}
+            height={38}
             className="mx-auto w-full max-w-[90%] sm:max-w-md h-auto"
-            priority
           />
         </div>
 

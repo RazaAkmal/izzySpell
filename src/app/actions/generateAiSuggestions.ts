@@ -2,7 +2,7 @@
 
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
-import { generateAndSaveTimeDurations } from './AiService';
+import { generateAndSaveTimeDurations } from '@/lib/timeDurations';
 
 /**
  * Manually generates AI time duration suggestions for an existing spelling list

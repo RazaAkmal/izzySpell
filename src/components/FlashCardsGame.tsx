@@ -10,10 +10,16 @@ import GameCompletionContent from "./GameCompletionContent";
 import { useListName } from "@/context/ListNameContext";
 import JSConfetti from "js-confetti";
 import TextToSpeech from "./TextToSpeach";
+import { shuffleArray } from "@/lib/shuffle";
+import RegenerateButton from "./RegenerateButton";
+import { markWordsAsStudied } from "@/app/actions/prismaActions";
+import { matchWordIds, ListWordRef } from "@/lib/gameWords";
+import { regenerateFlashCards } from "@/app/actions/AiService";
 
 interface FlashCardsGameProps {
   listId: string;
   flashCardsData: any[];
+  listWords: ListWordRef[];
 }
 
 interface FlashCard {
@@ -35,7 +41,7 @@ interface GameCard {
   hasShake: boolean;
 }
 
-const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData }) => {
+const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData, listWords }) => {
   const { listName } = useListName();
   const router = useRouter();
   const confettiRef = useRef<JSConfetti | null>(null);
@@ -44,7 +50,9 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [gameCards, setGameCards] = useState<GameCard[]>([]);
   const [gameState, setGameState] = useState<"loading" | "introduction" | "playing" | "answered" | "completed">("loading");
-  const [score, setScore] = useState(0);
+  const [score, setScore] = useState(0); // questions answered correctly on the first try
+  // Question indices where a wrong answer was given before the correct one (they score 0)
+  const [answeredWithMistake, setAnsweredWithMistake] = useState<Set<number>>(new Set());
   const [showExitModal, setShowExitModal] = useState(false);
   const [isConfirmLoading] = useState(false);
   const [attempts, setAttempts] = useState(0);
@@ -86,7 +94,7 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData 
         const options = Array.isArray(card.options) ? card.options as string[] : [];
         
         // Shuffle the options to randomize correct answer position
-        const shuffledOptions = [...options].sort(() => Math.random() - 0.5);
+        const shuffledOptions = shuffleArray(options);
         
         // Find the new correct index after shuffling
         const correctOption = options[card.correctIndex];
@@ -129,6 +137,16 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData 
       setLastSelectedWord("");
     }
   }, [gameState, currentQuestionIndex, currentFlashCard]);
+
+  // Record completion: when the player finishes every card, mark the list's words as
+  // studied in the background (not on exit or regenerate, which never reach "completed")
+  useEffect(() => {
+    if (gameState !== "completed") return;
+    const wordIds = matchWordIds(flashCards.map((card) => card.originalWord), listWords);
+    if (wordIds.length > 0) {
+      markWordsAsStudied(wordIds).catch(console.error);
+    }
+  }, [gameState, flashCards, listWords]);
 
   // Initialize confetti
   useEffect(() => {
@@ -214,7 +232,10 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData 
       if (confettiRef.current) {
         confettiRef.current.addConfetti();
       }
-      setScore(prevScore => prevScore + 1);
+      // Only a first-try answer scores
+      if (!answeredWithMistake.has(currentQuestionIndex)) {
+        setScore(prevScore => prevScore + 1);
+      }
 
       // After a delay, flip all cards to show correct answer
       scheduleTimeout(() => {
@@ -254,6 +275,7 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData 
       }
       // Lock stays held until handleNextQuestion / unmount clears it.
     } else {
+      setAnsweredWithMistake(prev => new Set(prev).add(currentQuestionIndex));
       setGameCards(prevCards =>
         prevCards.map(card =>
           card.id === cardId
@@ -341,6 +363,7 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData 
     isProcessingClickRef.current = false;
     setCurrentQuestionIndex(0);
     setScore(0);
+    setAnsweredWithMistake(new Set());
     setGameState("playing");
     setAttempts(0);
     setTotalAttempts(0);
@@ -384,7 +407,13 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData 
             }
           </p>
         </div>
-        <div className="order-1 sm:order-3 flex justify-end">
+        <div className="order-1 sm:order-3 flex justify-end items-start gap-3">
+          <RegenerateButton
+            label="Regenerate Cards"
+            confirmTitle="Regenerate Flash Cards?"
+            confirmMessage="This will replace all current flash cards with new AI-generated ones. Continue?"
+            onRegenerate={() => regenerateFlashCards(Number(listId))}
+          />
           <Button 
             className="focus:outline-none" 
             disabled={isConfirmLoading}
@@ -406,6 +435,12 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData 
           gameTitle="Flash Cards Challenge"
           totalQuestions={totalQuestions}
           totalAttempts={totalAttempts}
+          customStats={[
+            { label: "Words Completed", value: totalQuestions },
+            { label: "Correct on First Try", value: `${score} / ${totalQuestions}` },
+            { label: "Total Tries", value: totalAttempts },
+            { label: "Avg Attempts", value: totalQuestions > 0 ? (totalAttempts / totalQuestions).toFixed(1) : "0.0" },
+          ]}
           onPlayAgain={handleRestartGame}
           onBackToExercises={handleExit}
           motivationalMessage="You completed the Flash Cards challenge!"

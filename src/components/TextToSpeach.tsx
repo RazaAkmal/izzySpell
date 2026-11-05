@@ -44,11 +44,23 @@ const getBestVoice = (): SpeechSynthesisVoice | null => {
   return cachedVoice;
 };
 
-function TextToSpeech({ spell, heightWidth }: { spell: string; heightWidth: number }) {
+const isSpeechSupported = () =>
+  typeof window !== "undefined" && "speechSynthesis" in window;
+
+// onUnavailable (optional): called when speech cannot play (no support, no voices, error)
+function TextToSpeech({
+  spell,
+  heightWidth,
+  onUnavailable,
+}: {
+  spell: string;
+  heightWidth: number;
+  onUnavailable?: () => void;
+}) {
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!isSpeechSupported()) return;
 
     // Voices may not be ready immediately — pre-load them
     if (speechSynthesis.getVoices().length > 0) {
@@ -62,6 +74,21 @@ function TextToSpeech({ spell, heightWidth }: { spell: string; heightWidth: numb
   }, []);
 
   const pronounceText = (text: string) => {
+    if (!isSpeechSupported()) {
+      onUnavailable?.();
+      return;
+    }
+
+    try {
+      speakText(text);
+    } catch (error) {
+      console.error("Text-to-speech failed:", error);
+      setIsSpeaking(false);
+      onUnavailable?.();
+    }
+  };
+
+  const speakText = (text: string) => {
     // Toggle off if already speaking
     if (isSpeaking) {
       speechSynthesis.cancel();
@@ -70,6 +97,11 @@ function TextToSpeech({ spell, heightWidth }: { spell: string; heightWidth: numb
     }
 
     speechSynthesis.cancel(); // Clear any previous utterance
+
+    // No voices loaded: tell the parent (it can show a fallback) but still try to speak
+    if (speechSynthesis.getVoices().length === 0) {
+      onUnavailable?.();
+    }
 
     const utterance = new SpeechSynthesisUtterance(text);
     const voice = getBestVoice();
@@ -82,7 +114,13 @@ function TextToSpeech({ spell, heightWidth }: { spell: string; heightWidth: numb
 
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
+    utterance.onerror = (event) => {
+      setIsSpeaking(false);
+      // "canceled" / "interrupted" come from our own cancel() calls, not a failure
+      if (event.error !== "canceled" && event.error !== "interrupted") {
+        onUnavailable?.();
+      }
+    };
 
     speechSynthesis.speak(utterance);
   };

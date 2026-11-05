@@ -19,7 +19,7 @@ import GameCompletionContent from './GameCompletionContent';
 import ChallengeModeModal from './ChallengeModeModal';
 
 // Import data and types
-import { getWordsByAgeGroup, WordBuilderWord } from '../data/wordBuilderData';
+import { WordBuilderWord } from '../data/wordBuilderData';
 import { useListName } from '@/context/ListNameContext';
 
 interface WordBuilderGameProps {
@@ -27,6 +27,7 @@ interface WordBuilderGameProps {
   ageGroup: '4-6' | '6-8' | '9-11' | '11-13+';
   mode: 'picture' | 'phonics' | 'syllable' | 'morphology';
   difficulty: 'easy' | 'medium' | 'hard';
+  words: WordBuilderWord[]; // the child's own words from this list
 }
 
 interface GameTile {
@@ -45,7 +46,8 @@ export default function WordBuilderGameNew({
   listId, 
   ageGroup, 
   mode, 
-  difficulty
+  difficulty,
+  words: listWords
 }: WordBuilderGameProps) {
   const { listName } = useListName();
   const router = useRouter();
@@ -97,20 +99,19 @@ export default function WordBuilderGameNew({
   useEffect(() => {
     confettiRef.current = new JSConfetti();
     
-    // Load personal best from localStorage
-    const savedBest = localStorage.getItem(`wordBuilder_${mode}_best`);
+    // Load personal best from localStorage (one best per list)
+    const savedBest = localStorage.getItem(`wordBuilder_best_${listId}`);
     if (savedBest) {
       setPersonalBest(parseInt(savedBest));
     }
-  }, [mode]);
+  }, [listId]);
 
   // Load words based on criteria
   useEffect(() => {
     if (!ageGroup || !mode || !difficulty) return;
-    const selectedWords = getWordsByAgeGroup(ageGroup);
-    setWords(selectedWords);
+    setWords(listWords);
     setGameState('playing');
-  }, [ageGroup, mode, difficulty]);
+  }, [ageGroup, mode, difficulty, listWords]);
 
   // Initialize current word
   useEffect(() => {
@@ -480,7 +481,7 @@ export default function WordBuilderGameNew({
       if (personalBest === null || currentTime > personalBest) {
         setPersonalBest(currentTime);
         // Store in localStorage for persistence
-        localStorage.setItem(`wordBuilder_${mode}_best`, currentTime.toString());
+        localStorage.setItem(`wordBuilder_best_${listId}`, currentTime.toString());
       }
     }
     
@@ -717,7 +718,7 @@ export default function WordBuilderGameNew({
                   word={currentWord}
                   showImageHint={mode === 'picture' && challengeMode !== 'hard'}
                   showAudioHint={challengeMode !== 'hard'}
-                  showDefinitionHint={mode !== 'picture' && challengeMode !== 'hard'}
+                  showDefinitionHint={mode !== 'picture' && challengeMode !== 'hard' && !!currentWord.definition}
                   showMorphologyHint={mode === 'morphology'}
                   onHintUsed={handleHintUsed}
                   hintsUsed={hintsUsed}

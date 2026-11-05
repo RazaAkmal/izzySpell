@@ -180,7 +180,6 @@ const ProfileForm = ({onComplete, userId, userData}: Props) => {
             alt="User avatar"
             width={80}
             height={80}
-            priority={true}
             className="object-cover w-full h-full"
           />
         </div>

@@ -4,6 +4,7 @@ import DefaultModePage from "@/components/DefaultModePage";
 import { getWordsByListId } from "@/app/actions/prismaActions";
 import { ListNameProvider } from "@/context/ListNameContext";
 import { preloadCurrentUserDetails } from "@/app/actions/getUserDetails";
+import { requireListOwnerForPage } from "@/lib/requireSession";
 
 async function page({
   params,
@@ -11,6 +12,7 @@ async function page({
   params: Promise<{ listId: string }>;
 }) {
   const listId = (await params).listId
+  await requireListOwnerForPage(parseInt(listId));
   // Header's user lookup runs in parallel with this page's queries
   preloadCurrentUserDetails();
   const { list, words, studiedWordCount } = await getWordsByListId(parseInt(listId));

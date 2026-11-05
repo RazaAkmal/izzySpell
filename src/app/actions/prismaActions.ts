@@ -1,20 +1,22 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 import { getColorForProgress } from "../utils/colors";
 import { SpellingList } from "@prisma/client";
+import { requireListOwner, requireSessionUserId } from "@/lib/requireSession";
 
-export const deleteList = async (listId: number | string, userId: string) => {
+// Every export in this file can be called directly from the browser, so each one takes
+// the user from the session. A userId argument is kept for existing callers but ignored.
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const deleteList = async (listId: number | string, _userId: string) => {
+  const userId = await requireSessionUserId();
   try {
     const numericListId = parseInt(listId as string, 10);
     if (isNaN(numericListId)) {
       console.error("Invalid list ID:", listId);
       return { success: false, message: "List ID must be a valid number" };
-    }
-
-    if (!userId || typeof userId !== "string") {
-      console.error("Invalid user ID:", userId);
-      return { success: false, message: "Invalid user ID" };
     }
 
     console.log("Deleting list with ID:", numericListId, "for user ID:", userId);
@@ -68,9 +70,11 @@ export const deleteList = async (listId: number | string, userId: string) => {
 
 // Same data as GET /api/fetch-words (the list plus its words), read directly from
 // the database instead of making an extra HTTP request to this app's own API.
-export async function fetchWordsForList(userId: string, listId: number) {
-  // The API returned nothing for a missing userId or an invalid list id
-  if (!userId || isNaN(listId)) return undefined;
+export async function fetchWordsForList(_userId: string, listId: number) {
+  // The API returned nothing for an invalid list id
+  if (isNaN(listId)) return undefined;
+  // Only the signed-in user's own list is returned (someone else's list looks "not found")
+  await requireListOwner(listId);
   try {
     const [list, words] = await Promise.all([
       prisma.spellingList.findUnique({ where: { id: listId } }),
@@ -86,6 +90,7 @@ export async function fetchWordsForList(userId: string, listId: number) {
 }
 
 export async function getWordCountForEachExercise(listId: number) {
+  await requireListOwner(listId);
   const [total, studiedWordCount, studiedSyllableWord, studiedGroupCount, totalGroups] = await Promise.all([
     prisma.word.count({
       where: { listId },
@@ -120,6 +125,7 @@ export async function getWordCountForEachExercise(listId: number) {
 }
 
 export async function getListById(listId: number) {
+  await requireListOwner(listId);
   const listName = await prisma.spellingList.findUnique({
     where: { id: listId },
     select: {
@@ -131,6 +137,7 @@ export async function getListById(listId: number) {
 }
 
 export async function getWordsByListId(listId: number) {
+  await requireListOwner(listId);
 
   const [list, words, total, studiedWordCount] = await Promise.all([
     prisma.spellingList.findUnique({
@@ -153,6 +160,7 @@ export async function getWordsByListId(listId: number) {
   return { list, words, total, studiedWordCount };
 }
 export async function getSyllableWordsByListId(listId: number) {
+  await requireListOwner(listId);
 
   const [syllableWords, total, studiedWordCount] = await Promise.all([
     prisma.syllableWord.findMany({
@@ -171,6 +179,7 @@ export async function getSyllableWordsByListId(listId: number) {
 }
 
 export async function getGroupedWordsByListId(listId: number) {
+  await requireListOwner(listId);
 
   const [groupedWords, studiedGroups] = await Promise.all([
     prisma.groupedWord.findMany({
@@ -189,9 +198,8 @@ export async function getGroupedWordsByListId(listId: number) {
     })
   ]);
 
-  // Filter out groups with only one word
-  const validStudiedGroups = studiedGroups.filter(group => group._count.word > 1);
-  const totalStudiedGroups = validStudiedGroups.length;
+  // Every group with a studied word counts, including single-word groups (they are pages in Word Groups mode)
+  const totalStudiedGroups = studiedGroups.length;
 
   return { 
     groupedWords, 
@@ -202,20 +210,23 @@ export async function getGroupedWordsByListId(listId: number) {
 
 
 export async function markWordsAsStudied(wordIds: number[]) {
+  const userId = await requireSessionUserId();
   try {
-    // Update only the words with the provided IDs, and get the listId from the
-    // first word at the same time (independent queries, so run them together)
+    // Update only the signed-in user's words with the provided IDs, and get the listId
+    // from the first word at the same time (independent queries, so run them together)
     const [, firstWord] = await Promise.all([
       prisma.word.updateMany({
-        where: { id: { in: wordIds }, studied: false },
+        where: { id: { in: wordIds }, studied: false, spellingList: { userId } },
         data: { studied: true },
       }),
-      prisma.word.findUnique({ where: { id: wordIds[0] } }),
+      prisma.word.findUnique({ where: { id: wordIds[0], spellingList: { userId } } }),
     ]);
     const listId = firstWord?.listId;
 
     if (listId) {
       await updateListProgress(listId);
+      // The hub page is a cached server component: refresh its progress and counts
+      revalidatePath(`/spellPractice/${listId}`);
     }
 
     return { success: true };
@@ -225,12 +236,10 @@ export async function markWordsAsStudied(wordIds: number[]) {
   }
 }
 
-export async function fetchSpellingLists(userId: string) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function fetchSpellingLists(_userId: string) {
+  const userId = await requireSessionUserId();
   try {
-    if (!userId) {
-      throw new Error("Invalid input: 'userId' is required.");
-    }
-
     // Fetch only the spelling list details for the user without associated words or groupedWords
     const spellingListsWithoutColor = await prisma.spellingList.findMany({
       where: { userId },
@@ -253,15 +262,19 @@ export async function fetchSpellingLists(userId: string) {
 }
 
 export async function markSyllableWordsAsStudied(wordIds: number[], listId: number) {
+  await requireListOwner(listId);
   try {
-    // Update only the syllable words with the provided IDs
+    // Update only the syllable words with the provided IDs. listId is part of the filter
+    // so word IDs from someone else's list can't be passed alongside the user's own listId.
     await prisma.syllableWord.updateMany({
-      where: { id: { in: wordIds }, studied: false },
+      where: { id: { in: wordIds }, listId, studied: false },
       data: { studied: true },
     });
 
     if (listId) {
       await updateListProgress(listId);
+      // The hub page is a cached server component: refresh its progress and counts
+      revalidatePath(`/spellPractice/${listId}`);
     }
 
     return { success: true };
@@ -278,6 +291,7 @@ export async function markGroupAsStudied(groupName: string, listId: number) {
 // Marks several groups at once with a single update and a single progress
 // recalculation (instead of one full save per group).
 export async function markGroupsAsStudied(groupNames: string[], listId: number) {
+  await requireListOwner(listId);
   try {
     await prisma.groupedWord.updateMany({
       where: {
@@ -289,12 +303,73 @@ export async function markGroupsAsStudied(groupNames: string[], listId: number) 
     });
 
     await updateListProgress(listId);
+    // The hub page is a cached server component: refresh its progress and counts
+    revalidatePath(`/spellPractice/${listId}`);
 
     return { success: true as const };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.log("[markGroupsAsStudied] failed:", { groupNames, listId, message });
     return { success: false as const, error: message };
+  }
+}
+
+// Background auto-saves during a practice session: only the write, so a correct answer
+// costs one query and doesn't re-render the page. useSyncProgressOnLeave calls
+// syncListProgress for the rest. The mark*AsStudied actions above do all of it in one
+// call, for when a session is finished.
+export async function autoSaveWordAsStudied(wordId: number) {
+  const userId = await requireSessionUserId();
+  try {
+    await prisma.word.updateMany({
+      where: { id: wordId, studied: false, spellingList: { userId } },
+      data: { studied: true },
+    });
+    return { success: true as const };
+  } catch (error) {
+    console.error("Error auto-saving word:", error);
+    return { success: false as const, error: "Error auto-saving word" };
+  }
+}
+
+export async function autoSaveSyllableWordAsStudied(wordId: number, listId: number) {
+  const userId = await requireSessionUserId();
+  try {
+    await prisma.syllableWord.updateMany({
+      where: { id: wordId, listId, studied: false, spellingList: { userId } },
+      data: { studied: true },
+    });
+    return { success: true as const };
+  } catch (error) {
+    console.error("Error auto-saving syllable word:", error);
+    return { success: false as const, error: "Error auto-saving syllable word" };
+  }
+}
+
+export async function autoSaveGroupAsStudied(groupName: string, listId: number) {
+  const userId = await requireSessionUserId();
+  try {
+    await prisma.groupedWord.updateMany({
+      where: { groupName, listId, studied: false, spellingList: { userId } },
+      data: { studied: true },
+    });
+    return { success: true as const };
+  } catch (error) {
+    console.error("Error auto-saving group:", error);
+    return { success: false as const, error: "Error auto-saving group" };
+  }
+}
+
+export async function syncListProgress(listId: number) {
+  await requireListOwner(listId);
+  try {
+    await updateListProgress(listId);
+    // The hub page is a cached server component: refresh its progress and counts
+    revalidatePath(`/spellPractice/${listId}`);
+    return { success: true as const };
+  } catch (error) {
+    console.error("Error syncing list progress:", error);
+    return { success: false as const, error: "Error syncing list progress" };
   }
 }
 
@@ -360,23 +435,22 @@ async function updateListProgress(listId: number) {
   });
 }
 
-export async function resetListProgress(listId: number, userId?: string) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function resetListProgress(listId: number, _userId?: string) {
+  const userId = await requireSessionUserId();
   try {
-    // If userId is provided, check authorization
-    if (userId) {
-      const list = await prisma.spellingList.findUnique({
-        where: { id: listId },
-      });
+    const list = await prisma.spellingList.findUnique({
+      where: { id: listId },
+    });
 
-      if (!list) {
-        console.error("List not found for ID:", listId);
-        return { success: false, message: "List not found" };
-      }
+    if (!list) {
+      console.error("List not found for ID:", listId);
+      return { success: false, message: "List not found" };
+    }
 
-      if (list.userId !== userId) {
-        console.error("Unauthorized reset attempt by user:", userId);
-        return { success: false, message: "You are not authorized to reset this list" };
-      }
+    if (list.userId !== userId) {
+      console.error("Unauthorized reset attempt by user:", userId);
+      return { success: false, message: "You are not authorized to reset this list" };
     }
 
     // Reset all regular words
@@ -412,6 +486,7 @@ export async function resetListProgress(listId: number, userId?: string) {
 
 // Flash Cards functions
 export const getFlashCardsByListId = async (listId: number) => {
+  await requireListOwner(listId);
   try {
     const flashCards = await prisma.flashCard.findMany({
       where: { listId },
@@ -432,6 +507,7 @@ export const getFlashCardsByListId = async (listId: number) => {
 };
 
 export const checkFlashCardsExist = async (listId: number) => {
+  await requireListOwner(listId);
   try {
     const count = await prisma.flashCard.count({
       where: { listId }
@@ -455,6 +531,7 @@ export const checkFlashCardsExist = async (listId: number) => {
 
 // Scramble Words functions
 export const getScrambleWordsByListId = async (listId: number) => {
+  await requireListOwner(listId);
   try {
     const scrambleWords = await prisma.scrambleWord.findMany({
       where: { listId },
@@ -475,6 +552,7 @@ export const getScrambleWordsByListId = async (listId: number) => {
 };
 
 export const checkScrambleWordsExist = async (listId: number) => {
+  await requireListOwner(listId);
   try {
     const count = await prisma.scrambleWord.count({
       where: { listId }

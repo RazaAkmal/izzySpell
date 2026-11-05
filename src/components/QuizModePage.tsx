@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import CustomButton from "./HeadlessButton";
 import { Button } from "@headlessui/react";
@@ -30,6 +30,13 @@ interface QuizAnswer {
 
 type TimerType = "none" | "word" | "list";
 
+// answers[i] is the answer for words[i]: re-answering a word (after Previous) replaces its
+// entry instead of adding a second one
+const upsertAnswer = (list: QuizAnswer[], index: number, answer: QuizAnswer): QuizAnswer[] =>
+  index < list.length
+    ? list.map((a, i) => (i === index ? answer : a))
+    : [...list, answer];
+
 const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSuggestions = null }) => {
   const { listName } = useListName();
   const router = useRouter();
@@ -54,6 +61,38 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
   // Notification for expired word timer
   const [showTimeExpiredNotification, setShowTimeExpiredNotification] = useState(false);
 
+  // Warn before refresh / closing the tab / browser back while the quiz is in progress
+  // (not once the summary is showing, when leaving is fine)
+  useEffect(() => {
+    if (showSummary) return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [showSummary, isSaving]);
+
+  // Shown briefly (word spelled out) when text-to-speech is unavailable or fails
+  const [showWordFallback, setShowWordFallback] = useState(false);
+  const fallbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleTtsUnavailable = useCallback(() => {
+    setShowWordFallback(true);
+    if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
+    fallbackTimer.current = setTimeout(() => setShowWordFallback(false), 3000);
+  }, []);
+
+  // Never carry the fallback over to the next word, and clear the timer on unmount
+  useEffect(() => {
+    setShowWordFallback(false);
+  }, [currentPage]);
+  useEffect(() => {
+    return () => {
+      if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
+    };
+  }, []);
+
   const currentWord = words[currentPage - 1];
   const isLastWord = currentPage === words.length;
 
@@ -69,7 +108,7 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
       correctWord: currentWord.word,
     };
 
-    const updatedAnswers = [...answers, newAnswer];
+    const updatedAnswers = upsertAnswer(answers, currentPage - 1, newAnswer);
     setAnswers(updatedAnswers);
 
     if (isLastWord) {
@@ -103,8 +142,8 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
   const handlePrevious = () => {
     if (currentPage > 1) {
       setCurrentPage(prev => prev - 1);
-      // Restore previous answer if it exists
-      const previousAnswer = answers.find(a => a.wordId === String(words[currentPage - 2].id));
+      // Restore the answer stored for the previous page, if it exists
+      const previousAnswer = answers[currentPage - 2];
       setUserInput(previousAnswer?.userAnswer || "");
     }
   };
@@ -114,7 +153,7 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
   };
 
   const calculateStats = (currentAnswers: QuizAnswer[]) => {
-    const total = currentAnswers.length;
+    const total = words.length;
     const correct = currentAnswers.filter(a => a.isCorrect).length;
     const grade = total > 0 ? Math.round((correct / total) * 100) : 0;
     return { total, correct, incorrect: total - correct, grade };
@@ -126,6 +165,7 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
     setAnswers([]);
     setShowSummary(false);
     setShowTimerModal(true); // Show timer options again
+    setMistakesWarning(null);
     setExpiredWords(0);
     setTimerExpired(false);
     setTimeElapsed(0);
@@ -134,8 +174,14 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
 
   // Handle starting the quiz with timer settings
   const handleStartQuiz = (selectedTimerType: TimerType, selectedTimeAmount: number) => {
+    // Guard in case the modal's validation is bypassed: a 0/empty time would expire instantly
+    let safeTimeAmount = selectedTimeAmount;
+    if (selectedTimerType !== "none" && !(Number.isFinite(safeTimeAmount) && safeTimeAmount >= 1)) {
+      console.warn(`Invalid timer amount (${selectedTimeAmount}); using 10 seconds instead`);
+      safeTimeAmount = 10;
+    }
     setTimerType(selectedTimerType);
-    setTimeAmount(selectedTimeAmount);
+    setTimeAmount(safeTimeAmount);
     setShowTimerModal(false);
     
     if (selectedTimerType !== "none") {
@@ -197,7 +243,7 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
         correctWord: currentWord.word,
       };
 
-      const updatedAnswers = [...answers, newAnswer];
+      const updatedAnswers = upsertAnswer(answers, currentPage - 1, newAnswer);
       setAnswers(updatedAnswers);
       setExpiredWords(prev => prev + 1);
 
@@ -236,14 +282,14 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
       setTimerRunning(false);
       setTimerExpired(true);
       
-      // Calculate how many words weren't attempted
-      const unattemptedCount = words.length - currentPage;
-      setExpiredWords(unattemptedCount);
-      
       // Create empty answers for all unattempted words
-      const currentAnswers = [...answers];
+      // Keep the answers already given for later pages (after Previous) instead of adding
+      // a second entry for them
+      const currentAnswers = answers.slice(0, currentPage - 1);
       for (let i = currentPage - 1; i < words.length; i++) {
-        if (i === currentPage - 1 && userInput) {
+        if (i !== currentPage - 1 && answers[i]) {
+          currentAnswers.push(answers[i]);
+        } else if (i === currentPage - 1 && userInput) {
           // For the current word, if there's input, check it
           const isCorrect = userInput.toLowerCase().trim() === words[i].word.toLowerCase();
           currentAnswers.push({
@@ -262,6 +308,10 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
           });
         }
       }
+      // Expired words = the blank answers just filled in (this includes the current word
+      // when nothing was typed), so the count matches the final answers even after Previous
+      setExpiredWords(currentAnswers.filter((a) => a.userAnswer === "").length);
+
       setTimeout(() => {
         handleQuizCompletion(currentAnswers);
       }, 2000); // Show notification immediately
@@ -270,6 +320,8 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
 
   // State for error message display
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Non-blocking: the attempt saved but some mistakes did not
+  const [mistakesWarning, setMistakesWarning] = useState<string | null>(null);
 
   // Handle quiz completion (moved to a separate function to avoid duplication)
   const handleQuizCompletion = async (completedAnswers: QuizAnswer[]) => {
@@ -322,7 +374,15 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
         throw new Error(`Invalid list ID: ${listId}`);
       }
 
-      await saveQuizAttempt(parsedListId, timerStats, mistakes);      
+      const saveResult = await saveQuizAttempt(parsedListId, timerStats, mistakes);
+      // The score was saved, but some mistakes may be missing from Practice Mistakes
+      setMistakesWarning(
+        saveResult.mistakesFailed > 0
+          ? `Your score was saved, but ${saveResult.mistakesFailed} mistake${
+              saveResult.mistakesFailed === 1 ? "" : "s"
+            } couldn't be saved to Practice Mistakes. They may not appear for practice.`
+          : null
+      );
       // If successful, show summary
       setShowSummary(true);
     } catch (error) {
@@ -407,7 +467,7 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
         <div className="w-full max-w-[500px] my-6">
           <div className="flex justify-between text-sm text-darkBlue mb-2">
             <span className="font-medium">Progress</span>
-            <span className="font-medium">{answers.length}/{words.length} words</span>
+            <span className="font-medium">{Math.min(answers.length, words.length)}/{words.length} words</span>
             
             {/* Timer Display */}
             {timerType !== "none" && timerRunning && (
@@ -434,7 +494,7 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
           <div className="w-full bg-white rounded-full h-2.5">
             <div
               className="bg-green h-2.5 rounded-full transition-all duration-300"
-              style={{ width: `${(answers.length / words.length) * 100}%` }}
+              style={{ width: `${(Math.min(answers.length, words.length) / words.length) * 100}%` }}
             ></div>
           </div>
         </div>
@@ -488,9 +548,26 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
               autoFocus
             />
             <div className="p-2 mr-2">
-              <TextToSpeech heightWidth={40} spell={currentWord.word} />
+              <TextToSpeech
+                heightWidth={40}
+                spell={currentWord.word}
+                onUnavailable={handleTtsUnavailable}
+              />
             </div>
           </div>
+
+          {showWordFallback ? (
+            <p
+              className="mt-4 text-4xl font-bold tracking-widest text-purple text-center"
+              role="status"
+            >
+              {currentWord.word}
+            </p>
+          ) : (
+            <p className="mt-3 text-sm text-gray-500 text-center">
+              Tip: listen carefully — some words sound alike
+            </p>
+          )}
 
           <div className="flex justify-center gap-6 mt-8">
             <CustomButton
@@ -533,7 +610,11 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
           expiredWords,
           timeElapsed
         }}
+        mistakesList={answers
+          .filter((a) => !a.isCorrect)
+          .map((a) => ({ userAnswer: a.userAnswer, correctWord: a.correctWord }))}
         saveError={saveError}
+        mistakesWarning={mistakesWarning}
         onTrySaveAgain={() => {
           // Add a loading state for better UX during retry
           setIsSaving(true);
@@ -549,7 +630,7 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
 
       <ConfirmationModal
         isOpen={showConfirmation}
-        onClose={() => router.push(`/spellPractice/${listId}`)}
+        onClose={() => setShowConfirmation(false)}
         onConfirm={() => router.push(`/spellPractice/${listId}`)}
         title="Exit Quiz"
         message="Are you sure you want to exit the quiz? Your progress will be lost."
