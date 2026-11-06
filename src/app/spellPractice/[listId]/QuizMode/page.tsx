@@ -23,15 +23,21 @@ async function page({
   params: Promise<{ listId: string }>;
 }) {
   const listId = (await params).listId
-  await requireListOwnerForPage(parseInt(listId));
-  // Header's user lookup runs in parallel with this page's queries
+  // Header's user lookup and the data queries start before the ownership check so they run
+  // in parallel with it. The check is still awaited first: a non-owner gets notFound()
+  // exactly as before, and the early results are discarded.
   preloadCurrentUserDetails();
   // Words (incl. list name) and the AI timer suggestions load together,
   // so neither needs a separate request from the browser after the page loads
-  const [{ list, words }, aiDurations] = await Promise.all([
+  const dataPromise = Promise.all([
     getWordsByListId(parseInt(listId)),
     getTimeDurationsForList(parseInt(listId)),
   ]);
+  dataPromise.catch(() => {
+    // Surfaced below where it is awaited (or superseded by the ownership check's redirect/404)
+  });
+  await requireListOwnerForPage(parseInt(listId));
+  const [{ list, words }, aiDurations] = await dataPromise;
   const shuffledWords = shuffleArray(words);
   return (
     <DashboardLayout showFooter={false}>

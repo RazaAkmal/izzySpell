@@ -12,10 +12,17 @@ async function page({
   params: Promise<{ listId: string }>;
 }) {
   const listId = (await params).listId
-  await requireListOwnerForPage(parseInt(listId));
-  // Header's user lookup runs in parallel with this page's queries
+  // Header's user lookup and the word queries start before the ownership check, so all
+  // run in parallel (getWordsByListId checks ownership itself and shares the cached lookup).
+  // The check is still awaited first: a non-owner gets notFound() exactly as before, not
+  // the plain "Spelling list not found" error getWordsByListId would throw.
   preloadCurrentUserDetails();
-  const { list, words, studiedWordCount } = await getWordsByListId(parseInt(listId));
+  const wordsPromise = getWordsByListId(parseInt(listId));
+  wordsPromise.catch(() => {
+    // Surfaced below where it is awaited (or superseded by the ownership check's redirect/404)
+  });
+  await requireListOwnerForPage(parseInt(listId));
+  const { list, words, studiedWordCount } = await wordsPromise;
   return (
     <>
       <DashboardLayout showFooter={false}>

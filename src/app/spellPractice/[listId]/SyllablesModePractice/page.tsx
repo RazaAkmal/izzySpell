@@ -15,14 +15,19 @@ async function page({
 }) {
   //for listId
   const listId = (await params).listId;
-  await requireListOwnerForPage(parseInt(listId));
-
-  // Header's user lookup runs in parallel with this page's queries
+  // Header's user lookup and the data queries start before the ownership check so they run
+  // in parallel with it. The check is still awaited first: a non-owner gets notFound()
+  // exactly as before, and the early results are discarded.
   preloadCurrentUserDetails();
-  const [{ syllableWords,  studiedWordCount }, listName] = await Promise.all([
+  const dataPromise = Promise.all([
     getSyllableWordsByListId(parseInt(listId)),
     getListName(parseInt(listId)),
   ]);
+  dataPromise.catch(() => {
+    // Surfaced below where it is awaited (or superseded by the ownership check's redirect/404)
+  });
+  await requireListOwnerForPage(parseInt(listId));
+  const [{ syllableWords, studiedWordCount }, listName] = await dataPromise;
   return (
     <DashboardLayout showFooter={false}>
       <ListNameProvider listId={listId} initialListName={listName}>
