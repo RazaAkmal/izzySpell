@@ -139,41 +139,37 @@ export async function getListById(listId: number) {
 export async function getWordsByListId(listId: number) {
   await requireListOwner(listId);
 
-  const [list, words, total, studiedWordCount] = await Promise.all([
+  const [list, rows] = await Promise.all([
     prisma.spellingList.findUnique({
       where: { id: listId },
       select: {
         listName: true
       }
     }),
+    // Only what the practice and quiz pages use; `studied` is just for the count below
     prisma.word.findMany({
       where: { listId },
       orderBy: { id: 'asc' },
+      select: { id: true, word: true, studied: true },
     }),
-    prisma.word.count({
-      where: { listId },
-    }),
-    prisma.word.count({
-    where: { listId, studied: true },
-  }),
   ]);
+  const words = rows.map(({ id, word }) => ({ id, word }));
+  const total = rows.length;
+  const studiedWordCount = rows.filter((row) => row.studied).length;
   return { list, words, total, studiedWordCount };
 }
 export async function getSyllableWordsByListId(listId: number) {
   await requireListOwner(listId);
 
-  const [syllableWords, total, studiedWordCount] = await Promise.all([
-    prisma.syllableWord.findMany({
-      where: { listId },
-      orderBy: { id: 'asc' },
-    }),
-    prisma.syllableWord.count({
-      where: { listId },
-    }),
-     prisma.syllableWord.count({
-    where: { listId, studied: true },
-  }),
-  ]);
+  const rows = await prisma.syllableWord.findMany({
+    where: { listId },
+    orderBy: { id: 'asc' },
+    // Only what Syllables mode uses; `studied` is just for the count below
+    select: { id: true, word: true, answer: true, options: true, studied: true },
+  });
+  const syllableWords = rows.map(({ id, word, answer, options }) => ({ id, word, answer, options }));
+  const total = rows.length;
+  const studiedWordCount = rows.filter((row) => row.studied).length;
 
   return { syllableWords, total, studiedWordCount};
 }

@@ -15,7 +15,7 @@ import { Button } from "@headlessui/react";
 
 interface SyllablesModePageProps {
   listId: number;
-  syllableWords: SyllableWord[];
+  syllableWords: Pick<SyllableWord, "id" | "word" | "answer" | "options">[];
   studiedWordCount: number;
 }
 

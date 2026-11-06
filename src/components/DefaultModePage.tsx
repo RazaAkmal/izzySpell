@@ -18,7 +18,7 @@ import { useListName } from "@/context/ListNameContext";
 import { useSyncProgressOnLeave } from "@/lib/useSyncProgressOnLeave";
 
 interface DefaultModePageProps {
-  words: Word[];
+  words: Pick<Word, "id" | "word">[];
   listId: string;
   studiedWordCount: number;
 }

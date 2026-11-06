@@ -1,8 +1,31 @@
-import DashboardLayout from "@/components/DashboardLayout";
+import Image from "next/image";
+import Link from "next/link";
+
+// Static shell only: DashboardLayout awaits auth() + a user query, which would delay this fallback
 
 export default function Loading() {
   return (
-    <DashboardLayout showFooter={false}>
+    <div className="bg-dashboard-background bg-cover bg-center min-h-screen flex flex-col">
+      <div className="mx-4 md:mx-8 lg:mx-16">
+        <header className="bg-skyBlue m-2 md:m-6 px-4 md:px-6 rounded-2xl shadow-md">
+          <div className="flex flex-row justify-between items-center h-16 md:h-20">
+            <Link href="/dashboard">
+              <div className="relative flex items-center h-full w-32 md:w-48 overflow-hidden">
+                <Image
+                  src="/images/izzyLogo.svg"
+                  alt="Logo"
+                  width={200}
+                  height={40}
+                  priority
+                  fetchPriority="high"
+                  className="mx-auto hover-scale !shadow-none"
+                />
+              </div>
+            </Link>
+            <div className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-white animate-pulse flex-shrink-0" />
+          </div>
+        </header>
+        <main>
       <div className="bg-skyBlue m-7 p-10 rounded-lg shadow-lg">
         {/* Header with title and close button */}
         <div className="w-full flex md:flex-row items-center justify-between mb-4">
@@ -54,6 +77,8 @@ export default function Loading() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+        </main>
+      </div>
+    </div>
   );
 }

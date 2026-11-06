@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 import { maskEmail } from "@/lib/maskEmail";
@@ -9,7 +10,12 @@ import { maskEmail } from "@/lib/maskEmail";
 // The account email is read here but only returned as `hasParentEmail` + a masked
 // string (e.g. "m***@example.com"): this result is passed to client components (the
 // profile form), so the full address must never be part of it.
-export const getUserDetails = cache(async (userId: string) => {
+//
+// On top of that, the result is cached across requests for 60s per user. Anything that
+// changes these fields must call revalidateTag(userDetailsTag(userId)) (see updateProfile).
+export const userDetailsTag = (userId: string) => `user-details-${userId}`;
+
+const fetchUserDetails = async (userId: string) => {
     const user = await prisma.user.findUnique({
       where: {
         id: userId,
@@ -32,7 +38,14 @@ export const getUserDetails = cache(async (userId: string) => {
       hasParentEmail: Boolean(parentEmail),
       parentEmailMasked: parentEmail ? maskEmail(parentEmail) : null,
     };
-});
+};
+
+export const getUserDetails = cache(async (userId: string) =>
+  unstable_cache(fetchUserDetails, ["user-details", userId], {
+    revalidate: 60,
+    tags: [userDetailsTag(userId)],
+  })(userId)
+);
 
 // Start the signed-in user's lookup early so DashboardLayout's query runs in
 // parallel with the page's own queries instead of after them.

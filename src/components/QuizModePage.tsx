@@ -16,7 +16,7 @@ import TimeExpiredNotification from "./TimeExpiredNotification";
 import { saveQuizAttempt } from "@/app/actions/saveQuizAttempt";
 
 interface QuizModePageProps {
-  words: Word[];
+  words: Pick<Word, "id" | "word">[];
   listId: string;
   initialAiSuggestions?: AiPaceSuggestions | null;
 }

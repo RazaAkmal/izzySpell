@@ -1,4 +1,6 @@
 import prisma from '@/lib/prisma';
+import { revalidateTag } from 'next/cache';
+import { userDetailsTag } from '@/app/actions/getUserDetails';
 import { auth } from '@/auth';
 import { firstProfileError, PROFILE_MESSAGES, updateProfileBodySchema } from '@/lib/profileValidation';
 import { AUTH_MESSAGES, parseParentEmailUpdate } from '@/lib/authValidation';
@@ -76,6 +78,8 @@ export async function PUT(req: Request) {
       if (result.count !== 1) {
         return new Response(JSON.stringify({ error: AUTH_MESSAGES.parentEmailAlreadySet }), { status: 400 });
       }
+      // Header/profile data is cached for 60s: clear it so the change shows immediately
+      revalidateTag(userDetailsTag(userId));
       const updatedUser = await prisma.user.findUnique({ where: { id: userId }, select: PUBLIC_USER_SELECT });
       return new Response(JSON.stringify(updatedUser), { status: 200 });
     }
@@ -86,6 +90,7 @@ export async function PUT(req: Request) {
       select: PUBLIC_USER_SELECT,
     });
 
+    revalidateTag(userDetailsTag(userId));
     return new Response(JSON.stringify(updatedUser), { status: 200 });
   } catch (error) {
     console.error('Error updating profile:', error);

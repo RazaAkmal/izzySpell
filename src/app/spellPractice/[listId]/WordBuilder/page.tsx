@@ -19,16 +19,27 @@ async function page({
   params: Promise<{ listId: string }>;
 }) {
   const listId = (await params).listId;
+  // The list name and the list's words start before the ownership check so they run in
+  // parallel with it. The check is still awaited first (a non-owner gets notFound() as
+  // before, and the early results are discarded); the session and user lookups stay after it.
+  const listNamePromise = getListName(parseInt(listId));
+  const listWordsPromise = getWordBuilderSources(parseInt(listId));
+  listNamePromise.catch(() => {
+    // Surfaced below where it is awaited (or superseded by the ownership check's redirect/404)
+  });
+  listWordsPromise.catch(() => {
+    // Same as above
+  });
   await requireListOwnerForPage(parseInt(listId));
   // The game plays the child's own words from this list (not a built-in word set)
   const session = (await auth()) as Session | null;
   const user = session?.user as User;
   // getUserDetails is cached per request, so DashboardLayout reuses this lookup;
-  // the list name loads alongside it
+  // the list name and words were started above
   const [userData, listName, listWords] = await Promise.all([
     user?.id ? getUserDetails(user.id) : undefined,
-    getListName(parseInt(listId)),
-    getWordBuilderSources(parseInt(listId)),
+    listNamePromise,
+    listWordsPromise,
   ]);
    
   // Determine age group and mode based on user's grade
