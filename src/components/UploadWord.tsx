@@ -45,7 +45,7 @@ function UploadWord({ user, refreshSpellingLists, onProcessingChange }: {
         return;
       }
 
-      // Part 1: cheap gpt-4o-mini call — filter to valid English words + suggest list name
+      // Part 1: cheap AI call — filter to valid English words + suggest list name
       const extraction = await extractWordsFromContent(rawWords);
 
       if (!extraction.success || !extraction.data) {

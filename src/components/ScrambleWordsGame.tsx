@@ -71,15 +71,15 @@ const ScrambleWordsGame: React.FC<ScrambleWordsGameProps> = ({ listId, scrambleW
         const shuffledOptions = shuffleArray(options);
         
         // More robust correct answer detection
-        const originalWordSorted = word.originalWord.split('').sort().join('').toLowerCase();
+        const originalWordSorted = word.originalWord.toLowerCase().split('').sort().join('');
         
         // Find ALL potential correct options (anagrams) with detailed logging
         const anagramAnalysis = shuffledOptions
           .map((option, idx) => ({
             index: idx,
             option: option,
-            optionSorted: option.split('').sort().join('').toLowerCase(),
-            isAnagram: option.split('').sort().join('').toLowerCase() === originalWordSorted
+            optionSorted: option.toLowerCase().split('').sort().join(''),
+            isAnagram: option.toLowerCase().split('').sort().join('') === originalWordSorted
           }));
         
         const correctIndices = anagramAnalysis

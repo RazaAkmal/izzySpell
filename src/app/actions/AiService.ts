@@ -18,7 +18,7 @@ const openai = new OpenAI({
 });
 
 // Part 1: Cheap, fast extraction — filters raw tokens to valid English words
-// and suggests a list name. Uses gpt-4o-mini to minimise cost.
+// and suggests a list name.
 // Called immediately after file read, before showing the modal.
 export const extractWordsFromContent = async (rawWords: string[]) => {
   await requireSessionUserId();
@@ -32,7 +32,7 @@ export const extractWordsFromContent = async (rawWords: string[]) => {
     const content = rawWords.join(" ");
 
     const gptResponse = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: OPENAI_MODEL,
       messages: [
         {
           role: "system",
@@ -51,7 +51,7 @@ Return ONLY this JSON structure:
 Raw tokens: ${content}`,
         },
       ],
-      max_tokens: 500,
+      max_completion_tokens: 500,
       temperature: 0.1,
     });
 
@@ -127,7 +127,7 @@ Requirements:
 5. Return valid JSON that can be parsed`,
         },
       ],
-      max_tokens: 4096,
+      max_completion_tokens: 4096,
       temperature: 0.3, // Reduced temperature for more consistent output
     });
 
@@ -528,7 +528,7 @@ Remember: Return ONLY JSON array format. No additional text or explanations.`;
         }
       ],
       temperature: 0.7,
-      max_tokens: 2000
+      max_completion_tokens: 2000
     });
 
     const content = gptResponse.choices[0]?.message?.content;
