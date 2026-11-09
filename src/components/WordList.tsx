@@ -7,7 +7,6 @@ import ToggleButton from "./CustomToggleButton";
 import { Textarea } from "@headlessui/react";
 import Modal from "@/components/WordListModal";
 import Progress from "./Progress";
-import { processFileWithAI } from "@/app/actions/AiService";
 import { SpellingListItem } from "@/lib/defination";
 import ConfirmationModal from "@/components/ConfirmationModal";
 
@@ -43,8 +42,9 @@ const WordList = ({ spellingLists, user, refreshSpellingLists, onProcessingChang
     setInputField(updatedFields);
   };
 
-  // Runs when the user clicks "Save & Start Learning" in the review modal: the AI
-  // processes the FINAL reviewed words (including anything added or edited in the modal)
+  // Runs when the user clicks "Save & Start Learning" in the review modal: saves the FINAL
+  // reviewed words (including anything added or edited in the modal); the server then prepares
+  // the exercises in the background
   const handleModalSave = async (words: string[], listName: string) => {
     setIsModalOpen(false);
     setLoading(true);
@@ -61,21 +61,12 @@ const WordList = ({ spellingLists, user, refreshSpellingLists, onProcessingChang
     }, 1000);
 
     try {
-      const response = await processFileWithAI(words);
-      if (!response.success || !response.data) {
-        setErrorMessage(response.error || "Error processing file with AI");
-        setShowErrorModal(true);
-        // The typed words are still in the form, so the user can just save again
-        return;
-      }
-
       const saveResponse = await fetch("/api/save-words", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           listName,
           words,
-          extractedWords: response.data,
           userId: user.id,
         }),
       });

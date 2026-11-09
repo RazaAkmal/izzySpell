@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import prisma from "@/lib/prisma"; // Import your Prisma client instance
 import { revalidatePath } from "next/cache";
 import { generateAndSaveTimeDurations } from "@/lib/timeDurations";
 import { getSessionUserId } from "@/lib/requireSession";
-import { isValidExtractedWords } from "@/lib/extractedWords";
 import { MAX_WORDS_PER_LIST, MAX_WORDS_ERROR } from "@/lib/limits";
+import { generateListExercises } from "@/app/actions/AiService";
 
 // TODO: add per-user rate limiting to cap uploads per day.
 
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
     }
 
-    const { words, extractedWords, listName } = await req.json();
+    const { words, listName } = await req.json();
 
     if (
       !listName ||
@@ -33,20 +33,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: MAX_WORDS_ERROR }, { status: 400 });
     }
 
-    // Same shape check as update-words: bad AI data is rejected before anything is saved
-    if (!isValidExtractedWords(extractedWords)) {
-      return NextResponse.json(
-        { error: "The processed word data was invalid. Your list was not saved. Please try saving again." },
-        { status: 400 }
-      );
-    }
-
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
-    // Create the SpellingList and associated entries
+    // Only the list and its words: saving never depends on the AI. The syllable and group
+    // exercises are generated in the background below.
     const spellingList = await prisma.spellingList.create({
       data: {
         listName,
@@ -56,23 +49,6 @@ export async function POST(req: Request) {
             word,
             type: "original",
           })),
-        },
-        syllableWords: {
-          create: extractedWords.SyllableWords.map((syllableWord: any) => ({
-            word: syllableWord.Word,
-            answer: syllableWord.Answer,
-            options: syllableWord.Options,
-          })),
-        },
-        groupedWords: {
-          create: Object.entries(
-            extractedWords.GroupedWords as Record<string, string[]>
-          ).flatMap(([groupName, groupWords]) =>
-            groupWords.map((word: string) => ({
-              groupName,
-              word,
-            }))
-          ),
         },
       },
     });
@@ -88,6 +64,10 @@ export async function POST(req: Request) {
         }
       );
     }
+
+    // Runs after the response is sent, so the user does not wait for the AI. If it fails or
+    // is cut off, the practice page prepares the exercises when the list is opened.
+    after(() => generateListExercises(spellingList.id));
 
     revalidatePath("/dashboard");
     return NextResponse.json(

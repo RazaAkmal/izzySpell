@@ -6,7 +6,7 @@ import { ListNameProvider } from "@/context/ListNameContext";
 import { preloadCurrentUserDetails } from "@/app/actions/getUserDetails";
 import { requireListOwnerForPage } from "@/lib/requireSession";
 import { getListName } from "@/lib/listName";
-import NoModeData from "@/components/NoModeData";
+import PrepareExercises from "@/components/PrepareExercises";
 
 async function page({
   params,
@@ -34,9 +34,10 @@ async function page({
         {syllableWords.length > 0 ? (
           <SyllableModePage studiedWordCount={studiedWordCount} syllableWords={syllableWords} listId={parseInt(listId)} />
         ) : (
-          <NoModeData
-            listId={listId}
-            message="No syllable data for this list. Please edit the list to regenerate."
+          <PrepareExercises
+            listId={parseInt(listId)}
+            emptyMessage="No syllable data for this list. Please edit the list to regenerate."
+            backOnClose
           />
         )}
       </ListNameProvider>

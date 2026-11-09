@@ -11,6 +11,7 @@ import { stripCodeFences, validateFlashCards } from '@/lib/flashCards';
 import { repairScrambleOptions } from '@/lib/scrambleWords';
 import { revalidatePath } from 'next/cache';
 import { GENERATION_CHUNK_SIZE, chunkArray, uniqueWords } from '@/lib/chunks';
+import { toExerciseRows } from '@/lib/extractedWords';
 
 
 const openai = new OpenAI({
@@ -212,6 +213,58 @@ export const processFileWithAI = async (content: string | string[]) => {
 
   const validChunks = results.map((r) => (r as { success: true; data: ProcessedList }).data);
   return { success: true as const, data: mergeProcessedChunks(validChunks) };
+};
+
+// Syllable and group exercises for a saved list. Runs after the save, and again from
+// PrepareExercises if that failed. A list with either kind of exercise is left untouched.
+export const generateListExercises = async (listId: number) => {
+  await requireListOwner(listId);
+  try {
+    const [words, syllableCount, groupCount] = await Promise.all([
+      prisma.word.findMany({ where: { listId }, orderBy: { id: "asc" }, select: { word: true } }),
+      prisma.syllableWord.count({ where: { listId } }),
+      prisma.groupedWord.count({ where: { listId } }),
+    ]);
+
+    if (syllableCount > 0 || groupCount > 0) {
+      return { success: true, alreadyPrepared: true };
+    }
+    if (words.length === 0) {
+      return { success: false, error: "This list has no words yet." };
+    }
+
+    const result: { success: boolean; data?: ProcessedList; error?: string } =
+      await processFileWithAI(words.map(({ word }) => word));
+    if (!result.success || !result.data) {
+      return { success: false, error: result.error || "Error processing list with AI" };
+    }
+
+    const { syllableRows, groupRows } = toExerciseRows(listId, result.data);
+    if (syllableRows.length === 0 && groupRows.length === 0) {
+      return { success: false, error: "No exercises were generated" };
+    }
+
+    // The row lock makes a second tab wait here and then see the rows, so nothing is duplicated
+    await prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT id FROM spelling_list WHERE id = ${listId} FOR UPDATE`;
+        if ((await tx.syllableWord.count({ where: { listId } })) > 0) return;
+        if ((await tx.groupedWord.count({ where: { listId } })) > 0) return;
+        await tx.syllableWord.createMany({ data: syllableRows });
+        await tx.groupedWord.createMany({ data: groupRows });
+      },
+      { timeout: 20000 } // the database is far from the functions, each step takes about a second
+    );
+
+    revalidatePath(`/spellPractice/${listId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error generating list exercises:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Error generating exercises",
+    };
+  }
 };
 
 export const getTimeDurationsForList = async (listId: number) => {

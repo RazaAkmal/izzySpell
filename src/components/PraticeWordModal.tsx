@@ -8,6 +8,7 @@ import { getRecentQuizAttempts } from "@/app/actions/getRecentQuizAttempts";
 import ModeCard, { ModeType, QuizAttempt } from "./ModeCard";
 import { checkFlashCardsExist, checkScrambleWordsExist } from "@/app/actions/prismaActions";
 import { generateAndSaveFlashCards, generateAndSaveScrambleWords } from "@/app/actions/AiService";
+import PrepareExercises from "./PrepareExercises";
 
 interface ModeConfigItem {
   id: ModeType;
@@ -23,6 +24,7 @@ interface ModeConfigItem {
   isRecentAttempts: boolean;
   recentAttempts?: QuizAttempt[];
   isMistakesPractice?: boolean;
+  notReady?: boolean;
 }
 
 interface PracticeWordModalProps {
@@ -60,6 +62,10 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
   const [isPending, startTransition] = useTransition();
   const [selectedTab, setSelectedTab] = useState<"study" | "quiz" | "extra">("study");
   const [selectedMode, setSelectedMode] = useState<ModeType>("DefualtModePratice");
+  // A list saved without its syllable and group exercises (the AI step failed or never finished)
+  const exercisesMissing = totalWords > 0 && totalSyllableWords === 0 && totalGroups === 0;
+  // Changing this remounts PrepareExercises, which reopens the modal and tries again
+  const [prepareAttempt, setPrepareAttempt] = useState(0);
   const [recentAttempts, setRecentAttempts] = useState<QuizAttempt[]>(initialRecentAttempts);
   const [mistakesCount, setMistakesCount] = useState(initialMistakesCount);
   const [isLoadingQuizData] = useState(false);
@@ -250,8 +256,9 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         recentAttempts: [],
         isMistakesPractice: false
       },
-      // Hidden when the list has no syllable exercises (the mode would open a blank page)
-      ...(totalSyllableWords > 0
+      // Hidden when the list has no syllable exercises (the mode would open a blank page),
+      // unless they are still to be prepared: then the card says so and offers to prepare them
+      ...(totalSyllableWords > 0 || exercisesMissing
         ? [
           {
             id: "SyllablesModePractice" as const,
@@ -268,12 +275,14 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
         continueFrom: studiedSyllableCount,
             isRecentAttempts: false,
             recentAttempts: [],
-            isMistakesPractice: false
+            isMistakesPractice: false,
+            notReady: exercisesMissing
           }
           ]
         : []),
-      // Hidden when no group has more than one word (the mode would have nothing to show)
-      ...(totalGroups > 0
+      // Hidden when no group has more than one word (the mode would have nothing to show),
+      // unless the groups are still to be prepared
+      ...(totalGroups > 0 || exercisesMissing
         ? [
           {
             id: "GroupModePractice" as const,
@@ -288,12 +297,13 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
             continueFrom: totalStudiedGroups,
             isRecentAttempts: false,
             recentAttempts: [],
-            isMistakesPractice: false
+            isMistakesPractice: false,
+            notReady: exercisesMissing
           }
           ]
         : []),
     ];
-  }, [selectedTab, totalWords, studiedCount, totalSyllableWords, studiedSyllableCount, studiedGroupCount, totalGroups, totalStudiedGroups, recentAttempts, mistakesCount]);
+  }, [selectedTab, totalWords, studiedCount, totalSyllableWords, studiedSyllableCount, studiedGroupCount, totalGroups, totalStudiedGroups, exercisesMissing, recentAttempts, mistakesCount]);
   
   // Create a mapping for quick access
   const modeData = React.useMemo(() => {
@@ -411,6 +421,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
 
   return (
     <>
+      {exercisesMissing && <PrepareExercises key={prepareAttempt} listId={Number(listId)} />}
       <div className="flex flex-col gap-4 sm:gap-6 md:gap-8 justify-center px-2 sm:px-4">
         <div className="flex flex-wrap gap-2 justify-center">
           <CustomButton
@@ -467,6 +478,7 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
               recentAttempts={mode.recentAttempts}
               isMistakesPractice={mode.isMistakesPractice}
               isLoading={isLoadingQuizData && (mode.isRecentAttempts || mode.isMistakesPractice)}
+              notReady={mode.notReady}
             />
           ))}
         </div>
@@ -476,7 +488,21 @@ const PracticeWordModal: React.FC<PracticeWordModalProps> = ({
           <div className="flex justify-center w-full">
             {/* Fixed-width container to maintain consistent layout */}
             <div className="flex flex-col sm:flex-row justify-center items-stretch gap-3 sm:gap-4 w-full max-w-[700px] px-2 sm:px-4">
-              {selectedMode === "RecentAttempts" ? (
+              {currentModeData?.notReady ? (
+                <div className="w-full flex flex-col items-center gap-3 px-2">
+                  <div className="text-center text-gray-500 text-xs sm:text-sm">
+                    Syllables and Word Groups aren&apos;t ready yet.
+                  </div>
+                  <CustomButton
+                    label="Prepare Exercises"
+                    size="small"
+                    variant="primary"
+                    radius="rounded"
+                    onClick={() => setPrepareAttempt((attempt) => attempt + 1)}
+                    className="w-full sm:w-auto sm:min-w-[240px] !h-auto flex items-center justify-center"
+                  />
+                </div>
+              ) : selectedMode === "RecentAttempts" ? (
                 <div className="w-full flex justify-center px-2">
                   <div className="text-center text-gray-500">
                     <div className="text-xs sm:text-sm">Select a quiz option to continue</div>
