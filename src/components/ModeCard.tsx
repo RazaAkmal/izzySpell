@@ -36,6 +36,7 @@ export type ModeCardProps = {
   recentAttempts?: QuizAttempt[];
   isMistakesPractice?: boolean;
   isLoading?: boolean;
+  notReady?: boolean;
 };
 
 const ModeCard: React.FC<ModeCardProps> = ({
@@ -51,6 +52,7 @@ const ModeCard: React.FC<ModeCardProps> = ({
   recentAttempts = [],
   isMistakesPractice = false,
   isLoading = false,
+  notReady = false,
 }) => {
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-US", {
@@ -152,7 +154,11 @@ const ModeCard: React.FC<ModeCardProps> = ({
       {/* Bottom section - consistent height whether content exists or not */}
       <div className="h-[40px] flex items-center justify-center">
         {/* For mistake practice, show count badge */}
-        {isMistakesPractice && isLoading ? (
+        {notReady ? (
+          <div className="bg-yellow-100 text-yellow-800 text-sm font-semibold px-3 py-1 rounded-full">
+            Not ready yet
+          </div>
+        ) : isMistakesPractice && isLoading ? (
           <div className="h-7 w-40 bg-gray-200 rounded-full animate-pulse" />
         ) : isMistakesPractice && total > 0 ? (
           <div className="bg-red-100 text-red-800 text-sm font-semibold px-3 py-1 rounded-full">

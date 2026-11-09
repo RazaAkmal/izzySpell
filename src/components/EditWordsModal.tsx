@@ -5,7 +5,6 @@ import { Button } from "@headlessui/react";
 import CustomButton from "./HeadlessButton";
 import { SpellingListWithWords } from "@/lib/defination";
 import { revalidateRoute } from "@/app/actions/revalidate";
-import { processFileWithAI } from "@/app/actions/AiService";
 import ConfirmationModal from "./ConfirmationModal";
 import DragDropProvider from "./WordBuilder/DragDropProvider";
 import { useDrag, useDrop } from "react-dnd";
@@ -277,35 +276,22 @@ const EditWordModal: React.FC<ModalProps> = ({ isOpen, listWithWords, onClose, u
         .map((w) => ({ id: w.dbId!, word: w.word }));
 
       const newWords = wordList.filter((w) => w.dbId === null).map((w) => w.word);
-      const allWords = wordList.map((w) => w.word);
 
       const requestData: any = {
         userId,
         listId: listWithWords.id,
         listName,
-        // Name-only (or name + reorder) saves send no words and no AI data
+        // Name-only (or name + reorder) saves send no words and keep the exercises
         words: hasWordsChanged
           ? [
               ...modifiedWords,
               ...newWords.map((word) => ({ id: null, word })),
             ]
           : [],
-        extractedWords: {},
+        wordsChanged: hasWordsChanged,
       };
 
-      if (hasWordsChanged) {
-        const response = await processFileWithAI(allWords);
-        if (!response.success || !response.data) {
-          setErrorMessage(response.error || "Failed to process the list.");
-          setShowErrorModal(true);
-          setLoading(false);
-          return;
-        }
-        requestData.extractedWords = response.data;
-      }
-
-      // Apply the deletions the user confirmed in the modal. This runs after the AI step
-      // succeeded, so an AI failure leaves the list completely untouched.
+      // Apply the deletions the user confirmed in the modal
       for (const wordId of deletedWordIds) {
         const deleteResponse = await fetch(
           `/api/delete-word?wordId=${wordId}&listId=${listWithWords.id}`,

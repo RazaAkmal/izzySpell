@@ -6,7 +6,7 @@ import { ListNameProvider } from "@/context/ListNameContext";
 import { preloadCurrentUserDetails } from "@/app/actions/getUserDetails";
 import { requireListOwnerForPage } from "@/lib/requireSession";
 import { getListName } from "@/lib/listName";
-import NoModeData from "@/components/NoModeData";
+import PrepareExercises from "@/components/PrepareExercises";
 
 async function page({ params }: { params: Promise<{ listId: string }> }) {
   const listId = (await params).listId;
@@ -38,9 +38,10 @@ async function page({ params }: { params: Promise<{ listId: string }> }) {
               listId={listId}
             />
           ) : (
-            <NoModeData
-              listId={listId}
-              message="No group data for this list. Please edit the list to regenerate."
+            <PrepareExercises
+              listId={parseInt(listId)}
+              emptyMessage="No group data for this list. Please edit the list to regenerate."
+              backOnClose
             />
           )}
         </ListNameProvider>

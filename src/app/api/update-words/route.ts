@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import prisma from "@/lib/prisma"; // Import your Prisma client instance
 import { revalidatePath } from "next/cache";
 import { getSessionUserId } from "@/lib/requireSession";
-import { isValidExtractedWords } from "@/lib/extractedWords";
 import { MAX_WORDS_PER_LIST, MAX_WORDS_ERROR } from "@/lib/limits";
+import { generateListExercises } from "@/app/actions/AiService";
 
 export async function PATCH(req: Request) {
   try {
@@ -13,7 +13,7 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
     }
 
-    const { listId, listName, words, extractedWords } = await req.json();
+    const { listId, listName, words, wordsChanged } = await req.json();
 
     // Validate the input
     if (!listId || !listName || !Array.isArray(words)) {
@@ -51,13 +51,8 @@ export async function PATCH(req: Request) {
     // Check if the list name has changed
     const hasListNameChanged = spellingList.listName !== listName;
 
-    // The client sends AI data only when words were added, edited or deleted
-    // (a delete-only edit has no entries in `words`, but does carry extractedWords)
-    const hasExtractedWords =
-      !!extractedWords &&
-      typeof extractedWords === "object" &&
-      Object.keys(extractedWords).length > 0;
-    const hasWordsChanged = words.length > 0 || hasExtractedWords;
+    // A delete-only edit has no entries in `words`, so the client also sends `wordsChanged`
+    const hasWordsChanged = words.length > 0 || wordsChanged === true;
 
     // If only the list name has changed, update it and skip other operations
     if (hasListNameChanged && !hasWordsChanged) {
@@ -77,20 +72,8 @@ export async function PATCH(req: Request) {
 
     // If words have changed, perform word-related operations
     if (hasWordsChanged) {
-      // Validate BEFORE touching the database: if the AI data is missing or bad,
-      // the existing words, syllable words and grouped words stay exactly as they are
-      if (!isValidExtractedWords(extractedWords)) {
-        console.warn("Invalid or missing extractedWords:", extractedWords);
-        return NextResponse.json(
-          { error: "The processed word data was invalid. Your list was not changed. Please try saving again." },
-          { status: 400 }
-        );
-      }
-
-      const groupedWords = extractedWords.GroupedWords as Record<string, string[]>;
-
-      // Word edits/creates, the list update and the exercise replacement run as ONE
-      // atomic call, so a partial failure can never leave the list without exercises
+      // Word edits/creates, the list update and clearing the old exercises run as ONE atomic
+      // call. Saving never depends on the AI: the new exercises are generated in the background.
       const wordOperations = [];
       for (const word of words) {
         if (word.id) {
@@ -124,36 +107,19 @@ export async function PATCH(req: Request) {
             generousPaceDuration: null,
           },
         }),
-        // Flash cards and scramble words are built from the old words: drop them so
-        // they are regenerated from the new words the next time they are opened
+        // Every exercise is built from the old words: drop them so they are regenerated
         prisma.flashCard.deleteMany({ where: { listId } }),
         prisma.scrambleWord.deleteMany({ where: { listId } }),
         ...wordOperations,
         prisma.syllableWord.deleteMany({ where: { listId } }),
-        prisma.syllableWord.createMany({
-          data: extractedWords.SyllableWords.map((syllableWord: any) => ({
-            word: syllableWord.Word, // Map "Word" to "word"
-            options: syllableWord.Options, // Map "Options" to "options"
-            answer: syllableWord.Answer, // Map "Answer" to "answer"
-            listId,
-          })),
-        }),
         prisma.groupedWord.deleteMany({ where: { listId } }),
-        prisma.groupedWord.createMany({
-          data: Object.entries(groupedWords).flatMap(([groupName, groupWords]) =>
-            groupWords.map((word: string) => ({
-              groupName,
-              word,
-              listId,
-            }))
-          ),
-        }),
       ]);
 
-      // results: [list update, flash delete, scramble delete, ...word operations, syllable delete, syllable create, group delete, group create]
+      // results: [list update, flash delete, scramble delete, ...word operations, syllable delete, group delete]
       const updatedWords = results.slice(3, 3 + wordOperations.length);
-      const newSyllableWords = results[results.length - 3];
-      const newGroupedWords = results[results.length - 1];
+
+      // Same as save-words: after the response, with the practice page as the fallback
+      after(() => generateListExercises(listId));
 
       // Revalidate the path after the update
       revalidatePath("/lists");
@@ -161,10 +127,8 @@ export async function PATCH(req: Request) {
       // Return the response with updated list and words
       return NextResponse.json(
         {
-          message: "Spelling list, grouped words, and syllable words updated successfully!",
+          message: "Spelling list updated successfully!",
           updatedWords,
-          newSyllableWords,
-          newGroupedWords,
         },
         { status: 200 }
       );

@@ -7,14 +7,8 @@ import Image from "next/image";
 import Modal from "@/components/WordListModal";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import { readFileContent } from "@/app/utils/fileReaderUtil";
-import { extractWordsFromContent, processFileWithAI } from "@/app/actions/AiService";
+import { extractWordsFromContent } from "@/app/actions/AiService";
 import { MAX_UPLOAD_BYTES } from "@/lib/limits";
-
-type AIResponse = {
-  success: boolean;
-  data?: any;
-  error?: string;
-};
 
 function UploadWord({ user, refreshSpellingLists, onProcessingChange }: {
   user: any;
@@ -87,24 +81,12 @@ function UploadWord({ user, refreshSpellingLists, onProcessingChange }: {
     }, 600);
 
     try {
-      const response: AIResponse = await processFileWithAI(words);
-      clearInterval(interval);
-
-      if (!response.success || !response.data) {
-        setErrorMessage(response.error || "Error processing file");
-        setShowErrorModal(true);
-        setIsProcessing(false);
-        setProcessingProgress(0);
-        return;
-      }
-
       const saveResponse = await fetch("/api/save-words", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           listName,
           words,
-          extractedWords: response.data,
           userId: user.id,
         }),
       });
@@ -113,6 +95,9 @@ function UploadWord({ user, refreshSpellingLists, onProcessingChange }: {
         const data = await saveResponse.json().catch(() => null);
         throw new Error(data?.error || "Failed to save the list");
       }
+
+      // The server prepares the exercises in the background after the save
+      clearInterval(interval);
 
       await refreshSpellingLists();
       setProcessingProgress(100);
