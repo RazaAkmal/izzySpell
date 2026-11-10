@@ -1,36 +1,53 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
-import CustomPagination from "./CustomPagination";
 import { SyllableWord } from "@prisma/client";
 import { useRouter } from "next/navigation";
-import TextToSpeech from "./TextToSpeach";
 import ConfirmationModal from "./ConfirmationModal";
-import { autoSaveSyllableWordAsStudied, markSyllableWordsAsStudied } from "@/app/actions/prismaActions";
+import {
+  autoSaveSyllableWordAsStudied,
+  markSyllableWordsAsStudied,
+} from "@/app/actions/prismaActions";
 import StudyCompletionModal from "./StudyCompletionModal";
 import { useListName } from "@/context/ListNameContext";
 import { useSyncProgressOnLeave } from "@/lib/useSyncProgressOnLeave";
-import CustomButton from "./HeadlessButton";
-import { Button } from "@headlessui/react";
+import { playSound } from "@/lib/sounds";
+import { celebrate } from "@/lib/confetti";
+import PracticeModeLayout, {
+  AnswerFeedback,
+  AnswerStatus,
+  AnswerTray,
+  ListenButton,
+  getPraise,
+  getTileGap,
+  getTileSize,
+  tileStatusClass,
+} from "./PracticeModeLayout";
 
 interface SyllablesModePageProps {
   listId: number;
   syllableWords: Pick<SyllableWord, "id" | "word" | "answer" | "options">[];
-  studiedWordCount: number;
+  // Words already saved as studied (from earlier sessions)
+  studiedWordIds: number[];
 }
 
 const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
   listId,
   syllableWords,
-  studiedWordCount,
+  studiedWordIds,
 }) => {
   const router = useRouter();
   const { listName } = useListName();
-  const { markProgressPending, clearProgressPending } = useSyncProgressOnLeave(listId);
+  const { autoSave, saveFinishedSession } = useSyncProgressOnLeave(listId, studiedWordIds);
+  // Saves only words not saved yet; on a repeat run of a finished list it makes no call
+  const saveSession = () =>
+    saveFinishedSession(
+      syllableWords.map((word) => word.id),
+      (ids) => markSyllableWordsAsStudied(ids, listId)
+    );
   // Resume on the first unfinished word (the one after the studied ones); when everything is
   // studied this is the last word, and "Begin Again" restarts from the first.
   // TODO: position-based resume breaks after list edits; needs per-word studied tracking
-  const resumePage = Math.min(studiedWordCount + 1, syllableWords.length) || 1;
+  const resumePage = Math.min(studiedWordIds.length + 1, syllableWords.length) || 1;
   const [currentPage, setCurrentPage] = useState(resumePage);
   const [highestReachedPage, setHighestReachedPage] = useState(resumePage);
   const correctSyllable = syllableWords[currentPage - 1].answer;
@@ -88,6 +105,8 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
   }, [syllableWords, correctSyllable]);
 
   const handleOptionClick = (optionId: number, option: string) => {
+    // Ignore clicks while the correct answer is showing, so the page can't advance twice
+    if (isCorrectAnswer) return;
     setSelectedOption(optionId);
     setSyllableBoxes(option.split(""));
     checkAnswer(option);
@@ -96,20 +115,12 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
   const checkAnswer = (selectedOption: string) => {
     if (selectedOption === correctSyllable) {
       setIsCorrectAnswer(true);
-      // Auto-save in the background so progress survives back/refresh/closing the tab.
-      // The server action returns { success: false } instead of throwing, so check both.
+      celebrate();
+      playSound("correct");
+      // Auto-save in the background so progress survives back/refresh/closing the tab
       const answeredWordId = syllableWords[currentPage - 1]?.id;
       if (answeredWordId !== undefined) {
-        markProgressPending();
-        autoSaveSyllableWordAsStudied(answeredWordId, listId)
-          .then((result) => {
-            if (result && result.success === false) {
-              console.error("Auto-save failed for syllable word:", answeredWordId, result.error);
-            }
-          })
-          .catch((err) =>
-            console.error("Auto-save failed for syllable word:", answeredWordId, err)
-          );
+        autoSave(answeredWordId, () => autoSaveSyllableWordAsStudied(answeredWordId, listId));
       }
       // Update highest reached page when answer is correct
       if (currentPage < syllableWords.length) {
@@ -130,16 +141,18 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
       }
     } else {
       setIsCorrectAnswer(false);
+      playSound("wrong");
     }
   };
 
+  const answerStatus: AnswerStatus =
+    isCorrectAnswer === null ? "idle" : isCorrectAnswer ? "correct" : "wrong";
+  const tileSize = getTileSize(syllableBoxes.length);
+  const tileGap = getTileGap(syllableBoxes.length);
+
   const handlePageChange = (page: number) => {
     // Only allow navigation to pages up to the highest reached page
-    if (
-      page >= 1 &&
-      page <= syllableWords.length &&
-      page <= highestReachedPage
-    ) {
+    if (page >= 1 && page <= syllableWords.length && page <= highestReachedPage) {
       setCurrentPage(page);
       setSelectedOption(null);
       setIsCorrectAnswer(null);
@@ -148,104 +161,94 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
 
   return (
     <>
-      <div className="bg-skyBlue h-[75vh] m-7 mt-1 p-6 rounded-lg shadow-lg">
-        <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4 sm:gap-0 items-center">
-          <div className="order-2 sm:order-1 flex justify-start">
-            <CustomButton
-              label={`List name: ${listName}`}
-              variant="success"
-              size="small"
-              img="/images/bookIcon.svg"
-            />
-          </div>
-          <div className="order-3 sm:order-2 flex justify-center">
-            <p className="text-2xl md:text-4xl md:ml-8 font-bold text-center w-full text-purple">
-              Syllables Mode
-            </p>
-          </div>
-          <div className="order-1 sm:order-3 flex justify-end">
-            <Button
-              className="focus:outline-none"
-              onClick={() => setShowConfirmation(true)}
-              disabled={isConfirmLoading}
-            >
-              <Image
-                src="/images/Vector.svg"
-                alt="Cancel Button"
-                width={24}
-                height={24}
-                className="w-8 h-8"
+      <PracticeModeLayout
+        title="Syllables Mode"
+        listName={listName}
+        onClose={() => setShowConfirmation(true)}
+        closeDisabled={isConfirmLoading}
+        currentPage={currentPage}
+        totalPages={syllableWords.length}
+        highestReachedPage={highestReachedPage}
+        onPageChange={handlePageChange}
+        instruction="Listen, then pick the right syllables!"
+      >
+        <div className="w-full max-w-3xl flex flex-col items-center gap-5 sm:gap-6">
+          <ListenButton spell={orignalWord} />
+
+          {/* Syllable Boxes. The feedback sits like a sticker on the tray's bottom edge, so it
+              needs no empty row of its own and the choices below never move when it appears. */}
+          <div className="relative max-w-full pb-10 sm:pb-9">
+            <AnswerTray status={answerStatus} label="Your answer" shakeKey={selectedOption}>
+              {/* Read as one phrase instead of letter by letter */}
+              <p className="sr-only">
+                {selectedOption === null
+                  ? "No answer picked yet"
+                  : `Your answer: ${syllableBoxes.join("")}`}
+              </p>
+              <div aria-hidden="true" className={`flex flex-wrap justify-center ${tileGap}`}>
+                {syllableBoxes.map((letter, index) => (
+                  <div
+                    key={index}
+                    className={`${tileSize} border-2 rounded-xl flex items-center justify-center font-bold text-white transition-colors ${tileStatusClass(
+                      answerStatus,
+                      !!letter
+                    )}`}
+                  >
+                    {letter}
+                  </div>
+                ))}
+              </div>
+            </AnswerTray>
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 whitespace-nowrap">
+              <AnswerFeedback
+                state={answerStatus}
+                correctText={getPraise(currentPage)}
+                wrongText="Almost! Try another one."
               />
-            </Button>
+            </div>
           </div>
-        </div>
 
-        <div className="flex mt-10 flex-col items-center space-y-6">
-          <CustomPagination
-            currentPage={currentPage}
-            totalPages={syllableWords.length}
-            onPageChange={handlePageChange}
-            highestReachedPage={highestReachedPage}
-          />
-        </div>
-
-        <div className="flex flex-col items-center mt-4">
-          <p className="text-lg text-center mt-3  font-semibold md:text-2xl mb-3 text-gray-700">
-            Please choose the correct syllable word below.
-          </p>
-
-          {/* Syllable Boxes */}
-          <div className="flex flex-wrap gap-4 justify-center items-center md:ml-20">
-            <div
-              className={`flex flex-wrap gap-1 md:p-4 p-2 rounded-2xl bg-white ${
-                isCorrectAnswer === null
-                  ? "border-darkGreen"
-                  : isCorrectAnswer
-                  ? "border-green"
-                  : "border-red-500"
-              } border-4`}
-            >
-              {syllableBoxes.map((letter, index) => (
-                <div
+          <div
+            role="group"
+            aria-label="Answer choices"
+            className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full max-w-2xl"
+          >
+            {options.map((option, index) => {
+              const isSelected = selectedOption === index;
+              return (
+                <button
                   key={index}
-                  className={`w-14 h-14 md:w-16 md:h-16 border-2 border-darkGreen rounded-xl flex items-center justify-center  ${
-                    isCorrectAnswer === null
-                      ? "border-darkGreen"
-                      : isCorrectAnswer
-                      ? "border-green"
-                      : "border-red-500"
-                  } rounded-xl flex items-center justify-center ${
-                    letter ? "bg-darkGreen" : "bg-greenLite"
+                  type="button"
+                  onClick={() => handleOptionClick(index, option)}
+                  disabled={!!isCorrectAnswer}
+                  aria-label={`Choice ${String.fromCharCode(65 + index)}: ${option}${
+                    isSelected ? (isCorrectAnswer ? ", correct" : ", not right") : ""
+                  }`}
+                  className={`flex items-center gap-3 w-full min-h-[56px] px-3 py-3 sm:py-4 rounded-2xl border-2 text-left font-bold transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-blue focus-visible:ring-offset-2 ${
+                    isSelected
+                      ? isCorrectAnswer
+                        ? "bg-deepGreen border-deepGreen text-white shadow-[0_4px_0_#2a5704]"
+                        : "bg-red-600 border-red-600 text-white shadow-[0_4px_0_#991b1b] motion-safe:animate-wiggle"
+                      : "bg-white border-blueStroke text-darkBlue shadow-[0_4px_0_#98C3FF] motion-safe:hover:-translate-y-0.5 hover:border-blue motion-safe:active:translate-y-0.5 active:shadow-[0_1px_0_#98C3FF] disabled:opacity-60 disabled:hover:translate-y-0"
                   }`}
                 >
-                  <span className="text-2xl font-bold text-white">
-                    {letter}
+                  <span
+                    aria-hidden="true"
+                    className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-base ${
+                      isSelected ? "bg-white/25 text-white" : "bg-skyBlue text-darkBlue"
+                    }`}
+                  >
+                    {String.fromCharCode(65 + index)}
                   </span>
-                </div>
-              ))}
-            </div>
-            <TextToSpeech heightWidth={60} spell={orignalWord} />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mt-6">
-            {options.map((option, index) => (
-              <button
-                key={index}
-                onClick={() => handleOptionClick(index, option)}
-                className={`text-darkBlue w-full px-4 py-3 border-2 rounded-2xl text-xl text-center font-semibold sm:text-2xl lg:text-3xl ${
-                  selectedOption === index
-                    ? isCorrectAnswer
-                      ? "bg-green border-green"
-                      : "bg-red-500 border-red-500"
-                    : "bg-gray-100 border-gray-300 hover:bg-gray-200"
-                }`}
-              >
-                {option}
-              </button>
-            ))}
+                  <span className="flex-1 text-center text-xl sm:text-2xl lg:text-3xl tracking-wide break-all">
+                    {option}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
-      </div>
+      </PracticeModeLayout>
 
       <ConfirmationModal
         isOpen={showConfirmation}
@@ -263,11 +266,7 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
         onClose={async () => {
           setIsConfirmLoading(true);
           try {
-            const completedWordIds = syllableWords.map((word) => word.id);
-            if (completedWordIds.length > 0) {
-              await markSyllableWordsAsStudied(completedWordIds, listId);
-              clearProgressPending();
-            }
+            await saveSession();
           } catch (err) {
             console.error("Error saving on practice again:", err);
           } finally {
@@ -284,18 +283,14 @@ const SyllablesModePage: React.FC<SyllablesModePageProps> = ({
           try {
             setIsConfirmLoading(true);
             setError(null);
-            // Mark all words as studied since we completed them
-            const completedWordIds = syllableWords.map((word) => word.id);
-            await markSyllableWordsAsStudied(completedWordIds, listId);
-            clearProgressPending();
+            await saveSession();
             router.push(`/spellPractice/${listId}`);
           } catch (err) {
             setError(
-              `Failed to save progress: ${
-                err instanceof Error ? err.message : "Unknown error"
-              }`
+              `Failed to save progress: ${err instanceof Error ? err.message : "Unknown error"}`
             );
             console.error("Error marking syllable words as studied:", err);
+            setIsConfirmLoading(false);
           }
         }}
         isLoading={isConfirmLoading}

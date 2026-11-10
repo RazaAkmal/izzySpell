@@ -8,7 +8,8 @@ const variantStyles = {
     "bg-blue text-white border-[2px] border-[#FFFFFF] opacity-100",
   secondary:
     "bg-gray-200 text-blue font-bold border-2 border-blue",
-  success: "bg-green border-2 border-white text-white",
+  // Dark green so the white text passes WCAG AA contrast (the brand green is 2.6:1)
+  success: "bg-deepGreen border-2 border-white text-white",
   danger: "bg-red-500 text-white",
 };
 
@@ -84,7 +85,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({
               width={40}
               height={40}
               src={img}
-              alt="Arrow"
+              alt=""
               className={imageClassName || "w-8 h-8 sm:w-10 sm:h-10"}
             />
           )}
@@ -94,7 +95,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({
               width={40}
               height={40}
               src={arrow}
-              alt="Arrow"
+              alt=""
               className="w-4 h-4 sm:w-5 sm:h-5"
             />
           )}

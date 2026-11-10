@@ -146,7 +146,7 @@ export async function getWordsByListId(listId: number) {
         listName: true
       }
     }),
-    // Only what the practice and quiz pages use; `studied` is just for the count below
+    // Only what the practice and quiz pages use
     prisma.word.findMany({
       where: { listId },
       orderBy: { id: 'asc' },
@@ -155,8 +155,8 @@ export async function getWordsByListId(listId: number) {
   ]);
   const words = rows.map(({ id, word }) => ({ id, word }));
   const total = rows.length;
-  const studiedWordCount = rows.filter((row) => row.studied).length;
-  return { list, words, total, studiedWordCount };
+  const studiedWordIds = rows.filter((row) => row.studied).map((row) => row.id);
+  return { list, words, total, studiedWordIds };
 }
 export async function getSyllableWordsByListId(listId: number) {
   await requireListOwner(listId);
@@ -164,14 +164,14 @@ export async function getSyllableWordsByListId(listId: number) {
   const rows = await prisma.syllableWord.findMany({
     where: { listId },
     orderBy: { id: 'asc' },
-    // Only what Syllables mode uses; `studied` is just for the count below
+    // Only what Syllables mode uses
     select: { id: true, word: true, answer: true, options: true, studied: true },
   });
   const syllableWords = rows.map(({ id, word, answer, options }) => ({ id, word, answer, options }));
   const total = rows.length;
-  const studiedWordCount = rows.filter((row) => row.studied).length;
+  const studiedWordIds = rows.filter((row) => row.studied).map((row) => row.id);
 
-  return { syllableWords, total, studiedWordCount};
+  return { syllableWords, total, studiedWordIds };
 }
 
 export async function getGroupedWordsByListId(listId: number) {

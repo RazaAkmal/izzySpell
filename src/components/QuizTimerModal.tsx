@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import CustomButton from "./HeadlessButton";
-import Image from "next/image";
+import { formatTime } from "@/lib/formatTime";
 import { getTimeDurationsForList } from "@/app/actions/AiService";
 import { generateAiSuggestionsForList } from "@/app/actions/generateAiSuggestions";
 import { useRouter } from "next/navigation";
-import { Button } from "@headlessui/react";
+import { Description, Dialog, DialogBackdrop, DialogPanel, DialogTitle } from "@headlessui/react";
 
 export type TimerType = "none" | "word" | "list";
 
@@ -32,7 +32,6 @@ const QuizTimerModal: React.FC<QuizTimerModalProps> = ({
 }) => {
   const [timerType, setTimerType] = useState<TimerType>("none");
   const [timeAmount, setTimeAmount] = useState<number>(30); // Default 30 seconds
-  const [timeUnit, setTimeUnit] = useState<'sec' | 'min'>('sec'); // Default to seconds
   const [aiSuggestions, setAiSuggestions] = useState<AiPaceSuggestions | null>(initialAiSuggestions);
   const [loadingAiSuggestions, setLoadingAiSuggestions] = useState(false);
   const [generatingAiSuggestions, setGeneratingAiSuggestions] = useState(false);
@@ -62,7 +61,6 @@ const QuizTimerModal: React.FC<QuizTimerModalProps> = ({
     setGeneratingAiSuggestions(true);
     try {
       const result = await generateAiSuggestionsForList(listId);
-      console.log("AI suggestions generated:", result);
       if (result.success && result.data) {
         setAiSuggestions({
           shortPaceDuration: result.data.shortPace,
@@ -77,372 +75,225 @@ const QuizTimerModal: React.FC<QuizTimerModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  // Seconds for a pace: per word as is, for the whole quiz times the number of words
+  const forMode = (perWord: number, type: TimerType = timerType) =>
+    type === "list" ? perWord * totalWords : perWord;
 
-  // A timed mode needs a whole number of at least 1 second (0 or empty would time out instantly)
-  const isTimeInvalid =
-    timerType !== "none" && !(Number.isInteger(timeAmount) && timeAmount >= 1);
+  // AI paces when the list has them, otherwise standard ones
+  const aiPaces = [
+    { label: "Fast", perWord: aiSuggestions?.shortPaceDuration },
+    { label: "Balanced", perWord: aiSuggestions?.mediumPaceDuration },
+    { label: "Relaxed", perWord: aiSuggestions?.generousPaceDuration },
+  ].filter((pace): pace is { label: string; perWord: number } => !!pace.perWord);
+  const hasAiPaces = aiPaces.length > 0;
+  const paces = hasAiPaces ? aiPaces : STANDARD_PACES;
 
-  const handleStart = () => {
-    if (isTimeInvalid) return;
-    // Timer selection has been made, proceed with the quiz
-    onStart(timerType, timeAmount);
+  // Range the −/+ buttons allow: 5 sec to 5 min per word, 30 sec to 1 hour for the whole quiz
+  const limits = (type: TimerType) => (type === "word" ? { min: 5, max: 300 } : { min: 30, max: 3600 });
+  const clamp = (seconds: number, type: TimerType) =>
+    Math.min(limits(type).max, Math.max(limits(type).min, seconds));
+  const { min: minTime, max: maxTime } = limits(timerType);
+
+  const chooseMode = (type: TimerType) => {
+    setTimerType(type);
+    // Start each timed mode on the middle pace, kept inside the −/+ range (a long list
+    // times a slow pace could pass the 1 hour cap)
+    if (type !== "none") setTimeAmount(clamp(forMode(paces[Math.floor(paces.length / 2)].perWord, type), type));
+  };
+
+  // −/+ steps: 5 sec per word; for the whole quiz 30 sec up to 5 min and 1 min above it.
+  // The step depends on which side of 5 min the result lands, so + then − gets back to the
+  // same time, and off-step times snap to the next step in the direction pressed.
+  const adjust = (direction: 1 | -1) =>
+    setTimeAmount((t) => {
+      const step = timerType === "word" ? 5 : (direction > 0 ? t >= 300 : t > 300) ? 60 : 30;
+      const next = direction > 0 ? Math.floor(t / step) * step + step : Math.ceil(t / step) * step - step;
+      return clamp(next, timerType);
+    });
+
+  const summary =
+    timerType === "none"
+      ? "No timer, take your time"
+      : timerType === "word"
+      ? `${formatTime(timeAmount)} for each word`
+      : `${formatTime(timeAmount)} for the whole quiz (about ${formatTime(
+          Math.max(1, Math.round(timeAmount / Math.max(totalWords, 1)))
+        )} a word)`;
+
+  const leave = () => {
+    if (listId) router.push(`/spellPractice/${listId}`);
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-8 max-w-md w-full mx-auto shadow-lg relative">
-        <Button 
-          className="absolute top-4 right-4 focus:outline-none"
-          onClick={() => {
-            if (listId) {
-              router.push(`/spellPractice/${listId}`);
-            }
-          }}
-        >
-          <Image
-            src="/images/Vector.svg"
-            alt="Cancel Button"
-            width={30}
-            height={30}
-          />
-        </Button>
-       
-
-        <h2 className="text-2xl font-bold text-center w-full text-purple mb-4">
-          Quiz Timer Options
-        </h2>
-
-        <p className="text-center text-gray-600 mb-6">
-          Please select a timer option to continue with the quiz
-        </p>
-
-        <div className="mb-6">
-          <p className="text-darkBlue mb-4">Choose a timer mode:</p>
-
-          <div className="space-y-3">
-            <label
-              className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                timerType === "none"
-                  ? "border-purple bg-purple bg-opacity-10"
-                  : "border-gray-200 hover:bg-gray-50"
-              }`}
-            >
-              <input
-                type="radio"
-                name="timerType"
-                checked={timerType === "none"}
-                onChange={() => setTimerType("none")}
-                className="mr-3 h-5 w-5 text-purple"
-              />
-              <div>
-                <p className="font-medium text-darkBlue">No Timer</p>
-                <p className="text-sm text-gray-500">
-                  Take the quiz without time pressure
-                </p>
-              </div>
-            </label>
-
-            <label
-              className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                timerType === "word"
-                  ? "border-purple bg-purple bg-opacity-10"
-                  : "border-gray-200 hover:bg-gray-50"
-              }`}
-            >
-              <input
-                type="radio"
-                name="timerType"
-                checked={timerType === "word"}
-                onChange={() => setTimerType("word")}
-                className="mr-3 h-5 w-5 text-purple"
-              />
-              <div>
-                <p className="font-medium text-darkBlue">Time per Word</p>
-                <p className="text-sm text-gray-500">
-                  Set time limit for each individual word
-                </p>
-              </div>
-            </label>
-
-            <label
-              className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                timerType === "list"
-                  ? "border-purple bg-purple bg-opacity-10"
-                  : "border-gray-200 hover:bg-gray-50"
-              }`}
-            >
-              <input
-                type="radio"
-                name="timerType"
-                checked={timerType === "list"}
-                onChange={() => setTimerType("list")}
-                className="mr-3 h-5 w-5 text-purple"
-              />
-              <div>
-                <p className="font-medium text-darkBlue">Time for Full List</p>
-                <p className="text-sm text-gray-500">
-                  Set time limit for the entire quiz
-                </p>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        {timerType !== "none" && (
-          <div className="mb-6">
-            <p className="text-darkBlue mb-2">
-              Time {timerType === "word" ? "per word" : "for entire list"}:
-            </p>
-
-            {aiSuggestions &&
-              (aiSuggestions.shortPaceDuration ||
-                aiSuggestions.mediumPaceDuration ||
-                aiSuggestions.generousPaceDuration) && (
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm text-gray-600">
-                      🤖 AI-Suggested Paces:
-                    </p>
-                    {/* <button
-                    onClick={handleGenerateAiSuggestions}
-                    disabled={generatingAiSuggestions}
-                    className="text-xs text-darkBlue"
-                    title="Refresh AI suggestions"
-                  >
-                    {generatingAiSuggestions ? "Updating..." : "🔄 Refresh"}
-                  </button> */}
-                  </div>
-                  <div className="flex gap-2 mb-3">
-                    {aiSuggestions.shortPaceDuration && (
-                      <button
-                        onClick={() => {
-                          const duration =
-                            timerType === "list"
-                              ? aiSuggestions.shortPaceDuration! * totalWords
-                              : aiSuggestions.shortPaceDuration!;
-                          setTimeAmount(duration);
-                        }}
-                        className={`py-2 px-3 rounded-lg text-xs ${
-                          timeAmount ===
-                          aiSuggestions.shortPaceDuration! *
-                            (timerType === "list" ? totalWords : 1)
-                            ? "bg-purple text-white"
-                            : "bg-blue"
-                        }`}
-                      >
-                        Fast (
-                        {timerType === "list"
-                          ? `${Math.floor(
-                              (aiSuggestions.shortPaceDuration! * totalWords) /
-                                60
-                            )}m ${
-                              (aiSuggestions.shortPaceDuration! * totalWords) %
-                              60
-                            }s`
-                          : `${Math.floor(
-                              aiSuggestions.shortPaceDuration! / 60
-                            )}m ${aiSuggestions.shortPaceDuration! % 60}s`}
-                        )
-                      </button>
-                    )}
-                    {aiSuggestions.mediumPaceDuration && (
-                      <button
-                        onClick={() => {
-                          const duration =
-                            timerType === "list"
-                              ? aiSuggestions.mediumPaceDuration! * totalWords
-                              : aiSuggestions.mediumPaceDuration!;
-                          setTimeAmount(duration);
-                        }}
-                        className={`py-2 px-3 rounded-lg text-xs ${
-                          timeAmount ===
-                          aiSuggestions.mediumPaceDuration! *
-                            (timerType === "list" ? totalWords : 1)
-                            ? "bg-purple text-white"
-                            : "bg-green hover:bg-darkGreen text-green-800"
-                        }`}
-                      >
-                        Balanced (
-                        {timerType === "list"
-                          ? `${Math.floor(
-                              (aiSuggestions.mediumPaceDuration! * totalWords) /
-                                60
-                            )}m ${
-                              (aiSuggestions.mediumPaceDuration! * totalWords) %
-                              60
-                            }s`
-                          : `${Math.floor(
-                              aiSuggestions.mediumPaceDuration! / 60
-                            )}m ${aiSuggestions.mediumPaceDuration! % 60}s`}
-                        )
-                      </button>
-                    )}
-                    {aiSuggestions.generousPaceDuration && (
-                      <button
-                        onClick={() => {
-                          const duration =
-                            timerType === "list"
-                              ? aiSuggestions.generousPaceDuration! * totalWords
-                              : aiSuggestions.generousPaceDuration!;
-                          setTimeAmount(duration);
-                        }}
-                        className={`py-2 px-3 rounded-lg text-xs ${
-                          timeAmount ===
-                          aiSuggestions.generousPaceDuration! *
-                            (timerType === "list" ? totalWords : 1)
-                            ? "bg-purple text-white"
-                            : "bg-amber-100 hover:bg-amber-200 text-amber-800"
-                        }`}
-                      >
-                        Relaxed (
-                        {timerType === "list"
-                          ? `${Math.floor(
-                              (aiSuggestions.generousPaceDuration! *
-                                totalWords) /
-                                60
-                            )}m ${
-                              (aiSuggestions.generousPaceDuration! *
-                                totalWords) %
-                              60
-                            }s`
-                          : `${Math.floor(
-                              aiSuggestions.generousPaceDuration! / 60
-                            )}m ${aiSuggestions.generousPaceDuration! % 60}s`}
-                        )
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-            {/* Show generate AI suggestions button if no suggestions available or all are null */}
-            {(!aiSuggestions ||
-              (aiSuggestions.shortPaceDuration === null &&
-                aiSuggestions.mediumPaceDuration === null &&
-                aiSuggestions.generousPaceDuration === null)) &&
-              !loadingAiSuggestions && (
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600 mb-2">
-                    🤖 Get AI-Suggested Paces for your grade level:
-                  </p>
-                  <button
-                    onClick={handleGenerateAiSuggestions}
-                    disabled={generatingAiSuggestions}
-                    className="py-2 px-4 bg-darkBlue  text-white rounded-lg text-sm"
-                  >
-                    {generatingAiSuggestions
-                      ? "Picking the right pace..."
-                      : "Generate AI Suggestions"}
-                  </button>
-                </div>
-              )}
-
-            {/* Standard time options */}
-            <p className="text-sm text-gray-600 mb-2">Standard Options:</p>
-            <div className="flex flex-wrap gap-3 mb-2">
-              {[15, 30, 60].map((seconds) => {
-                const actualSeconds =
-                  timerType === "list" ? seconds * totalWords : seconds;
-                return (
-                  <button
-                    key={seconds}
-                    onClick={() => setTimeAmount(actualSeconds)}
-                    className={`py-2 px-4 rounded-lg text-sm ${
-                      timeAmount === actualSeconds
-                        ? "bg-purple text-white"
-                        : "bg-gray-100 hover:bg-gray-200 text-darkBlue"
-                    }`}
-                  >
-                    {timerType === "list" ? actualSeconds : seconds} sec
-                  </button>
-                );
-              })}
-
-              {/* Custom time input */}
-              <div
-                className={`flex rounded-lg overflow-hidden ${
-                  ![15, 30, 60, 120, 180, 300].includes(timeAmount)
-                    ? "ring-2 ring-purple"
-                    : "bg-gray-100 hover:bg-gray-200"
-                }`}
-              >
-                <input
-                  type="number"
-                  max={timeUnit === 'min' ? 30 : 1800}
-                  value={
-                    timeUnit === 'min' 
-                      ? timeAmount === 0 ? '' : Math.floor(timeAmount / 60)
-                      : timeAmount === 0 ? '' : timeAmount
-                  }
-                  onChange={(e) => {
-                    if (e.target.value === '') {
-                      setTimeAmount(0);
-                      return;
-                    }
-                    const value = parseInt(e.target.value, 10);
-                    if (!isNaN(value)) {
-                      const seconds = timeUnit === 'min' ? value * 60 : value;
-                      setTimeAmount(seconds);
-                    }
-                  }}
-                  placeholder="Custom"
-                  className="py-2 text-black px-2 w-12 text-sm text-center bg-transparent border-0 focus:outline-none"
-                />
-                <select
-                  value={timeUnit}
-                  onChange={(e) => {
-                    const newUnit = e.target.value as 'sec' | 'min';
-                    setTimeUnit(newUnit);
-                    // Convert the current value when changing units
-                    if (![15, 30, 60, 120, 180, 300].includes(timeAmount)) {
-                      const currentValue = timeUnit === 'min' ? timeAmount / 60 : timeAmount;
-                      const newSeconds = newUnit === 'min' ? currentValue * 60 : currentValue;
-                      setTimeAmount(Math.round(newSeconds));
-                    }
-                  }}
-                  className="py-2 px-2 text-sm text-darkBlue bg-transparent border-0 focus:outline-none cursor-pointer"
-                >
-                  <option value="sec">sec</option>
-                  <option value="min">min</option>
-                </select>
-              </div>
+    // Escape or tapping outside goes back, same as the close button
+    <Dialog open={isOpen} onClose={leave} className="relative z-50">
+      <DialogBackdrop className="fixed inset-0 bg-black/50" />
+      <div className="fixed inset-0 flex items-center justify-center p-3 sm:p-4">
+        {/* Never taller than the screen: the header and Start button stay put and only the
+            middle scrolls, so Start Quiz is always visible */}
+        <DialogPanel className="relative w-full max-w-lg max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)] flex flex-col bg-skyBlue rounded-3xl shadow-xl">
+          <div className="flex items-start justify-between gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
+            <div>
+              <DialogTitle className="text-2xl sm:text-3xl font-bold text-purple">Quiz timer</DialogTitle>
+              <Description className="mt-1 text-base font-semibold text-darkBlue">
+                Want a timer? Pick one, then start.
+              </Description>
             </div>
+            <button
+              type="button"
+              onClick={leave}
+              aria-label="Back to practice"
+              className="flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center bg-white text-darkBlue border-2 border-blueStroke shadow-sm transition-transform motion-safe:hover:scale-110 motion-safe:active:scale-95 hover:border-blue focus:outline-none focus-visible:ring-4 focus-visible:ring-blue focus-visible:ring-offset-2"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          </div>
 
-            {isTimeInvalid && (
-              <p className="text-sm text-red-600 mb-2" role="alert">
-                Please enter a time of at least 1 second.
-              </p>
-            )}
+          <div className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-6 py-4 space-y-5">
+            <fieldset>
+              <legend className="sr-only">Timer</legend>
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                {MODES.map((mode) => {
+                  const selected = timerType === mode.type;
+                  return (
+                    <label
+                      key={mode.type}
+                      className={`relative flex flex-col items-center justify-center gap-1 min-h-[88px] px-2 py-3 rounded-2xl border-[3px] text-center cursor-pointer transition-colors has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-blue ${
+                        selected
+                          ? "bg-purple border-purple text-white shadow-[0_4px_0_#6d4bc4]"
+                          : "bg-white border-blueStroke text-darkBlue hover:border-blue shadow-[0_4px_0_#98C3FF]"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="timerType"
+                        checked={selected}
+                        onChange={() => chooseMode(mode.type)}
+                        className="sr-only"
+                      />
+                      <span aria-hidden="true" className="text-2xl sm:text-3xl">{mode.icon}</span>
+                      <span className="text-sm sm:text-base font-bold leading-tight">{mode.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
 
-            {timerType === "list" && !isTimeInvalid && (
-              <p className="text-sm text-gray-500">
-                That&apos;s about {Math.round(timeAmount / totalWords)} seconds
-                per word.
-              </p>
-            )}
+            {timerType !== "none" && (
+              <div className="space-y-4">
+                <fieldset>
+                  <legend className="mb-2 flex items-center gap-2 text-base font-bold text-darkBlue">
+                    {timerType === "word" ? "Time for each word" : "Time for the whole quiz"}
+                    {hasAiPaces && (
+                      <span className="text-xs font-bold text-purple bg-white rounded-full px-2 py-0.5">
+                        ✨ Picked for your grade
+                      </span>
+                    )}
+                  </legend>
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                    {paces.map((pace) => {
+                      const seconds = forMode(pace.perWord);
+                      const selected = timeAmount === seconds;
+                      return (
+                        <button
+                          key={pace.label}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() => setTimeAmount(seconds)}
+                          className={`flex flex-col items-center justify-center min-h-[56px] px-2 py-2 rounded-2xl border-2 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-blue ${
+                            selected
+                              ? "bg-purple border-purple text-white"
+                              : "bg-white border-blueStroke text-darkBlue hover:border-blue"
+                          }`}
+                        >
+                          <span className="text-sm sm:text-base font-bold">
+                            {selected && <span aria-hidden="true">✓ </span>}
+                            {pace.label}
+                          </span>
+                          <span className={`text-xs sm:text-sm font-semibold ${selected ? "text-white" : "text-darkBlue/80"}`}>
+                            {formatTime(seconds)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
 
-            {loadingAiSuggestions && (
-              <p className="text-sm text-gray-500 italic">
-                Loading AI suggestions...
-              </p>
+                {!hasAiPaces && listId && (
+                  <button
+                    type="button"
+                    onClick={handleGenerateAiSuggestions}
+                    disabled={generatingAiSuggestions || loadingAiSuggestions}
+                    className="text-sm font-bold text-purple underline underline-offset-2 disabled:opacity-60 disabled:no-underline"
+                  >
+                    {loadingAiSuggestions
+                      ? "Loading suggested times..."
+                      : generatingAiSuggestions
+                      ? "Picking the right pace..."
+                      : "✨ Suggest times for my grade"}
+                  </button>
+                )}
+
+                {/* Fine-tune any time; the buttons keep it in range, so it can't be invalid */}
+                <div className="flex items-center justify-between gap-3 bg-white rounded-2xl border-2 border-blueStroke px-3 py-2">
+                  <span className="text-sm sm:text-base font-bold text-darkBlue">Or set your own</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => adjust(-1)}
+                      disabled={timeAmount <= minTime}
+                      aria-label="Less time"
+                      className="w-11 h-11 rounded-full bg-skyBlue text-darkBlue text-2xl font-bold leading-none disabled:opacity-40 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue"
+                    >
+                      −
+                    </button>
+                    <span aria-live="polite" className="min-w-[6.5rem] text-center text-base sm:text-lg font-bold text-darkBlue">
+                      {formatTime(timeAmount)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => adjust(1)}
+                      disabled={timeAmount >= maxTime}
+                      aria-label="More time"
+                      className="w-11 h-11 rounded-full bg-skyBlue text-darkBlue text-2xl font-bold leading-none disabled:opacity-40 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
-        )}
 
-        <div className="flex justify-center mt-8">
-          <CustomButton
-            label="Start Quiz"
-            variant="primary"
-            size="small"
-            onClick={handleStart}
-            disabled={isTimeInvalid}
-            className="w-48 py-3 text-lg"
-          />
-        </div>
+          <div className="px-5 pb-5 pt-3 sm:px-6 sm:pb-6 border-t-2 border-white flex flex-col items-center gap-3">
+            <p className="text-sm sm:text-base font-semibold text-darkBlue text-center">{summary}</p>
+            <CustomButton
+              label="Start Quiz"
+              variant="primary"
+              size="small"
+              onClick={() => onStart(timerType, timeAmount)}
+              className="w-full max-w-xs py-3 text-lg"
+            />
+          </div>
+        </DialogPanel>
       </div>
-    </div>
+    </Dialog>
   );
 };
+
+const MODES: { type: TimerType; icon: string; label: string }[] = [
+  { type: "none", icon: "😌", label: "No timer" },
+  { type: "word", icon: "⏱️", label: "Each word" },
+  { type: "list", icon: "⏳", label: "Whole quiz" },
+];
+
+// Used when the list has no AI-suggested paces (seconds per word)
+const STANDARD_PACES = [
+  { label: "Quick", perWord: 15 },
+  { label: "Steady", perWord: 30 },
+  { label: "Slow", perWord: 60 },
+];
 
 export default QuizTimerModal;

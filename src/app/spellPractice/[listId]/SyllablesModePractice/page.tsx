@@ -27,12 +27,12 @@ async function page({
     // Surfaced below where it is awaited (or superseded by the ownership check's redirect/404)
   });
   await requireListOwnerForPage(parseInt(listId));
-  const [{ syllableWords, studiedWordCount }, listName] = await dataPromise;
+  const [{ syllableWords, studiedWordIds }, listName] = await dataPromise;
   return (
     <DashboardLayout showFooter={false}>
       <ListNameProvider listId={listId} initialListName={listName}>
         {syllableWords.length > 0 ? (
-          <SyllableModePage studiedWordCount={studiedWordCount} syllableWords={syllableWords} listId={parseInt(listId)} />
+          <SyllableModePage studiedWordIds={studiedWordIds} syllableWords={syllableWords} listId={parseInt(listId)} />
         ) : (
           <PrepareExercises
             listId={parseInt(listId)}

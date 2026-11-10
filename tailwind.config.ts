@@ -34,7 +34,11 @@ const config: Config = {
        lightOrange:'#FDAC40',
        darkOrange:'#C57306',
        pink:'#F181B9',
-       greenLite:'#E2FFF8'
+       greenLite:'#E2FFF8',
+       // Darker brand green: white text on it passes WCAG AA contrast (4.9:1)
+       deepGreen:'#3B7A05',
+       // Text on lightGreen tiles (7:1)
+       inkGreen:'#073B30'
        
       },
       backgroundImage: {
@@ -44,12 +48,18 @@ const config: Config = {
       },
       animation: {
         'wiggle': 'wiggle 0.6s ease-in-out',
+        'pop': 'pop 0.35s ease-out',
       },
       keyframes: {
         wiggle: {
           '0%, 100%': { transform: 'translateX(0)' },
           '10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-5px)' },
           '20%, 40%, 60%, 80%': { transform: 'translateX(5px)' },
+        },
+        pop: {
+          '0%': { transform: 'scale(0.6)', opacity: '0' },
+          '70%': { transform: 'scale(1.08)', opacity: '1' },
+          '100%': { transform: 'scale(1)' },
         }
       }
       

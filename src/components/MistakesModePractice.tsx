@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
-import Image from "next/image";
+import React, { useRef, useState } from "react";
 import CustomButton from "./HeadlessButton";
-import { Button } from "@headlessui/react";
-import TextToSpeech from "./TextToSpeach";
+import PracticeModeLayout, { ListenButton } from "./PracticeModeLayout";
+import { playSound } from "@/lib/sounds";
+import { celebrate } from "@/lib/confetti";
 import { useRouter } from "next/navigation";
 import ConfirmationModal from "./ConfirmationModal";
 import { useListName } from "@/context/ListNameContext";
@@ -36,10 +36,10 @@ const MistakesModePractice: React.FC<MistakesModePracticeProps> = ({
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [isError, setIsError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
   const [showHint, setShowHint] = useState(false);
   const [streak, setStreak] = useState(0);
   const [practicedWords, setPracticedWords] = useState<string[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const currentMistake = queue[0];
   const isLastItem = queue.length === 1;
@@ -52,10 +52,7 @@ const MistakesModePractice: React.FC<MistakesModePracticeProps> = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUserInput(e.target.value);
-    if (isError) {
-      setIsError(false);
-      setErrorMessage("");
-    }
+    if (isError) setIsError(false);
   };
 
   const checkAnswer = () => {
@@ -67,18 +64,23 @@ const MistakesModePractice: React.FC<MistakesModePracticeProps> = ({
     if (!currentMistake) return;
 
     if (!checkAnswer()) {
+      // An open hint stays: it shows again once they start retyping
       setIsError(true);
-      setErrorMessage("That's not correct. Please listen again and try one more time!");
-      setShowHint(false);
       setStreak(0);
+      playSound("wrong");
+      inputRef.current?.select();
       return;
     }
 
     setPracticedWords((prev) => [...prev, currentMistake.word.word]);
     setStreak((prev) => prev + 1);
+    playSound("correct");
     // Fire-and-forget — delete the mistake from DB so the count updates
-    resolvePracticedMistake(currentMistake.wordId);
+    resolvePracticedMistake(currentMistake.wordId).catch((err) =>
+      console.error("Failed to clear practiced mistake:", currentMistake.wordId, err)
+    );
 
+    celebrate();
     if (isLastItem) {
       setShowCompletionModal(true);
     } else {
@@ -86,7 +88,6 @@ const MistakesModePractice: React.FC<MistakesModePracticeProps> = ({
       setUserInput("");
       setShowHint(false);
       setIsError(false);
-      setErrorMessage("");
     }
   };
 
@@ -97,11 +98,8 @@ const MistakesModePractice: React.FC<MistakesModePracticeProps> = ({
     setUserInput("");
     setShowHint(false);
     setIsError(false);
-    setErrorMessage("");
     setStreak(0);
   };
-
-  const handleClose = () => setShowConfirmation(true);
 
   const handleRetakeQuiz = () => {
     router.push(`/spellPractice/${listId}/QuizMode?start=0`);
@@ -111,25 +109,30 @@ const MistakesModePractice: React.FC<MistakesModePracticeProps> = ({
     router.push(`/spellPractice/${listId}`);
   };
 
-  const toggleHint = () => setShowHint(!showHint);
-
+  // First and last letters with a blank for each letter between: "b _ _ k"
   const getHint = () => {
     if (!currentMistake) return "";
     const word = currentMistake.word.word;
-    if (word.length <= 2) return word[0] + "...";
-    return word[0] + "..." + word[word.length - 1];
+    if (word.length <= 2) return word[0] + " _".repeat(word.length - 1);
+    return [word[0], ...Array(word.length - 2).fill("_"), word[word.length - 1]].join(" ");
   };
+  const getHintLabel = () => {
+    if (!currentMistake) return "";
+    const word = currentMistake.word.word;
+    return `${word.length} letters, starts with ${word[0]}, ends with ${word[word.length - 1]}`;
+  };
+
 
   if (initialMistakes.length === 0) {
     return (
-      <div className="bg-skyBlue h-[75vh] m-7 mt-1 p-6 rounded-lg shadow-lg flex justify-center items-center">
+      <div className="mx-6 mt-2 mb-6 md:mx-14 md:mt-0 lg:mx-[5.5rem] bg-skyBlue rounded-3xl shadow-lg p-6 sm:p-10 flex justify-center">
         <div className="text-center max-w-lg">
-          <div className="text-5xl mb-6">🎉</div>
-          <h2 className="text-2xl font-bold text-darkBlue mb-4">No Mistakes to Practice</h2>
-          <p className="text-darkBlue mb-8">
+          <div className="text-5xl mb-4" aria-hidden="true">🎉</div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-purple mb-3">No mistakes to practice</h1>
+          <p className="text-lg font-semibold text-darkBlue mb-8">
             Great job! You don&apos;t have any mistakes from recent quizzes to practice.
           </p>
-          <div className="flex justify-center gap-4">
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
             <CustomButton
               label="Take a Quiz"
               variant="primary"
@@ -153,162 +156,137 @@ const MistakesModePractice: React.FC<MistakesModePracticeProps> = ({
   }
 
   return (
-    <div className="bg-skyBlue h-[75vh] m-7 mt-1 p-6 rounded-lg shadow-lg overflow-y-auto">
-      <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4 sm:gap-0 items-center">
-        <div className="order-2 sm:order-1 flex justify-start">
-          <CustomButton
-            label={`List name ${listName}`}
-            variant="success"
-            size="small"
-            img="/images/bookIcon.svg"
-          />
-        </div>
-        <div className="order-3 sm:order-2 flex justify-center">
-          <p className="text-2xl md:text-4xl md:ml-8 font-bold text-center w-full text-purple">
-            Practice Mistakes
-          </p>
-        </div>
-        <div className="order-1 sm:order-3 flex justify-end">
-          <Button className="focus:outline-none">
-            <Image
-              src="/images/Vector.svg"
-              alt="Cancel Button"
-              width={30}
-              height={30}
-              onClick={handleClose}
-            />
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-col items-center justify-center mt-4 mb-4">
-        {/* Progress Bar */}
-        <div className="w-full max-w-[500px] my-4">
-          <div className="flex justify-between text-sm text-darkBlue mb-2">
-            <span className="font-medium">Progress</span>
-            <span className="font-medium">{practicedCount}/{totalWords} words</span>
-          </div>
-          <div className="w-full bg-white rounded-full h-2.5">
-            <div
-              className="bg-green h-2.5 rounded-full transition-all duration-300"
-              style={{ width: `${(practicedCount / totalWords) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Streak indicator */}
-        {streak > 1 && (
-          <div className="mb-3">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-              <span className="mr-1">🔥</span> {streak} Word Streak!
-            </span>
-          </div>
-        )}
-
-        {/* Practiced words */}
-        {practicedWords.length > 0 && (
-          <div className="flex flex-wrap gap-2 justify-center max-w-[500px] mb-4">
-            {practicedWords.map((word, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center gap-1 bg-green bg-opacity-10 text-green border border-green rounded-full px-3 py-1 text-sm font-medium"
-              >
-                <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                {word}
-              </span>
-            ))}
-          </div>
-        )}
-
-        <p className="w-[50%] text-center text-xl font-bold text-darkBlue my-4">
-          Practice the words you got wrong in previous quizzes. Listen to the word, type it, and click Next.
-        </p>
-      </div>
-
-      {currentMistake && (
-        <div className="flex flex-col items-center justify-center">
-          <div
-            className={`flex items-center justify-center w-full max-w-[500px] bg-white rounded-full shadow-md border-2 ${
-              isError ? "border-red-500" : "border-gray-200 focus-within:border-purple"
-            } overflow-hidden transition-colors duration-200`}
+    <>
+      <PracticeModeLayout
+        title="Practice Mistakes"
+        listName={listName}
+        onClose={() => setShowConfirmation(true)}
+        currentPage={Math.min(practicedCount + 1, totalWords)}
+        totalPages={totalWords}
+        // Stars fill as words are fixed; skipped words come back later, so no jumping around
+        highestReachedPage={practicedCount + 1}
+        instruction="Listen, type the word, then press Next!"
+      >
+        {currentMistake && (
+          <form
+            className="w-full max-w-xl flex flex-col items-center gap-4"
+            onSubmit={(e) => {
+              // Enter in the box works like the Next button
+              e.preventDefault();
+              if (userInput.trim()) handleNext();
+            }}
           >
+            {streak > 1 && (
+              <span className="inline-flex items-center gap-1 px-4 py-1 rounded-full text-sm sm:text-base font-bold bg-white text-darkBlue border-2 border-darkOrange shadow-sm">
+                <span aria-hidden="true">🔥</span> {streak} in a row!
+              </span>
+            )}
+
+            <ListenButton spell={currentMistake.word.word} />
+
             <input
+              ref={inputRef}
               type="text"
               value={userInput}
               onChange={handleInputChange}
-              onKeyDown={(e) => e.key === "Enter" && handleNext()}
-              placeholder="Type the word you hear..."
-              className={`w-full px-6 py-4 border-0 focus:ring-0 focus:outline-none text-lg ${
-                isError ? "text-red-500" : "text-darkBlue"
-              } bg-transparent`}
+              placeholder="Type the word here"
+              aria-label="Type the word you hear"
+              aria-invalid={isError}
+              aria-describedby="mistake-status"
+              // A spelling practice: no autocorrect, spell check or auto capitals
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
               autoFocus
+              className={`w-full max-w-md px-5 py-3 sm:py-4 text-center text-2xl sm:text-3xl font-bold bg-white rounded-2xl border-[3px] shadow-md placeholder:text-lg placeholder:font-semibold placeholder:text-inputText focus:outline-none focus:ring-4 ${
+                isError
+                  ? "border-red-600 text-red-600 focus:ring-red-600/20"
+                  : "border-darkGreen text-darkBlue focus:border-purple focus:ring-purple/30"
+              }`}
             />
-            <div className="p-2 mr-2">
-              <TextToSpeech heightWidth={40} spell={currentMistake.word.word} />
+
+            {/* One fixed line under the box for the hint or a wrong answer, so the buttons
+                below never move */}
+            <div id="mistake-status" role="status" aria-live="polite" className="min-h-[44px] flex items-center justify-center">
+              {isError ? (
+                <p className="text-base sm:text-lg font-bold text-red-600 text-center">
+                  Not quite! Listen again and try once more.
+                </p>
+              ) : showHint ? (
+                <p className="flex items-center gap-2 text-base sm:text-lg font-bold text-darkBlue">
+                  <span>It looks like:</span>
+                  <span className="sr-only">{getHintLabel()}</span>
+                  <span aria-hidden="true" className="tracking-[0.3em] text-xl sm:text-2xl text-purple">
+                    {getHint()}
+                  </span>
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowHint(true)}
+                  className="inline-flex items-center gap-2 min-h-[44px] px-5 rounded-full bg-lightOrange text-darkGray font-bold text-base sm:text-lg border-2 border-darkOrange shadow-[0_3px_0_#C57306] transition-transform motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0.5 active:shadow-[0_1px_0_#C57306] focus:outline-none focus-visible:ring-4 focus-visible:ring-blue focus-visible:ring-offset-2"
+                >
+                  <span aria-hidden="true">💡</span> Hint
+                  <span className="sr-only">: show the first and last letters</span>
+                </button>
+              )}
             </div>
-          </div>
 
-          {isError && (
-            <div className="mt-3 text-red-500 text-center max-w-[500px]">
-              <p>{errorMessage}</p>
+            <div className="flex justify-center gap-3 sm:gap-6">
+              <CustomButton
+                type="button"
+                label="Skip"
+                variant="secondary"
+                size="small"
+                onClick={handleSkip}
+                disabled={!canSkip}
+                img="/images/NextArrow.svg"
+                className="w-36 !gap-2"
+                imageClassName="w-4 h-4"
+              />
+              <CustomButton
+                type="submit"
+                label={isLastItem ? "Finish" : "Next"}
+                variant={isLastItem ? "success" : "secondary"}
+                size="small"
+                disabled={!userInput.trim()}
+                img={isLastItem ? "/images/completeIcon.svg" : "/images/NextArrow.svg"}
+                className="w-36 flex-row-reverse !gap-2 justify-between"
+                imageClassName="w-4 h-4"
+              />
             </div>
-          )}
+            {!canSkip && !isLastItem && (
+              <p className="-mt-2 text-sm font-semibold text-darkBlue text-center">
+                Give it a try first. You can skip after a try or a hint.
+              </p>
+            )}
 
-          {/* Hint */}
-          <div className="flex items-center justify-center mt-3">
-            <button
-              onClick={toggleHint}
-              className="text-purple hover:text-purple-700 text-sm font-medium flex items-center"
-            >
-              {showHint ? "Hide Hint" : "Show Hint"}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 ml-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
-          </div>
-
-          {showHint && (
-            <div className="mt-2 p-2 text-darkBlue text-center">
-              <p>Hint: {getHint()}</p>
-            </div>
-          )}
-
-          <div className="flex justify-center gap-6 mt-8">
-            <CustomButton
-              label="Skip"
-              variant="secondary"
-              size="small"
-              onClick={handleSkip}
-              disabled={!canSkip}
-              img="/images/NextArrow.svg"
-              className="w-36 !gap-2"
-              imageClassName="w-4 h-4"
-            />
-            <CustomButton
-              label={isLastItem ? "Finish" : "Next"}
-              variant={isLastItem ? "success" : "secondary"}
-              size="small"
-              onClick={handleNext}
-              disabled={!userInput.trim()}
-              img={isLastItem ? "/images/completeIcon.svg" : "/images/NextArrow.svg"}
-              className="w-36 flex-row-reverse !gap-2 justify-between"
-              imageClassName="w-4 h-4"
-            />
-          </div>
-        </div>
-      )}
+            {practicedWords.length > 0 && (
+              <div className="w-full mt-2 flex flex-col items-center gap-2">
+                <h2 className="text-sm font-bold text-darkBlue">Fixed so far</h2>
+                <ul className="flex flex-wrap gap-2 justify-center">
+                  {practicedWords.map((word, i) => (
+                    <li
+                      key={i}
+                      className="inline-flex items-center gap-1 bg-white text-deepGreen border-2 border-deepGreen rounded-full px-3 py-1 text-sm sm:text-base font-bold"
+                    >
+                      <svg aria-hidden="true" className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      {word}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </form>
+        )}
+      </PracticeModeLayout>
 
       <ConfirmationModal
         isOpen={showCompletionModal}
@@ -324,11 +302,12 @@ const MistakesModePractice: React.FC<MistakesModePracticeProps> = ({
         isOpen={showConfirmation}
         onClose={() => setShowConfirmation(false)}
         onConfirm={handleGoHome}
-        title="Exit Practice"
-        message="Are you sure you want to exit? Your progress will be lost."
-        confirmText="Yes, Exit"
+        title="Leave Practice"
+        // Each fixed word is removed from the mistakes list right away
+        message="Words you've already fixed are saved. Leave this practice?"
+        confirmText="Yes, Leave"
       />
-    </div>
+    </>
   );
 };
 

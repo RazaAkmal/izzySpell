@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@headlessui/react";
 import CustomButton from "./HeadlessButton";
+import ListNamePill from "./ListNamePill";
 import ConfirmationModal from "./ConfirmationModal";
 import GameCompletionContent from "./GameCompletionContent";
 import { useListName } from "@/context/ListNameContext";
-import JSConfetti from "js-confetti";
+import { fireConfetti } from "@/lib/confetti";
 import TextToSpeech from "./TextToSpeach";
 import { shuffleArray } from "@/lib/shuffle";
 import RegenerateButton from "./RegenerateButton";
@@ -44,7 +45,6 @@ interface GameCard {
 const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData, listWords }) => {
   const { listName } = useListName();
   const router = useRouter();
-  const confettiRef = useRef<JSConfetti | null>(null);
   
   const [flashCards, setFlashCards] = useState<FlashCard[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -148,11 +148,6 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData,
     }
   }, [gameState, flashCards, listWords]);
 
-  // Initialize confetti
-  useEffect(() => {
-    confettiRef.current = new JSConfetti();
-  }, []);
-
   // Cancel any pending timeouts on unmount so late callbacks can't fire
   // setState on an unmounted (or navigated-away) component.
   useEffect(() => {
@@ -229,9 +224,7 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData,
     if (clickedCard.isCorrect) {
       setShowHint(false);
 
-      if (confettiRef.current) {
-        confettiRef.current.addConfetti();
-      }
+      fireConfetti();
       // Only a first-try answer scores
       if (!answeredWithMistake.has(currentQuestionIndex)) {
         setScore(prevScore => prevScore + 1);
@@ -392,12 +385,7 @@ const FlashCardsGame: React.FC<FlashCardsGameProps> = ({ listId, flashCardsData,
       {/* Header */}
       <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4 sm:gap-0 items-center p-6">
         <div className="order-2 sm:order-1 flex justify-start">
-          <CustomButton
-            label={`List name ${listName}`}
-            variant="success"
-            size="small"
-            img="/images/bookIcon.svg"
-          />
+          <ListNamePill listName={listName} />
         </div>
         <div className="order-3 sm:order-2 flex justify-center">
           <p className="text-2xl md:text-4xl md:ml-8 font-bold text-center w-full text-purple">
