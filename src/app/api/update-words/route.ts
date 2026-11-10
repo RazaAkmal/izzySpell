@@ -26,12 +26,6 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: MAX_WORDS_ERROR }, { status: 400 });
     }
 
-    // Verify the user exists
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      return NextResponse.json({ error: "User not found." }, { status: 404 });
-    }
-
     const spellingList = await prisma.spellingList.findUnique({
       where: { id: listId, userId },
       include: { words: true },
@@ -74,30 +68,22 @@ export async function PATCH(req: Request) {
     if (hasWordsChanged) {
       // Word edits/creates, the list update and clearing the old exercises run as ONE atomic
       // call. Saving never depends on the AI: the new exercises are generated in the background.
-      const wordOperations = [];
+      // Each database call is a network round trip, so all edited words are updated in one
+      // statement and all new words are inserted in one, however many there are.
+      const edited: { id: number; word: string }[] = [];
+      const added: string[] = [];
       for (const word of words) {
         if (word.id) {
-          // Update existing word if changed
           const existingWord = spellingList.words.find((w) => w.id === word.id);
           if (existingWord && existingWord.word !== word.word) {
-            wordOperations.push(
-              prisma.word.update({
-                where: { id: word.id },
-                data: { word: word.word },
-              })
-            );
+            edited.push({ id: word.id, word: word.word });
           }
         } else if (word.word) {
-          // Create new word
-          wordOperations.push(
-            prisma.word.create({
-              data: { word: word.word, listId, type: "original" },
-            })
-          );
+          added.push(word.word);
         }
       }
 
-      const results = await prisma.$transaction([
+      const [, , , createdWords] = await prisma.$transaction([
         prisma.spellingList.update({
           where: { id: listId },
           data: {
@@ -110,13 +96,26 @@ export async function PATCH(req: Request) {
         // Every exercise is built from the old words: drop them so they are regenerated
         prisma.flashCard.deleteMany({ where: { listId } }),
         prisma.scrambleWord.deleteMany({ where: { listId } }),
-        ...wordOperations,
+        prisma.word.createManyAndReturn({
+          data: added.map((word) => ({ word, listId, type: "original" })),
+        }),
+        ...(edited.length > 0
+          ? [
+              prisma.$executeRaw`
+                UPDATE words AS w SET word = v.word
+                FROM unnest(${edited.map((e) => e.id)}::int[], ${edited.map((e) => e.word)}::text[])
+                  AS v(id, word)
+                WHERE w.id = v.id AND w."listId" = ${listId}`,
+            ]
+          : []),
         prisma.syllableWord.deleteMany({ where: { listId } }),
         prisma.groupedWord.deleteMany({ where: { listId } }),
       ]);
 
-      // results: [list update, flash delete, scramble delete, ...word operations, syllable delete, group delete]
-      const updatedWords = results.slice(3, 3 + wordOperations.length);
+      const updatedWords = [
+        ...edited.map((e) => ({ ...spellingList.words.find((w) => w.id === e.id)!, word: e.word })),
+        ...createdWords,
+      ];
 
       // Same as save-words: after the response, with the practice page as the fallback
       after(() => generateListExercises(listId));

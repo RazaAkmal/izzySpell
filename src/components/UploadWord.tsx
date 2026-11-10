@@ -10,9 +10,8 @@ import { readFileContent } from "@/app/utils/fileReaderUtil";
 import { extractWordsFromContent } from "@/app/actions/AiService";
 import { MAX_UPLOAD_BYTES } from "@/lib/limits";
 
-function UploadWord({ user, refreshSpellingLists, onProcessingChange }: {
+function UploadWord({ user, onProcessingChange }: {
   user: any;
-  refreshSpellingLists: () => Promise<void>;
   onProcessingChange: (processing: boolean) => void;
 }) {
   const router = useRouter();
@@ -70,6 +69,8 @@ function UploadWord({ user, refreshSpellingLists, onProcessingChange }: {
     setIsModalOpen(false);
     setIsProcessing(true);
     setProcessingProgress(0);
+    // Start loading /lists now so the redirect after the save is quick
+    router.prefetch("/lists");
 
     // Eased progress: starts faster, slows as it approaches 90%, never exceeds it
     const interval = setInterval(() => {
@@ -99,17 +100,17 @@ function UploadWord({ user, refreshSpellingLists, onProcessingChange }: {
       // The server prepares the exercises in the background after the save
       clearInterval(interval);
 
-      await refreshSpellingLists();
+      // No list refresh here: /lists loads the lists itself when it opens
       setProcessingProgress(100);
       setIsDone(true);
 
-      // Show success for 3s, then redirect to /lists
+      // Show success briefly, then redirect to /lists
       setTimeout(() => {
         setIsFadingOut(true);
         setTimeout(() => {
           router.push("/lists");
         }, 500);
-      }, 3000);
+      }, 1000);
 
     } catch (error) {
       clearInterval(interval);
@@ -123,7 +124,7 @@ function UploadWord({ user, refreshSpellingLists, onProcessingChange }: {
       setIsProcessing(false);
       setProcessingProgress(0);
     }
-  }, [user.id, refreshSpellingLists, router]);
+  }, [user.id, router]);
 
   useEffect(() => {
     onProcessingChange(isExtracting || isProcessing || isDone);

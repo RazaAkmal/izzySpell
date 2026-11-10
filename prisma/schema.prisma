@@ -102,8 +102,10 @@ model SpellingList {
   quizAttempts         QuizAttempt[]
   shortPaceDuration    Int?          
   mediumPaceDuration   Int?           
-  generousPaceDuration Int?        
+  generousPaceDuration Int?
 
+  // The dashboard and /lists load a user's lists newest first
+  @@index([userId, createdAt])
   @@map(name: "spelling_list")
 }
 
