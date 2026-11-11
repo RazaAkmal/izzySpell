@@ -1,8 +1,8 @@
 'use client'
 import CustomButton from "./HeadlessButton";
 import Image from "next/image";
-import { useEffect, useRef } from "react";
-import JSConfetti from "js-confetti";
+import { useEffect } from "react";
+import { fireConfetti } from "@/lib/confetti";
 
 interface StudyCompletionModalProps {
   isOpen: boolean;
@@ -13,12 +13,9 @@ interface StudyCompletionModalProps {
 }
 
 export default function StudyCompletionModal({ isOpen, onClose, onContinue, mode, isLoading = false }: StudyCompletionModalProps) {
-  const confettiRef = useRef<JSConfetti | null>(null);
-
   useEffect(() => {
     if (isOpen) {
-      confettiRef.current = new JSConfetti();
-      confettiRef.current.addConfetti({
+      fireConfetti({
         confettiRadius: 6,
         confettiNumber: 500,
       });

@@ -17,8 +17,6 @@ const CustomPagination: React.FC<CustomPaginationProps> = ({
   onPageChange,
   highestReachedPage,
 }) => {
-  const isSmallScreen = typeof window !== "undefined" && window.innerWidth <= 768;
-
   const handlePageChange = (page: number) => {
     // Allow navigation to any page up to highest reached
     if (page <= highestReachedPage) {
@@ -95,7 +93,9 @@ const CustomPagination: React.FC<CustomPaginationProps> = ({
       }
       onChange={handlePageChange}
       itemRender={itemRender}
-      className={`custom-pagination ${isSmallScreen ? "small-screen" : ""}`}
+      // Mobile layout comes from the media query in CustomPagination.module.css (a
+      // window-width check here made server and client HTML differ on phones)
+      className="custom-pagination"
     />
     </div>
   );

@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@headlessui/react";
 import CustomButton from "./HeadlessButton";
+import ListNamePill from "./ListNamePill";
 import ConfirmationModal from "./ConfirmationModal";
 import GameCompletionContent from "./GameCompletionContent";
 import { useListName } from "@/context/ListNameContext";
-import JSConfetti from "js-confetti";
+import { fireConfetti } from "@/lib/confetti";
 import TextToSpeech from "./TextToSpeach";
 import { shuffleArray } from "@/lib/shuffle";
 import RegenerateButton from "./RegenerateButton";
@@ -41,7 +42,6 @@ interface GameCard {
 const ScrambleWordsGame: React.FC<ScrambleWordsGameProps> = ({ listId, scrambleWordsData, listWords }) => {
   const { listName } = useListName();
   const router = useRouter();
-  const confettiRef = useRef<JSConfetti | null>(null);
   
   const [scrambleWords, setScrambleWords] = useState<ScrambleWord[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -155,11 +155,6 @@ const ScrambleWordsGame: React.FC<ScrambleWordsGameProps> = ({ listId, scrambleW
     }
   }, [gameState, scrambleWords, listWords]);
 
-  // Initialize confetti
-  useEffect(() => {
-    confettiRef.current = new JSConfetti();
-  }, []);
-
   // Compares the clicked scrambled option with the correct scrambled option (the anagram),
   // so the hint helps pick the right option rather than spell the unscrambled word
   const generateHint = (clickedOption: string, correctOption: string) => {
@@ -207,7 +202,7 @@ const ScrambleWordsGame: React.FC<ScrambleWordsGameProps> = ({ listId, scrambleW
       setTotalAttempts(prev => prev + attempts + 1);
       
       // Trigger confetti
-      confettiRef.current?.addConfetti({
+      fireConfetti({
         // emojis: ["🎉", "✨", "🌟", "🎊"],
         emojiSize: 50,
         confettiNumber: 1000,
@@ -288,12 +283,7 @@ const ScrambleWordsGame: React.FC<ScrambleWordsGameProps> = ({ listId, scrambleW
       {/* Header */}
       <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4 sm:gap-0 items-center p-6">
         <div className="order-2 sm:order-1 flex justify-start">
-          <CustomButton
-            label={`List name ${listName}`}
-            variant="success"
-            size="small"
-            img="/images/bookIcon.svg"
-          />
+          <ListNamePill listName={listName} />
         </div>
         <div className="order-3 sm:order-2 flex justify-center">
           <p className="text-2xl md:text-4xl md:ml-8 font-bold text-center w-full text-purple">

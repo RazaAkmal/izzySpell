@@ -3,8 +3,9 @@ import DashboardLayout from "@/components/DashboardLayout";
 import DefaultModePage from "@/components/DefaultModePage";
 import { getWordsByListId } from "@/app/actions/prismaActions";
 import { ListNameProvider } from "@/context/ListNameContext";
-import { preloadCurrentUserDetails } from "@/app/actions/getUserDetails";
+import { getUserDetails, preloadCurrentUserDetails } from "@/app/actions/getUserDetails";
 import { requireListOwnerForPage } from "@/lib/requireSession";
+import { showsLetterHints } from "@/lib/grade";
 
 async function page({
   params,
@@ -21,13 +22,22 @@ async function page({
   wordsPromise.catch(() => {
     // Surfaced below where it is awaited (or superseded by the ownership check's redirect/404)
   });
-  await requireListOwnerForPage(parseInt(listId));
-  const { list, words, studiedWordCount } = await wordsPromise;
+  const userId = await requireListOwnerForPage(parseInt(listId));
+  // getUserDetails is cached per request, so this reuses the header's lookup
+  const [{ list, words, studiedWordIds }, userDetails] = await Promise.all([
+    wordsPromise,
+    getUserDetails(userId),
+  ]);
   return (
     <>
       <DashboardLayout showFooter={false}>
         <ListNameProvider listId={listId} initialListName={list?.listName}>
-          { words.length > 0 && <DefaultModePage studiedWordCount={studiedWordCount} words={words} listId={listId} /> }
+          { words.length > 0 && <DefaultModePage
+            studiedWordIds={studiedWordIds}
+            words={words}
+            listId={listId}
+            showLetterHints={showsLetterHints(userDetails?.grade)}
+          /> }
         </ListNameProvider>
       </DashboardLayout>
     </>

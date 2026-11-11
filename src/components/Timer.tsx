@@ -61,8 +61,9 @@ const Timer: React.FC<TimerProps> = ({ initialSeconds, isRunning, onTimeUp }) =>
   const getColorClass = () => {
     const totalSeconds = minutes * 60 + seconds;
     const percentage = (totalSeconds / initialSeconds) * 100;
-    if (percentage > 50) return 'text-green-600';
-    if (percentage > 25) return 'text-yellow-600';
+    // Dark enough to read on white (yellow-600 was too pale)
+    if (percentage > 50) return 'text-green-700';
+    if (percentage > 25) return 'text-amber-700';
     return 'text-red-600';
   };
 

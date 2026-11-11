@@ -34,10 +34,12 @@ export async function requireListOwner(listId: number): Promise<string> {
   return userId;
 }
 
-// For pages that take a listId: someone else's list looks exactly like a missing one
-export async function requireListOwnerForPage(listId: number): Promise<void> {
+// For pages that take a listId: someone else's list looks exactly like a missing one.
+// Returns the signed-in user's id.
+export async function requireListOwnerForPage(listId: number): Promise<string> {
   const userId = await getSessionUserId();
   // No session (e.g. ended after a password change): clear the cookie and go to sign-in
   if (!userId) redirect("/session-expired");
   if (isNaN(listId) || !(await isListOwner(listId, userId))) notFound();
+  return userId;
 }

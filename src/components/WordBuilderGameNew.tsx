@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@headlessui/react';
-import JSConfetti from 'js-confetti';
+import { fireConfetti } from '@/lib/confetti';
 
 // Import our custom components
 import DragDropProvider from './WordBuilder/DragDropProvider';
@@ -13,6 +13,7 @@ import DropSlot from './WordBuilder/DropSlot';
 import HintSystem from './WordBuilder/HintSystem';
 import SyllableBuilderFeatures from './WordBuilder/SyllableBuilderFeatures';
 import CustomButton from './HeadlessButton';
+import ListNamePill from './ListNamePill';
 import TextToSpeech from './TextToSpeach';
 import ConfirmationModal from './ConfirmationModal';
 import GameCompletionContent from './GameCompletionContent';
@@ -51,7 +52,6 @@ export default function WordBuilderGameNew({
 }: WordBuilderGameProps) {
   const { listName } = useListName();
   const router = useRouter();
-  const confettiRef = useRef<JSConfetti | null>(null);
 
   // Game state
   const [gameState, setGameState] = useState<'loading' | 'playing' | 'completed'>('loading');
@@ -95,10 +95,7 @@ export default function WordBuilderGameNew({
   const currentWord = words[currentWordIndex];
   const totalQuestions = words.length;
 
-  // Initialize confetti and load personal best
   useEffect(() => {
-    confettiRef.current = new JSConfetti();
-    
     // Load personal best from localStorage (one best per list)
     const savedBest = localStorage.getItem(`wordBuilder_best_${listId}`);
     if (savedBest) {
@@ -388,22 +385,18 @@ export default function WordBuilderGameNew({
       setWordFamilyUnlocked(true);
       
       // Special confetti for morphology success
-      if (confettiRef.current) {
-        confettiRef.current.addConfetti({
-          emojis: ['🧬', '🔬', '📚', '💡', '🎯'],
-          emojiSize: 60,
-          confettiNumber: 150,
-        });
-      }
+      fireConfetti({
+        emojis: ['🧬', '🔬', '📚', '💡', '🎯'],
+        emojiSize: 60,
+        confettiNumber: 150,
+      });
     } else {
       // Regular confetti for other modes
-      if (confettiRef.current) {
-        confettiRef.current.addConfetti({
-          emojis: ['🎉', '⭐', '🌟', '✨'],
-          emojiSize: 50,
-          confettiNumber: 100,
-        });
-      }
+      fireConfetti({
+        emojis: ['🎉', '⭐', '🌟', '✨'],
+        emojiSize: 50,
+        confettiNumber: 100,
+      });
     }
   };
 
@@ -549,12 +542,7 @@ export default function WordBuilderGameNew({
         {/* Header */}
         <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4 sm:gap-0 items-center p-6">
           <div className="order-2 sm:order-1 flex justify-start">
-            <CustomButton
-              label={`List name ${listName}`}
-              variant="success"
-              size="small"
-              img="/images/bookIcon.svg"
-            />
+            <ListNamePill listName={listName} />
           </div>
           <div className="order-3 sm:order-2 flex justify-center">
             <p className="text-2xl md:text-4xl md:ml-8 font-bold text-center w-full text-purple">

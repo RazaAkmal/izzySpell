@@ -40,7 +40,7 @@ const DashboardClient: React.FC<DashboardClientProps> = ({
         <div className="fixed inset-0 z-50 cursor-wait" />
       )}
       <div className="flex flex-col md:flex-row justify-around gap-2 m-2">
-        <UploadWord user={user} refreshSpellingLists={refreshSpellingLists} onProcessingChange={setIsUploading} />
+        <UploadWord user={user} onProcessingChange={setIsUploading} />
         <WordList
           user={user}
           spellingLists={spellingLists}

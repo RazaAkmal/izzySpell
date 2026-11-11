@@ -1,11 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import Image from "next/image";
 import CustomButton from "./HeadlessButton";
-import { Button } from "@headlessui/react";
 import { Word } from "@prisma/client";
-import TextToSpeech from "./TextToSpeach";
 import { useRouter } from "next/navigation";
 import ConfirmationModal from "./ConfirmationModal";
 import { useListName } from "@/context/ListNameContext";
@@ -14,6 +11,7 @@ import QuizTimerModal, { AiPaceSuggestions } from "./QuizTimerModal";
 import Timer from "./Timer";
 import TimeExpiredNotification from "./TimeExpiredNotification";
 import { saveQuizAttempt } from "@/app/actions/saveQuizAttempt";
+import PracticeModeLayout, { ListenButton } from "./PracticeModeLayout";
 
 interface QuizModePageProps {
   words: Pick<Word, "id" | "word">[];
@@ -419,7 +417,7 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
   };
 
   return (
-    <div className="bg-skyBlue h-[75vh] m-7 mt-1 p-6 rounded-lg shadow-lg">
+    <>
       {/* Timer Modal - User must select an option */}
       <QuizTimerModal
         isOpen={showTimerModal}
@@ -428,180 +426,160 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
         listId={parseInt(listId, 10)}
         initialAiSuggestions={initialAiSuggestions}
       />
-      
+
       {/* Notification for word time expiration */}
-      <TimeExpiredNotification 
+      <TimeExpiredNotification
         show={showTimeExpiredNotification}
         onClose={() => setShowTimeExpiredNotification(false)}
       />
-    
-      <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4 sm:gap-0 items-center">
-        <div className="order-2 sm:order-1 flex justify-start">
-          <CustomButton
-            label={`List name ${listName}`}
-            variant="success"
-            size="small"
-            img="/images/bookIcon.svg"
-          />
-        </div>
-        <div className="order-3 sm:order-2 flex justify-center">
-          <p className="text-2xl md:text-4xl md:ml-8 font-bold text-center w-full text-purple">
-              Quiz Mode
-            </p>
-        </div>
-        <div className="order-1 sm:order-3 flex justify-end">
-          <Button className="focus:outline-none">
-            <Image
-              src="/images/Vector.svg"
-              alt="Cancel Button"
-              width={30}
-              height={30}
-              onClick={handleClose}
-            />
-          </Button>
-        </div>
-      </div>
 
-      <div className="flex flex-col items-center justify-center mt-4 mb-8">
-        {/* Progress Bar and Timer */}
-        <div className="w-full max-w-[500px] my-6">
-          <div className="flex justify-between text-sm text-darkBlue mb-2">
-            <span className="font-medium">Progress</span>
-            <span className="font-medium">{Math.min(answers.length, words.length)}/{words.length} words</span>
-            
-            {/* Timer Display */}
-            {timerType !== "none" && timerRunning && (
-              <div className="flex items-center gap-2">
-                <span className="text-darkBlue font-medium">Time:</span>
-                {timerType === "word" ? (
-                  <Timer 
-                    key={`word-timer-${currentPage}-${wordTimerKey}`} 
-                    initialSeconds={timeAmount} 
-                    isRunning={timerRunning} 
-                    onTimeUp={handleWordTimerExpired} 
-                  />
-                ) : (
-                  <Timer 
-                    key={`list-timer`}
-                    initialSeconds={timeAmount} 
-                    isRunning={timerRunning} 
-                    onTimeUp={handleListTimerExpired} 
-                  />
-                )}
-              </div>
-            )}
-          </div>
-          <div className="w-full bg-white rounded-full h-2.5">
-            <div
-              className="bg-green h-2.5 rounded-full transition-all duration-300"
-              style={{ width: `${(Math.min(answers.length, words.length) / words.length) * 100}%` }}
-            ></div>
-          </div>
-        </div>
-
-        <p className="w-[50%] text-center text-xl font-bold text-darkBlue my-8">
-          {timerExpired ? (
+      <PracticeModeLayout
+        title="Quiz Mode"
+        listName={listName}
+        onClose={handleClose}
+        closeDisabled={isSaving}
+        currentPage={currentPage}
+        totalPages={words.length}
+        // Stars fill as words are answered; they never show right/wrong during the quiz
+        highestReachedPage={answers.length + 1}
+        starTone="answered"
+        // The quiz plays no sound effects (only the spoken word), so nothing to toggle
+        showSoundToggle={false}
+        instruction={
+          timerExpired ? (
             <span className="text-red-600">Time&apos;s up! Your quiz has ended.</span>
           ) : (
-            <>
-              Listen to the Word: Click the Play button to hear the word. Type it in the box and then click Next to proceed.
-              {timerType === "word" && <span className="block text-sm font-normal mt-2 text-amber-600">You have {timeAmount} seconds for each word.</span>}
-              {timerType === "list" && <span className="block text-sm font-normal mt-2 text-amber-600">You have limited time for the entire quiz.</span>}
-            </>
-          )}
-        </p>
-      </div>
-
-      {/* Show error message if save failed */}
-      {saveError && (
-        <div className="flex flex-col items-center justify-center mt-4">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative max-w-[500px] w-full" role="alert">
-            <strong className="font-bold">Error! </strong>
+            "Listen, type the word, then press Next!"
+          )
+        }
+      >
+        {/* Show error message if save failed */}
+        {saveError && (
+          <div
+            className="mb-4 bg-red-100 border-2 border-red-600 text-red-700 px-4 py-3 rounded-2xl max-w-xl w-full"
+            role="alert"
+          >
+            <strong className="font-bold">Something went wrong. </strong>
             <span className="block sm:inline">{saveError}</span>
-            <div className="flex justify-end mt-2">
-              <button 
-                className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-4 rounded"
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                type="button"
+                className="bg-white border-2 border-red-600 text-red-700 font-bold py-1 px-4 rounded-full"
                 onClick={() => setSaveError(null)}
               >
                 Dismiss
               </button>
-              <button 
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-4 rounded ml-2"
+              <button
+                type="button"
+                className="bg-darkBlue text-white font-bold py-1 px-4 rounded-full"
                 onClick={() => handleQuizCompletion(answers)}
               >
                 Try Again
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {!showSummary && currentWord && (
-        <div className="flex flex-col items-center justify-center">
-          <div className="flex items-center justify-center w-full max-w-[500px] bg-white rounded-full shadow-md border-2 border-gray-200 overflow-hidden focus-within:border-purple transition-colors duration-200">
+        {/* Mounted only once the quiz has started, so the word isn't spoken behind the
+            timer options */}
+        {!showSummary && !showTimerModal && currentWord && (
+          <form
+            className="w-full max-w-xl flex flex-col items-center gap-4"
+            onSubmit={(e) => {
+              // Enter in the box works like the Next button
+              e.preventDefault();
+              if (userInput.trim() && !isSaving) handleNext();
+            }}
+          >
+            {timerType !== "none" && timerRunning && (
+              <div
+                role="timer"
+                aria-label={timerType === "word" ? "Time left for this word" : "Time left for the quiz"}
+                className="flex items-center gap-3 bg-white rounded-full pl-4 pr-5 py-1 shadow-sm"
+              >
+                <span className="text-sm font-semibold text-darkBlue">
+                  {timerType === "word" ? "This word" : "Whole quiz"}
+                </span>
+                {timerType === "word" ? (
+                  <Timer
+                    key={`word-timer-${currentPage}-${wordTimerKey}`}
+                    initialSeconds={timeAmount}
+                    isRunning={timerRunning}
+                    onTimeUp={handleWordTimerExpired}
+                  />
+                ) : (
+                  <Timer
+                    key={`list-timer`}
+                    initialSeconds={timeAmount}
+                    isRunning={timerRunning}
+                    onTimeUp={handleListTimerExpired}
+                  />
+                )}
+              </div>
+            )}
+
+            <ListenButton spell={currentWord.word} onUnavailable={handleTtsUnavailable} />
+
+            {showWordFallback && (
+              <p className="text-4xl font-bold tracking-widest text-purple text-center" role="status">
+                {currentWord.word}
+              </p>
+            )}
+
             <input
               type="text"
               value={userInput}
               onChange={handleInputChange}
-              placeholder="Type the word you hear..."
-              className="w-full px-6 py-4 border-0 focus:ring-0 focus:outline-none text-lg text-darkBlue bg-transparent"
+              placeholder="Type the word here"
+              aria-label="Type the word you hear"
+              // A spelling quiz: no autocorrect, spell check or auto capitals
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
               autoFocus
+              className="w-full max-w-md px-5 py-3 sm:py-4 text-center text-2xl sm:text-3xl font-bold text-darkBlue bg-white rounded-2xl border-[3px] border-darkGreen shadow-md placeholder:text-lg placeholder:font-semibold placeholder:text-inputText focus:outline-none focus:border-purple focus:ring-4 focus:ring-purple/30"
             />
-            <div className="p-2 mr-2">
-              <TextToSpeech
-                heightWidth={40}
-                spell={currentWord.word}
-                onUnavailable={handleTtsUnavailable}
+
+            {!showWordFallback && (
+              <p className="text-sm font-semibold text-darkBlue text-center">
+                Tip: listen carefully, some words sound alike
+              </p>
+            )}
+
+            <div className="flex justify-center gap-3 sm:gap-6 mt-2">
+              <CustomButton
+                type="button"
+                label="Previous"
+                variant="secondary"
+                size="small"
+                onClick={handlePrevious}
+                disabled={currentPage === 1}
+                img="/images/PrevArrow.svg"
+                className="w-36 !gap-2"
+                imageClassName="w-4 h-4"
+              />
+              <CustomButton
+                type="submit"
+                label={isLastWord ? "Submit" : "Next"}
+                variant={isLastWord ? "success" : "secondary"}
+                size="small"
+                disabled={!userInput.trim() || isSaving}
+                loading={isSaving}
+                img={isLastWord ? "/images/completeIcon.svg" : "/images/NextArrow.svg"}
+                className="w-36 flex-row-reverse !gap-2 justify-between"
+                imageClassName="w-4 h-4"
               />
             </div>
-          </div>
-
-          {showWordFallback ? (
-            <p
-              className="mt-4 text-4xl font-bold tracking-widest text-purple text-center"
-              role="status"
-            >
-              {currentWord.word}
-            </p>
-          ) : (
-            <p className="mt-3 text-sm text-gray-500 text-center">
-              Tip: listen carefully — some words sound alike
-            </p>
-          )}
-
-          <div className="flex justify-center gap-6 mt-8">
-            <CustomButton
-              label="Previous"
-              variant="secondary"
-              size="small"
-              onClick={handlePrevious}
-              disabled={currentPage === 1}
-              img="/images/PrevArrow.svg"
-              className="w-36 !gap-2"
-              imageClassName="w-4 h-4"
-            />
-            <CustomButton
-              label={isLastWord ? "Submit" : "Next"}
-              variant={isLastWord ? "success" : "secondary"}
-              size="small"
-              onClick={handleNext}
-              disabled={!userInput.trim() || isSaving}
-              img={
-                isLastWord
-                  ? "/images/completeIcon.svg"
-                  : "/images/NextArrow.svg"
-              }
-              className="w-36 flex-row-reverse !gap-2 justify-between"
-              imageClassName="w-4 h-4"
-            />
-          </div>
-        </div>
-      )}
+          </form>
+        )}
+      </PracticeModeLayout>
 
       <QuizSummaryModal
         isOpen={showSummary}
         onRetake={handleRetakeQuiz}
         onGoHome={() => router.push(`/spellPractice/${listId}`)}
+        onPracticeMistakes={() => router.push(`/spellPractice/${listId}/MistakesPractice`)}
         stats={{
           ...calculateStats(answers),
           isTimed: timerType !== "none",
@@ -615,6 +593,7 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
           .map((a) => ({ userAnswer: a.userAnswer, correctWord: a.correctWord }))}
         saveError={saveError}
         mistakesWarning={mistakesWarning}
+        isSaving={isSaving}
         onTrySaveAgain={() => {
           // Add a loading state for better UX during retry
           setIsSaving(true);
@@ -636,7 +615,7 @@ const QuizModePage: React.FC<QuizModePageProps> = ({ words, listId, initialAiSug
         message="Are you sure you want to exit the quiz? Your progress will be lost."
         confirmText="Yes, Exit Quiz"
       />
-    </div>
+    </>
   );
 };
 
